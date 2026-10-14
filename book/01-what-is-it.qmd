@@ -129,9 +129,11 @@ non-occupational physical activity against cardiovascular disease, cancer and
 mortality. The analysis code is published, so it can be re-run rather than
 merely read. This is the worked example used in Chapter 5.
 
-**Antidepressant dose and acceptability** [@furukawa2019]. The clearest
-published case of a non-monotonic curve, where benefit and tolerability pull in
-opposite directions as dose climbs.
+**Optimal antidepressant dose** [@furukawa2019]. A dose-response meta-analysis
+of double-blind randomised trials of SSRIs, venlafaxine and mirtazapine, asking
+not whether the drugs work but what dose to aim for. The clearest published case
+of benefit and tolerability pulling in opposite directions as dose climbs, which
+is what makes the curve turn.
 
 **The Burden of Proof studies** [@gbd2022tobacco; @gbd2022vegetables]. A
 different toolchain, a different modelling philosophy, and an instructive public

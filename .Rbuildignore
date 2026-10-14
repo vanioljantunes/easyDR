@@ -1,0 +1,8 @@
+^book$
+^\.github$
+^\.nojekyll$
+^LICENSE-text\.md$
+^README\.md$
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.quarto$
