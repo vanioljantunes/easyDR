@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+book/_book/
+book/.quarto/
+book/*_files/
+.quarto/

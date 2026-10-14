@@ -1,0 +1,185 @@
+# What it is, goals and examples
+
+A dose-response meta-analysis pools studies to estimate how an outcome changes
+across levels of an exposure, rather than between two groups. The output is not
+a single number. It is a curve, with a confidence band, over the exposure range
+the evidence actually covers.
+
+That shift from number to curve is the whole subject. Everything in this chapter
+follows from it.
+
+## What a dose-response meta-analysis is
+
+A standard meta-analysis takes one effect estimate per study and pools them.
+Each study contributes a comparison: treated against control, exposed against
+unexposed. The result answers one question, "does it matter", and answers it at
+whatever dose the studies happened to use.
+
+A dose-response meta-analysis takes *several* estimates per study, one for each
+exposure level, and pools the relationship running through them. Study A might
+report risk at 0, 10 and 20 units. Study B might report 0, 15 and 30. Neither
+alone has enough points to describe a curve with confidence. Together, and with
+the right handling of the fact that estimates within a study share a reference
+group, they do.
+
+The method originates with @greenland1992, who showed that the covariance
+between estimates within a study can be reconstructed from the published table,
+and that a trend can then be fitted by generalised least squares. Every method
+in this book is a descendant of that result.
+
+::: {.callout-note}
+The exposure must be quantitative and comparable across studies. "Dose" need not
+mean a drug. It can be minutes of exercise per week, grams of processed meat per
+day, or years of follow-up. What it cannot be is a category with no natural
+ordering.
+:::
+
+## What it answers
+
+Three questions, none of which a pooled estimate can answer.
+
+**Does the effect grow with the dose?** A single estimate tells you the average
+effect across whatever doses were studied. It cannot tell you whether that
+average hides a strong effect at high doses and nothing at low ones.
+
+**Is there a threshold, or a ceiling?** Many interventions stop paying off past
+some point. A pooled estimate reports the average of the paying and the
+not-paying region, which describes neither.
+
+**What dose would you actually recommend?** This is the question clinicians and
+guideline committees ask, and it is unanswerable without a curve.
+
+## The shapes a curve can take
+
+Readers do not argue about coefficients. They argue about shape, so it is worth
+having the names straight before fitting anything.
+
+A **positive association** rises across the whole observed range: more exposure,
+more effect, with no sign of levelling. An **inverse association** is its mirror.
+
+An **Emax** curve rises and then flattens. The name comes from pharmacology,
+where the maximum achievable effect is reached and further dose adds nothing.
+This is the shape behind most "no additional benefit beyond X" recommendations.
+
+A **non-monotonic** curve turns: it rises, peaks, and comes back down. The
+antidepressant dose-response literature is the standard example
+[@furukawa2019], where higher doses eventually cost more in dropout than they
+return in benefit.
+
+**No association** is a flat curve whose band contains the null throughout. It
+is a real finding and worth reporting, because "we looked for a dose-response
+relationship and found none" is more informative than a pooled estimate that was
+never going to show one.
+
+The `easyDR` package will name a fitted curve for you, so a results paragraph
+can use the same vocabulary as the literature:
+
+```{r}
+library(easyDR)
+
+curve_shape(dose = 0:4, effect = c(0, 0.20, 0.40, 0.60, 0.80))
+curve_shape(dose = 0:4, effect = c(0, 0.50, 0.80, 0.85, 0.86))
+curve_shape(dose = 0:4, effect = c(0, 0.50, 0.90, 0.40, -0.10))
+```
+
+## Why it is not a network meta-analysis
+
+A network meta-analysis can include several doses of the same drug by treating
+each dose as a separate node. It will then rank those nodes. This looks like a
+dose-response answer and is not one.
+
+The ranking tells you which of the studied doses performed best. It does not
+estimate the relationship *between* them, so it cannot interpolate to a dose
+nobody trialled, and it cannot describe a shape. Treating 10 mg and 20 mg as
+unrelated categories discards the one fact that makes them comparable: that 20
+is twice 10.
+
+Model-based network meta-analysis closes this gap deliberately, by fitting a
+dose-response function inside the network [@mawdsley2016; @pedder2021]. That is
+a dose-response method wearing network clothing, and it is the right tool when
+the evidence is a network. Ordinary network meta-analysis is not.
+
+## Why it is not a meta-regression or a subgroup analysis
+
+**Meta-regression** puts dose on the right-hand side of a regression across
+studies. It is the closest relative, and the difference matters: meta-regression
+usually relates one effect estimate per study to the average dose in that study,
+which makes it vulnerable to aggregation bias and restricts it in practice to a
+straight line. A dose-response meta-analysis uses the within-study comparisons
+across levels, which is where the information about shape lives.
+
+**Subgroup analysis** splits studies into low, medium and high and pools each.
+You get three numbers and no relationship between them. Nothing constrains them
+to lie on any curve, nothing uses the ordering, and the cut points are usually
+arbitrary.
+
+What all three alternatives share is that they ignore the common comparator.
+Within a study, every exposure level is compared against the same reference
+group, which makes the estimates correlated. That correlation is a nuisance to
+be handled, and handling it correctly is exactly what @greenland1992 made
+possible.
+
+## What the published examples look like
+
+Three papers worth reading before writing your own protocol.
+
+**Physical activity and mortality** [@garcia2023]. A two-stage analysis in
+`dosresmeta` with restricted cubic splines, pooling large prospective cohorts of
+non-occupational physical activity against cardiovascular disease, cancer and
+mortality. The analysis code is published, so it can be re-run rather than
+merely read. This is the worked example used in Chapter 5.
+
+**Antidepressant dose and acceptability** [@furukawa2019]. The clearest
+published case of a non-monotonic curve, where benefit and tolerability pull in
+opposite directions as dose climbs.
+
+**The Burden of Proof studies** [@gbd2022tobacco; @gbd2022vegetables]. A
+different toolchain, a different modelling philosophy, and an instructive public
+dispute about whether the modelling choices drive the conclusions
+[@burdenofproofconcerns2023]. Read the critique alongside the papers. Chapter 7
+returns to it, because it is the best available lesson in how a dose-response
+result can be over-read.
+
+## Should you use it?
+
+Run a dose-response meta-analysis when all of these hold:
+
+1. The exposure is quantitative, and the levels can be put on a common scale
+   across studies.
+2. Enough studies report at least three exposure levels. Two-stage methods need
+   three; one-stage methods can use studies with fewer [@crippa2019], so failing
+   this test argues for one-stage rather than for giving up.
+3. Each study compares its levels against a common reference group, and reports
+   enough per level to reconstruct the covariance: counts, group sizes, and the
+   estimate with its interval.
+4. The shape is the question. If you only want to know whether the exposure
+   matters at all, a standard meta-analysis answers that with less machinery.
+
+Do not run one when doses cannot be harmonised, when almost every study reports
+a single contrast, or when the exposure is categorical in nature.
+
+Chapter 2 turns this list into a check you can run against a real extraction
+sheet, and `easyDR::dr_viability()` performs it:
+
+```{r}
+d <- data.frame(
+  study = c("A", "A", "A", "B", "B"),
+  dose  = c(0, 10, 20, 0, 15),
+  cases = c(10, 20, 31, 5, 9),
+  n     = c(100, 100, 100, 50, 50)
+)
+
+dr_viability(d)
+```
+
+Study B has two levels, so a two-stage fit would silently drop it. Knowing that
+before extraction finishes is worth more than knowing it afterwards.
+
+## What you will be able to do
+
+By the end of this book you will be able to state a dose-response question
+precisely, judge from an extraction sheet whether the evidence can support one,
+fit and interpret the model, and read a published dose-response curve critically
+enough to see where its author went past what the data supports.
+
+{{< include _cta.qmd >}}

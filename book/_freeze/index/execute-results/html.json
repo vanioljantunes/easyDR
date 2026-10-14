@@ -1,0 +1,15 @@
+{
+  "hash": "0164586c62f036582c58db46e2d302eb",
+  "result": {
+    "engine": "knitr",
+    "markdown": "# Welcome {.unnumbered}\n\nThis is a practical guide to dose-response meta-analysis: pooling studies not to\nask whether an exposure matters, but to ask how the effect changes as the dose\nchanges.\n\nMost meta-analysis teaching stops at a single pooled estimate. That estimate\nanswers \"treated versus untreated\" and nothing else. It cannot tell you whether\ntwice the dose buys twice the benefit, whether benefit stops accruing past some\npoint, or whether more becomes worse. Those are dose-response questions, and\nthey need a different model.\n\n## Who this is for {.unnumbered .no-slide}\n\nYou have run a meta-analysis before, or at least watched one being run. You know\nwhat a forest plot is and what heterogeneity means. You do not need to know any\ndose-response methods: that is what this book is for.\n\nCode is in R. Every analysis uses `dosresmeta` [@dosresmeta], with the companion\npackage `easyDR` for the checks that come before and after the model.\n\n## How this book is organised {.unnumbered .no-slide}\n\nSeven chapters, in the order you would actually do the work:\n\n| Chapter | Question it answers |\n|---|---|\n| 1 | What is a dose-response meta-analysis, and should you run one? |\n| 2 | Can your studies support one, and how do you extract the data? |\n| 3 | How do you register it? |\n| 4 | What is the model doing? |\n| 5 | How do you run it? |\n| 6 | How do you check it before submitting? |\n| 7 | How do you write it up and read it honestly? |\n\nEach chapter is the written half of a class. The chapters and the videos follow\nthe same seven steps, in the same order, so they can be used together or apart.\n\n## Conventions {.unnumbered .no-slide}\n\nRunnable code appears in blocks you can copy:\n\n\n::: {.cell}\n\n```{.r .cell-code}\nlibrary(easyDR)\ndr_viability(my_data)\n```\n:::\n\n\nTerms are defined where they first matter rather than in a glossary, because a\ndefinition you meet in use is a definition you keep.\n\n::: {.cta}\n**This chapter is the written half of a class.** The [Meta-Analysis\nAcademy](https://metahub.metaanalysisacademy.com) course walks through the same\nmaterial on video, with the worked example built live, the templates ready to\nfill, and somewhere to ask when your data does not look like the example.\n\nFound an error, or something explained badly? [Open an\nissue](https://github.com/vanioljantunes/easyDR/issues) — corrections are\nwelcome and credited.\n:::\n\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

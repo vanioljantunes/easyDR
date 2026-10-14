@@ -1,0 +1,63 @@
+name: Render and deploy the book
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      # The book executes code from the package in this repo, so the package has
+      # to be installed before the book renders, not after.
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck, local::.
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Check the package
+        run: R CMD check --no-manual --as-cran .
+        continue-on-error: true
+
+      - name: Run tests
+        run: Rscript -e 'testthat::test_local()'
+
+      - name: Render the book
+        run: quarto render book
+
+      # Pages serves this repo from a /easyDR/ subpath. Without .nojekyll it
+      # strips every directory beginning with an underscore, which is where
+      # Quarto puts the CSS and JavaScript, and the book loads unstyled.
+      - name: Keep Jekyll away from the output
+        run: touch book/_book/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: book/_book
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,43 @@
+# Statistics theory
+
+What the model is doing, in enough detail to defend it in review, and no more.
+
+::: {.callout-warning}
+Draft. Structure fixed, prose in progress.
+:::
+
+## The problem: correlated estimates within a study
+
+Why estimates sharing one reference group cannot be treated as independent, and
+what goes wrong when they are.
+
+## Reconstructing the within-study covariance
+
+The Greenland and Longnecker result [@greenland1992], and the refinements by
+study design [@orsini2006].
+
+## Two-stage estimation
+
+Fit a trend in each study, then pool the trends. The practical reference is
+@orsini2012.
+
+## One-stage estimation
+
+A single linear mixed model across all studies, which keeps studies that
+two-stage drops [@crippa2019].
+
+## Choosing a functional form
+
+Linear, quadratic, restricted cubic splines. Where to put knots and why the
+default is defensible but not sacred.
+
+## Heterogeneity in a dose-response model
+
+What heterogeneity means when the thing varying is a curve rather than a number.
+
+## Alternatives worth knowing
+
+Robust error meta-regression [@xu2018], Bayesian formulations [@hamza2021], and
+when each is the better answer.
+
+{{< include _cta.qmd >}}

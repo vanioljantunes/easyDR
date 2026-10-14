@@ -1,0 +1,38 @@
+# Registering on PROSPERO
+
+A dose-response protocol has to commit to choices that a standard protocol never
+mentions. This chapter walks the registration field by field.
+
+::: {.callout-warning}
+Draft. Structure fixed, prose in progress.
+:::
+
+## Why register a dose-response review
+
+What pre-registration protects against when the analysis has many defensible
+shapes.
+
+## The fields that differ from a standard review
+
+Exposure definition, dose scale, and the planned functional form.
+
+## Committing to a model before seeing the data
+
+Declaring two-stage or one-stage, the spline basis, and the knot placement in
+advance, and how to phrase a contingency without writing a blank cheque.
+
+## Declaring the dose metric
+
+The unit, the reference level, and how open-ended categories will be assigned.
+
+## Planned sensitivity analyses
+
+Which modelling choices will be varied, and which results would change the
+conclusion.
+
+## A worked record
+
+The registration for the physical activity review [@garcia2023] read as a model
+to copy.
+
+{{< include _cta.qmd >}}

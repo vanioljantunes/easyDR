@@ -1,0 +1,49 @@
+# Viability, search strategy and data extraction
+
+Most dose-response meta-analyses fail here rather than at the model. This
+chapter turns the checklist at the end of Chapter 1 into something you can run
+against a real extraction sheet.
+
+::: {.callout-warning}
+Draft. The structure below is fixed and matches the class; the prose is being
+written.
+:::
+
+## What makes a dataset viable
+
+The three conditions, restated as data requirements: a quantitative exposure on
+a common scale, enough levels per study, and enough reported per level to
+reconstruct the within-study covariance.
+
+## Counting exposure levels per study
+
+Why three is the two-stage floor, and why a study with two levels argues for a
+one-stage model rather than for exclusion [@crippa2019].
+
+## The reference category problem
+
+Studies rarely agree on a reference group. How to re-express estimates against a
+common reference [@hamling2008], and the floating-variance alternative
+[@easton1991].
+
+## Harmonising doses across studies
+
+Unit conversion, midpoint assignment for open-ended categories, and what to do
+when the top category has no upper bound.
+
+## What to extract, field by field
+
+The extraction sheet: study, dose level, midpoint, cases, total, person-time,
+effect estimate, interval, and the adjustment set.
+
+## Search strategy
+
+How a dose-response question changes the search, and why the filter is usually
+looser than expected.
+
+## Running the viability check
+
+Using `dr_viability()` on the finished sheet, and reading its output as a
+decision about which model to fit.
+
+{{< include _cta.qmd >}}

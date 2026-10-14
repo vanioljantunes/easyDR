@@ -1,0 +1,25 @@
+Package: easyDR
+Title: Dose-Response Meta-Analysis, Made Teachable
+Version: 0.0.0.9000
+Authors@R: 
+    person("Vanio", "Antunes", email = "vanio.antunes.md@gmail.com",
+           role = c("aut", "cre"))
+Description: Helpers for conducting and reporting dose-response
+    meta-analyses, built alongside the companion book at
+    <https://vanioljantunes.github.io/easyDR/>. The package wraps the
+    steps that students repeatedly get wrong: checking whether a set of
+    studies can support a dose-response model at all, and naming the
+    shape of a fitted curve. Modelling itself is delegated to
+    'dosresmeta'.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Depends: 
+    R (>= 4.1)
+Suggests: 
+    testthat (>= 3.0.0),
+    dosresmeta
+Config/testthat/edition: 3
+URL: https://github.com/vanioljantunes/easyDR, https://vanioljantunes.github.io/easyDR/
+BugReports: https://github.com/vanioljantunes/easyDR/issues
+Config/roxygen2/version: 8.0.0

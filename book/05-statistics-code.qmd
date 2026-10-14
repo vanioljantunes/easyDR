@@ -1,0 +1,40 @@
+# Statistics code
+
+The whole analysis, run end to end on published data you can download.
+
+::: {.callout-warning}
+Draft. The worked example is the physical activity review [@garcia2023], whose
+analysis code is public. Prose and output in progress.
+:::
+
+## The worked example
+
+What the physical activity review asked, and why it is a good first dataset.
+
+## Getting the data into shape
+
+The extraction sheet as an R data frame, and the viability check before fitting.
+
+## Fitting a linear dose-response model
+
+The simplest defensible fit, with `dosresmeta` [@dosresmeta].
+
+## Fitting a spline model
+
+Restricted cubic splines, knot placement, and comparing fit against the linear
+model.
+
+## Plotting the curve
+
+Building the figure that will carry the paper, with the confidence band and the
+observed exposure range marked.
+
+## Naming the shape
+
+Using `curve_shape()` so the results paragraph and the figure agree.
+
+## Sensitivity analyses in code
+
+Varying knots, dropping influential studies, and switching to one-stage.
+
+{{< include _cta.qmd >}}

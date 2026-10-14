@@ -1,0 +1,38 @@
+# Writing and interpretation
+
+How to report a curve honestly, and how to read one critically.
+
+::: {.callout-warning}
+Draft. Structure fixed, prose in progress.
+:::
+
+## Writing the methods
+
+The sentences that have to be there: covariance handling, functional form, knots,
+and the model class.
+
+## Writing the results
+
+Reporting a shape rather than a number, and giving effects at specific doses
+that readers care about.
+
+## Making claims the curve supports
+
+Interpolation inside the observed range is fair. Extrapolation beyond it is the
+single most common over-reach.
+
+## Thresholds and optimal doses
+
+Why a visually obvious plateau is weaker evidence than it looks, and how to
+phrase a threshold claim.
+
+## Reading someone else as a critic
+
+The Burden of Proof dispute [@burdenofproofconcerns2023] as a worked exercise in
+spotting where modelling choices carry the conclusion.
+
+## The discussion and its limits
+
+Stating what the evidence cannot answer, and why that strengthens the paper.
+
+{{< include _cta.qmd >}}

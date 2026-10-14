@@ -1,0 +1,52 @@
+# Welcome {.unnumbered}
+
+This is a practical guide to dose-response meta-analysis: pooling studies not to
+ask whether an exposure matters, but to ask how the effect changes as the dose
+changes.
+
+Most meta-analysis teaching stops at a single pooled estimate. That estimate
+answers "treated versus untreated" and nothing else. It cannot tell you whether
+twice the dose buys twice the benefit, whether benefit stops accruing past some
+point, or whether more becomes worse. Those are dose-response questions, and
+they need a different model.
+
+## Who this is for {.unnumbered .no-slide}
+
+You have run a meta-analysis before, or at least watched one being run. You know
+what a forest plot is and what heterogeneity means. You do not need to know any
+dose-response methods: that is what this book is for.
+
+Code is in R. Every analysis uses `dosresmeta` [@dosresmeta], with the companion
+package `easyDR` for the checks that come before and after the model.
+
+## How this book is organised {.unnumbered .no-slide}
+
+Seven chapters, in the order you would actually do the work:
+
+| Chapter | Question it answers |
+|---|---|
+| 1 | What is a dose-response meta-analysis, and should you run one? |
+| 2 | Can your studies support one, and how do you extract the data? |
+| 3 | How do you register it? |
+| 4 | What is the model doing? |
+| 5 | How do you run it? |
+| 6 | How do you check it before submitting? |
+| 7 | How do you write it up and read it honestly? |
+
+Each chapter is the written half of a class. The chapters and the videos follow
+the same seven steps, in the same order, so they can be used together or apart.
+
+## Conventions {.unnumbered .no-slide}
+
+Runnable code appears in blocks you can copy:
+
+```{r}
+#| eval: false
+library(easyDR)
+dr_viability(my_data)
+```
+
+Terms are defined where they first matter rather than in a glossary, because a
+definition you meet in use is a definition you keep.
+
+{{< include _cta.qmd >}}

@@ -1,0 +1,34 @@
+# Checklist
+
+What to verify before submitting, drawn from the published audit of how these
+analyses go wrong [@xu2019quality].
+
+::: {.callout-warning}
+Draft. Structure fixed, prose in progress.
+:::
+
+## Before extraction
+
+Protocol registered, dose metric declared, reference handling decided.
+
+## After extraction
+
+Viability check run, doses harmonised, covariance inputs complete.
+
+## Model specification
+
+Functional form justified, knots declared, two-stage versus one-stage defended.
+
+## Reporting the fit
+
+What numbers belong in the paper, and in what units.
+
+## The figure
+
+Exposure range, confidence band, reference point, and what not to extrapolate.
+
+## Common failures
+
+The errors found most often in the published audit, each with the fix.
+
+{{< include _cta.qmd >}}
