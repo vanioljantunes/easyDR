@@ -5,6 +5,10 @@ The whole analysis, run end to end on published data you can download.
 ::: {.callout-warning}
 Draft. The worked example is the physical activity review [@garcia2023], whose
 analysis code is public. Prose and output in progress.
+
+Every `##` section gets its own figure, as in Chapter 1. One H2 is one slide, so
+the figure is also that slide's visual, and a section without one leaves the
+deck with a blank.
 :::
 
 ## The worked example

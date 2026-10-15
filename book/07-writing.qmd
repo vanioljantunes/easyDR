@@ -3,7 +3,12 @@
 How to report a curve honestly, and how to read one critically.
 
 ::: {.callout-warning}
-Draft. Structure fixed, prose in progress.
+Draft. The section structure below is fixed and matches the class; the prose is
+being written.
+
+Every `##` section gets its own figure, as in Chapter 1. One H2 is one slide, so
+the figure is also that slide's visual, and a section without one leaves the
+deck with a blank.
 :::
 
 ## Writing the methods

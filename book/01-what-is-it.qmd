@@ -1,5 +1,46 @@
 # What it is, goals and examples
 
+```{r}
+#| label: setup-figures
+#| include: false
+
+# Figures are drawn in base R so the book builds with no plotting dependency.
+# Every one of them is schematic: the shape is the teaching point, the numbers
+# are not data, and the captions say so.
+
+knitr::opts_chunk$set(
+  fig.align = "center",
+  dev = "png",
+  dpi = 150,
+  out.width = "100%"
+)
+
+accent <- "#277db0"
+accent2 <- "#b07d2b"
+muted <- "#9aa3a8"
+frame <- "#dcdcd6"
+
+# One curve panel, drawn the same way every time so the shapes stay comparable.
+dr_panel <- function(f, title, ylim = c(-1, 1), xlab = "Dose", ylab = "Effect",
+                     col = accent) {
+  x <- seq(0, 1, length.out = 200)
+  par(mar = c(2.4, 2.4, 2.0, 0.6), mgp = c(1.3, 0.4, 0), tcl = -0.2,
+      cex.axis = 0.7)
+  plot(x, f(x), type = "n", ylim = ylim, axes = FALSE,
+       xlab = xlab, ylab = ylab, cex.lab = 0.8)
+  abline(h = 0, lty = 2, col = muted)
+  lines(x, f(x), col = col, lwd = 2.6)
+  box(col = frame)
+  title(main = title, cex.main = 0.92, font.main = 2, line = 0.6)
+}
+
+# A confidence band, for the panels where the width of the evidence matters.
+dr_band <- function(x, y, half, col = accent) {
+  polygon(c(x, rev(x)), c(y - half, rev(y + half)),
+          col = adjustcolor(col, alpha.f = 0.15), border = NA)
+}
+```
+
 A dose-response meta-analysis pools studies to estimate how an outcome changes
 across levels of an exposure, rather than between two groups. The output is not
 a single number. It is a curve, with a confidence band, over the exposure range
@@ -21,6 +62,54 @@ report risk at 0, 10 and 20 units. Study B might report 0, 15 and 30. Neither
 alone has enough points to describe a curve with confidence. Together, and with
 the right handling of the fact that estimates within a study share a reference
 group, they do.
+
+```{r}
+#| label: fig-one-vs-many
+#| fig-cap: "What each design asks of a study. A standard meta-analysis reads one effect estimate per study and pools them into a single summary. A dose-response meta-analysis reads every exposure level a study reports and pools the relationship running through them, so the result is a curve over the exposure range. Schematic."
+#| fig-width: 9
+#| fig-height: 3.4
+
+par(mfrow = c(1, 2))
+
+# Left: one estimate per study, and the pooled summary underneath.
+est <- c(0.42, 0.61, 0.28, 0.55)
+se <- c(0.12, 0.15, 0.10, 0.13)
+par(mar = c(2.6, 4.2, 2.0, 0.8), mgp = c(1.4, 0.4, 0), tcl = -0.2, cex.axis = 0.7)
+plot(est, 4:1, xlim = c(-0.1, 1), ylim = c(0.2, 4.6), axes = FALSE,
+     xlab = "Effect", ylab = "", pch = 15, col = accent, cex = 1.1, cex.lab = 0.8)
+segments(est - 1.96 * se, 4:1, est + 1.96 * se, 4:1, col = accent, lwd = 2)
+abline(v = 0, lty = 2, col = muted)
+axis(1, at = c(0, 0.5, 1), col = frame)
+axis(2, at = 4:1, labels = paste("Study", LETTERS[1:4]), las = 1,
+     col = frame, cex.axis = 0.7)
+pooled <- sum(est / se^2) / sum(1 / se^2)
+polygon(pooled + c(-0.09, 0, 0.09, 0), 0.55 + c(0, 0.16, 0, -0.16),
+        col = accent2, border = NA)
+# Clear of the diamond, which is 0.09 wide either side of the estimate.
+text(pooled + 0.14, 0.55, "pooled", adj = 0, cex = 0.7, col = accent2)
+box(col = frame)
+title(main = "Standard meta-analysis", cex.main = 0.92, line = 0.6)
+
+# Right: several levels per study, and the curve running through all of them.
+par(mar = c(2.6, 2.6, 2.0, 0.8), mgp = c(1.4, 0.4, 0))
+plot(NA, xlim = c(0, 30), ylim = c(-0.1, 1), axes = FALSE,
+     xlab = "Dose", ylab = "Effect", cex.lab = 0.8)
+abline(h = 0, lty = 2, col = muted)
+studies <- list(
+  list(d = c(0, 10, 20), y = c(0, 0.32, 0.55)),
+  list(d = c(0, 15, 30), y = c(0, 0.40, 0.72)),
+  list(d = c(0, 8, 16, 24), y = c(0, 0.20, 0.44, 0.63))
+)
+for (s in studies) {
+  lines(s$d, s$y, col = muted, lwd = 1.4, lty = 3)
+  points(s$d, s$y, col = muted, pch = 16, cex = 0.8)
+}
+xx <- seq(0, 30, length.out = 100)
+lines(xx, 0.78 * (xx / 30)^0.85, col = accent, lwd = 2.8)
+axis(1, col = frame); axis(2, col = frame)
+box(col = frame)
+title(main = "Dose-response meta-analysis", cex.main = 0.92, line = 0.6)
+```
 
 The method originates with @greenland1992, who showed that the covariance
 between estimates within a study can be reconstructed from the published table,
@@ -49,6 +138,42 @@ not-paying region, which describes neither.
 **What dose would you actually recommend?** This is the question clinicians and
 guideline committees ask, and it is unanswerable without a curve.
 
+```{r}
+#| label: fig-what-it-answers
+#| fig-cap: "The three questions a curve answers and a single estimate cannot. The threshold is where the effect separates from the null, the ceiling is where further dose stops buying benefit, and the recommended dose is an argument about where on the curve to stand. The dashed horizontal line is what a standard meta-analysis would have reported for the same evidence. Schematic."
+#| fig-width: 7.5
+#| fig-height: 3.6
+
+x <- seq(0, 1, length.out = 200)
+y <- 0.82 * (x / (x + 0.18))
+par(mar = c(3.0, 3.0, 1.4, 0.8), mgp = c(1.7, 0.5, 0), tcl = -0.2, cex.axis = 0.75)
+plot(x, y, type = "n", ylim = c(-0.08, 1), axes = FALSE,
+     xlab = "Dose", ylab = "Effect", cex.lab = 0.85)
+dr_band(x, y, 0.08)
+abline(h = 0, lty = 2, col = muted)
+lines(x, y, col = accent, lwd = 2.8)
+
+# What a single pooled estimate would have said about the same evidence.
+segments(0, 0.52, 1, 0.52, col = accent2, lwd = 2, lty = 4)
+text(0.02, 0.58, "one pooled estimate", col = accent2, cex = 0.72, adj = 0)
+
+thr <- 0.07
+abline(v = thr, col = muted, lty = 3)
+text(thr, -0.05, "threshold", cex = 0.72, col = "#5f6b72", adj = 0)
+
+ceil <- 0.62
+abline(v = ceil, col = muted, lty = 3)
+text(ceil, -0.05, "ceiling", cex = 0.72, col = "#5f6b72", adj = 0)
+
+points(0.42, 0.82 * (0.42 / (0.42 + 0.18)), pch = 21, bg = "white",
+       col = accent, cex = 1.3, lwd = 2)
+text(0.42, 0.82 * (0.42 / (0.42 + 0.18)) + 0.11, "a dose you could recommend",
+     cex = 0.72, col = accent, adj = 0.3)
+
+axis(1, col = frame); axis(2, col = frame)
+box(col = frame)
+```
+
 ## The shapes a curve can take
 
 Readers do not argue about coefficients. They argue about shape, so it is worth
@@ -70,6 +195,20 @@ return in benefit.
 is a real finding and worth reporting, because "we looked for a dose-response
 relationship and found none" is more informative than a pooled estimate that was
 never going to show one.
+
+```{r}
+#| label: fig-curve-shapes
+#| fig-cap: "The five shapes, one panel each. The dashed line is the null. The names follow the literature: a curve that rises throughout is a positive association, one that rises and then flattens is an Emax curve, and one that turns is non-monotonic. These are exactly the labels `curve_shape()` returns. Schematic."
+#| fig-width: 10
+#| fig-height: 2.6
+
+par(mfrow = c(1, 5))
+dr_panel(function(x) 0.9 * x, "Positive association")
+dr_panel(function(x) -0.9 * x, "Inverse association")
+dr_panel(function(x) 0.95 * x / (x + 0.12), "Emax")
+dr_panel(function(x) 3.6 * x * (1 - x), "Non-monotonic")
+dr_panel(function(x) rep(0, length(x)), "No association")
+```
 
 The `easyDR` package will name a fitted curve for you, so a results paragraph
 can use the same vocabulary as the literature:
@@ -94,6 +233,43 @@ nobody trialled, and it cannot describe a shape. Treating 10 mg and 20 mg as
 unrelated categories discards the one fact that makes them comparable: that 20
 is twice 10.
 
+```{r}
+#| label: fig-not-nma
+#| fig-cap: "The same four doses, read two ways. A network meta-analysis ranks them as unrelated nodes, so nothing connects 10 mg to 20 mg and nothing can be said about the gap between them. A dose-response model uses the ordering, which is what lets it say something about a dose nobody trialled. Schematic."
+#| fig-width: 9
+#| fig-height: 3.4
+
+d <- c(5, 10, 20, 40)
+e <- c(0.22, 0.44, 0.68, 0.74)
+
+par(mfrow = c(1, 2), mar = c(3.0, 3.0, 2.0, 0.8), mgp = c(1.7, 0.5, 0),
+    tcl = -0.2, cex.axis = 0.75)
+
+plot(seq_along(d), e, xlim = c(0.5, 4.5), ylim = c(0, 0.95), axes = FALSE,
+     xlab = "Dose, as separate nodes", ylab = "Effect", pch = 16,
+     col = accent, cex = 1.5, cex.lab = 0.82)
+segments(seq_along(d), e - 0.07, seq_along(d), e + 0.07, col = accent, lwd = 2)
+text(seq_along(d), e + 0.15, paste0("rank ", c(4, 3, 2, 1)), cex = 0.68,
+     col = "#5f6b72")
+axis(1, at = seq_along(d), labels = paste0(d, " mg"), col = frame)
+axis(2, col = frame)
+box(col = frame)
+title(main = "Network meta-analysis", cex.main = 0.92, line = 0.6)
+
+plot(d, e, xlim = c(0, 45), ylim = c(0, 0.95), axes = FALSE,
+     xlab = "Dose (mg)", ylab = "Effect", pch = 16, col = accent, cex = 1.3,
+     cex.lab = 0.82)
+xx <- seq(0, 45, length.out = 200)
+yy <- 0.86 * xx / (xx + 10)
+dr_band(xx, yy, 0.07)
+lines(xx, yy, col = accent, lwd = 2.6)
+arrows(28, 0.38, 28, 0.86 * 28 / 38 - 0.05, length = 0.06, col = accent2, lwd = 2)
+text(28, 0.31, "a dose nobody\ntrialled", cex = 0.68, col = accent2)
+axis(1, col = frame); axis(2, col = frame)
+box(col = frame)
+title(main = "Dose-response meta-analysis", cex.main = 0.92, line = 0.6)
+```
+
 Model-based network meta-analysis closes this gap deliberately, by fitting a
 dose-response function inside the network [@mawdsley2016; @pedder2021]. That is
 a dose-response method wearing network clothing, and it is the right tool when
@@ -112,6 +288,56 @@ across levels, which is where the information about shape lives.
 You get three numbers and no relationship between them. Nothing constrains them
 to lie on any curve, nothing uses the ordering, and the cut points are usually
 arbitrary.
+
+```{r}
+#| label: fig-not-metareg
+#| fig-cap: "Three ways to put dose on the x-axis. Meta-regression uses one point per study at its average dose and fits a line through them. Subgroup analysis pools within arbitrary bands and leaves three unconnected numbers. Only the dose-response model uses the within-study comparisons, drawn here as the dotted segments, which is where the information about shape lives. Schematic."
+#| fig-width: 10
+#| fig-height: 3.2
+
+par(mfrow = c(1, 3), mar = c(3.0, 3.0, 2.0, 0.8), mgp = c(1.7, 0.5, 0),
+    tcl = -0.2, cex.axis = 0.7)
+
+mean_d <- c(6, 9, 14, 18, 23, 29)
+mean_e <- c(0.18, 0.30, 0.46, 0.52, 0.66, 0.71)
+
+plot(mean_d, mean_e, xlim = c(0, 32), ylim = c(0, 0.9), axes = FALSE,
+     xlab = "Study average dose", ylab = "Effect", pch = 16, col = accent,
+     cex = 1.3, cex.lab = 0.82)
+abline(lm(mean_e ~ mean_d), col = accent, lwd = 2.4)
+axis(1, col = frame); axis(2, col = frame); box(col = frame)
+title(main = "Meta-regression", cex.main = 0.92, line = 0.6)
+
+plot(NA, xlim = c(0, 32), ylim = c(0, 0.9), axes = FALSE,
+     xlab = "Dose band", ylab = "Effect", cex.lab = 0.82)
+bands <- list(c(0, 10), c(10, 20), c(20, 32))
+vals <- c(0.26, 0.49, 0.69)
+for (i in seq_along(bands)) {
+  rect(bands[[i]][1] + 1, vals[i] - 0.05, bands[[i]][2] - 1, vals[i] + 0.05,
+       col = adjustcolor(accent, alpha.f = 0.25), border = accent)
+  abline(v = bands[[i]][2], lty = 3, col = muted)
+}
+axis(1, col = frame); axis(2, col = frame); box(col = frame)
+title(main = "Subgroup analysis", cex.main = 0.92, line = 0.6)
+
+plot(NA, xlim = c(0, 32), ylim = c(0, 0.9), axes = FALSE,
+     xlab = "Dose", ylab = "Effect", cex.lab = 0.82)
+within <- list(
+  list(d = c(0, 8, 16), y = c(0.02, 0.26, 0.46)),
+  list(d = c(0, 12, 24), y = c(0.01, 0.36, 0.62)),
+  list(d = c(0, 10, 20, 30), y = c(0.03, 0.30, 0.54, 0.73))
+)
+for (s in within) {
+  lines(s$d, s$y, col = muted, lwd = 1.5, lty = 3)
+  points(s$d, s$y, col = muted, pch = 16, cex = 0.7)
+}
+xx <- seq(0, 32, length.out = 200)
+yy <- 0.80 * (xx / 32)^0.9
+dr_band(xx, yy, 0.06)
+lines(xx, yy, col = accent, lwd = 2.6)
+axis(1, col = frame); axis(2, col = frame); box(col = frame)
+title(main = "Dose-response", cex.main = 0.92, line = 0.6)
+```
 
 What all three alternatives share is that they ignore the common comparator.
 Within a study, every exposure level is compared against the same reference
@@ -142,6 +368,45 @@ dispute about whether the modelling choices drive the conclusions
 returns to it, because it is the best available lesson in how a dose-response
 result can be over-read.
 
+```{r}
+#| label: fig-published-shapes
+#| fig-cap: "The shape each worked example reports, drawn to comparable axes. Benefit accrues fast and then levels off for physical activity, turns against higher doses for antidepressants, and keeps climbing with a band wide enough to argue about in the Burden of Proof studies. These are schematic redrawings of the reported shapes, not the published estimates; go to the papers for those."
+#| fig-width: 10
+#| fig-height: 3.0
+
+par(mfrow = c(1, 3), mar = c(3.0, 3.0, 2.2, 0.8), mgp = c(1.7, 0.5, 0),
+    tcl = -0.2, cex.axis = 0.7)
+
+x <- seq(0, 1, length.out = 200)
+
+y1 <- -0.75 * x / (x + 0.12)
+plot(x, y1, type = "n", ylim = c(-1, 0.25), axes = FALSE,
+     xlab = "Physical activity", ylab = "Log risk", cex.lab = 0.82)
+dr_band(x, y1, 0.07)
+abline(h = 0, lty = 2, col = muted)
+lines(x, y1, col = accent, lwd = 2.6)
+axis(1, col = frame); axis(2, col = frame); box(col = frame)
+title(main = "Emax: activity and mortality", cex.main = 0.88, line = 0.7)
+
+y2 <- 2.9 * x * (1 - x) - 0.05
+plot(x, y2, type = "n", ylim = c(-0.3, 1), axes = FALSE,
+     xlab = "Dose", ylab = "Net benefit", cex.lab = 0.82)
+dr_band(x, y2, 0.09)
+abline(h = 0, lty = 2, col = muted)
+lines(x, y2, col = accent, lwd = 2.6)
+axis(1, col = frame); axis(2, col = frame); box(col = frame)
+title(main = "Non-monotonic: antidepressants", cex.main = 0.88, line = 0.7)
+
+y3 <- 0.85 * x^1.1
+plot(x, y3, type = "n", ylim = c(-0.3, 1.3), axes = FALSE,
+     xlab = "Exposure", ylab = "Log risk", cex.lab = 0.82)
+dr_band(x, y3, 0.30)
+abline(h = 0, lty = 2, col = muted)
+lines(x, y3, col = accent, lwd = 2.6)
+axis(1, col = frame); axis(2, col = frame); box(col = frame)
+title(main = "Wide band: Burden of Proof", cex.main = 0.88, line = 0.7)
+```
+
 ## Should you use it?
 
 Run a dose-response meta-analysis when all of these hold:
@@ -159,6 +424,29 @@ Run a dose-response meta-analysis when all of these hold:
 
 Do not run one when doses cannot be harmonised, when almost every study reports
 a single contrast, or when the exposure is categorical in nature.
+
+```{r}
+#| label: fig-viability
+#| fig-cap: "Condition 2, read off an extraction sheet. Each bar is one study's count of exposure levels; the dashed line is the three-level floor a two-stage fit needs. Studies below it are dropped by two-stage methods and kept by one-stage, so a sheet that looks like this argues for one-stage rather than for abandoning the review. Schematic."
+#| fig-width: 7.5
+#| fig-height: 3.0
+
+levels_per_study <- c(5, 4, 4, 3, 3, 3, 2, 2)
+names(levels_per_study) <- LETTERS[1:8]
+cols <- ifelse(levels_per_study >= 3, accent, accent2)
+
+par(mar = c(2.8, 3.0, 1.4, 0.8), mgp = c(1.8, 0.5, 0), tcl = -0.2,
+    cex.axis = 0.75)
+bp <- barplot(levels_per_study, col = adjustcolor(cols, alpha.f = 0.75),
+              border = NA, ylim = c(0, 6), axes = FALSE,
+              xlab = "Study", ylab = "Exposure levels reported", cex.lab = 0.85)
+axis(2, at = 0:6, col = frame)
+abline(h = 3, lty = 2, col = "#444444", lwd = 1.6)
+text(max(bp), 3.35, "two-stage floor", pos = 2, cex = 0.72, col = "#444444")
+text(bp[levels_per_study < 3], levels_per_study[levels_per_study < 3] + 0.45,
+     "dropped", cex = 0.68, col = accent2)
+box(col = frame)
+```
 
 Chapter 2 turns this list into a check you can run against a real extraction
 sheet, and `easyDR::dr_viability()` performs it:
@@ -183,5 +471,29 @@ By the end of this book you will be able to state a dose-response question
 precisely, judge from an extraction sheet whether the evidence can support one,
 fit and interpret the model, and read a published dose-response curve critically
 enough to see where its author went past what the data supports.
+
+```{r}
+#| label: fig-roadmap
+#| fig-cap: "The seven chapters, in the order the work happens. Each is also a class, and the two halves cover the same ground. This chapter is step 1."
+#| fig-width: 10
+#| fig-height: 1.9
+
+steps <- c("What it is", "Viability", "PROSPERO", "Statistics\ntheory",
+           "Statistics\ncode", "Checklist", "Writing")
+n <- length(steps)
+par(mar = c(0.2, 0.2, 0.2, 0.2))
+plot(NA, xlim = c(0, n), ylim = c(0, 1), axes = FALSE, xlab = "", ylab = "")
+for (i in seq_len(n)) {
+  fill <- if (i == 1) adjustcolor(accent, alpha.f = 0.22) else "#f6f5f1"
+  edge <- if (i == 1) accent else frame
+  rect(i - 0.93, 0.28, i - 0.17, 0.78, col = fill, border = edge, lwd = 1.4)
+  text(i - 0.55, 0.53, steps[i], cex = 0.78,
+       col = if (i == 1) "#14506f" else "#23282d")
+  text(i - 0.55, 0.19, i, cex = 0.7, col = "#8a9298")
+  if (i < n) {
+    arrows(i - 0.14, 0.53, i - 0.02, 0.53, length = 0.05, col = muted, lwd = 1.4)
+  }
+}
+```
 
 {{< include _cta.qmd >}}

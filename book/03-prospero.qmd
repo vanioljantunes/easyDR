@@ -4,7 +4,12 @@ A dose-response protocol has to commit to choices that a standard protocol never
 mentions. This chapter walks the registration field by field.
 
 ::: {.callout-warning}
-Draft. Structure fixed, prose in progress.
+Draft. The section structure below is fixed and matches the class; the prose is
+being written.
+
+Every `##` section gets its own figure, as in Chapter 1. One H2 is one slide, so
+the figure is also that slide's visual, and a section without one leaves the
+deck with a blank.
 :::
 
 ## Why register a dose-response review

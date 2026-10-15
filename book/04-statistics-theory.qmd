@@ -3,7 +3,12 @@
 What the model is doing, in enough detail to defend it in review, and no more.
 
 ::: {.callout-warning}
-Draft. Structure fixed, prose in progress.
+Draft. The section structure below is fixed and matches the class; the prose is
+being written.
+
+Every `##` section gets its own figure, as in Chapter 1. One H2 is one slide, so
+the figure is also that slide's visual, and a section without one leaves the
+deck with a blank.
 :::
 
 ## The problem: correlated estimates within a study
