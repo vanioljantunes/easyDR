@@ -64,36 +64,48 @@ the right handling of the fact that estimates within a study share a reference
 group, they do.
 
 ```{r}
-#| label: fig-one-vs-many
-#| fig-cap: "What each design asks of a study. A standard meta-analysis reads one effect estimate per study and pools them into a single summary. A dose-response meta-analysis reads every exposure level a study reports and pools the relationship running through them, so the result is a curve over the exposure range. Schematic."
-#| fig-width: 9
-#| fig-height: 3.4
+#| label: fig-standard-ma
+#| fig-cap: "What a standard meta-analysis produces from four studies: one estimate each, pooled into a single summary. Drawn with `meta::forest()` so it is the plot this literature already knows how to read. The numbers are schematic."
+#| fig-width: 8.5
+#| fig-height: 2.8
+#| message: false
 
-par(mfrow = c(1, 2))
+library(meta)
 
-# Left: one estimate per study, and the pooled summary underneath.
-est <- c(0.42, 0.61, 0.28, 0.55)
-se <- c(0.12, 0.15, 0.10, 0.13)
-par(mar = c(2.6, 4.2, 2.0, 0.8), mgp = c(1.4, 0.4, 0), tcl = -0.2, cex.axis = 0.7)
-plot(est, 4:1, xlim = c(-0.1, 1), ylim = c(0.2, 4.6), axes = FALSE,
-     xlab = "Effect", ylab = "", pch = 15, col = accent, cex = 1.1, cex.lab = 0.8)
-segments(est - 1.96 * se, 4:1, est + 1.96 * se, 4:1, col = accent, lwd = 2)
-abline(v = 0, lty = 2, col = muted)
-axis(1, at = c(0, 0.5, 1), col = frame)
-axis(2, at = 4:1, labels = paste("Study", LETTERS[1:4]), las = 1,
-     col = frame, cex.axis = 0.7)
-pooled <- sum(est / se^2) / sum(1 / se^2)
-polygon(pooled + c(-0.09, 0, 0.09, 0), 0.55 + c(0, 0.16, 0, -0.16),
-        col = accent2, border = NA)
-# Clear of the diamond, which is 0.09 wide either side of the estimate.
-text(pooled + 0.14, 0.55, "pooled", adj = 0, cex = 0.7, col = accent2)
-box(col = frame)
-title(main = "Standard meta-analysis", cex.main = 0.92, line = 0.6)
+ma <- metagen(
+  TE = c(0.42, 0.61, 0.28, 0.55),
+  seTE = c(0.12, 0.15, 0.10, 0.13),
+  studlab = paste("Study", LETTERS[1:4]),
+  sm = "RR",
+  common = FALSE,
+  random = TRUE
+)
 
-# Right: several levels per study, and the curve running through all of them.
-par(mar = c(2.6, 2.6, 2.0, 0.8), mgp = c(1.4, 0.4, 0))
+forest(
+  ma,
+  xlab = "Risk ratio",
+  col.square = accent,
+  col.square.lines = accent,
+  col.diamond = accent2,
+  col.diamond.lines = accent2,
+  print.tau2 = FALSE
+)
+```
+
+Every study contributes one row, and the diamond at the foot is the answer. Now
+compare what the same four studies look like when each of them reports several
+exposure levels rather than one contrast.
+
+```{r}
+#| label: fig-dose-response-data
+#| fig-cap: "What a dose-response meta-analysis produces from the same kind of evidence. Each dotted line is one study, with a point per exposure level it reported; the solid line is the relationship pooled across them. There is no single row per study here, and no diamond, because the answer is a curve. Schematic."
+#| fig-width: 7.5
+#| fig-height: 3.2
+
+par(mar = c(3.0, 3.0, 1.2, 0.8), mgp = c(1.7, 0.5, 0), tcl = -0.2,
+    cex.axis = 0.75)
 plot(NA, xlim = c(0, 30), ylim = c(-0.1, 1), axes = FALSE,
-     xlab = "Dose", ylab = "Effect", cex.lab = 0.8)
+     xlab = "Dose", ylab = "Effect", cex.lab = 0.85)
 abline(h = 0, lty = 2, col = muted)
 studies <- list(
   list(d = c(0, 10, 20), y = c(0, 0.32, 0.55)),
@@ -102,13 +114,14 @@ studies <- list(
 )
 for (s in studies) {
   lines(s$d, s$y, col = muted, lwd = 1.4, lty = 3)
-  points(s$d, s$y, col = muted, pch = 16, cex = 0.8)
+  points(s$d, s$y, col = muted, pch = 16, cex = 0.9)
 }
-xx <- seq(0, 30, length.out = 100)
-lines(xx, 0.78 * (xx / 30)^0.85, col = accent, lwd = 2.8)
+xx <- seq(0, 30, length.out = 200)
+yy <- 0.78 * (xx / 30)^0.85
+dr_band(xx, yy, 0.06)
+lines(xx, yy, col = accent, lwd = 2.8)
 axis(1, col = frame); axis(2, col = frame)
 box(col = frame)
-title(main = "Dose-response meta-analysis", cex.main = 0.92, line = 0.6)
 ```
 
 The method originates with @greenland1992, who showed that the covariance

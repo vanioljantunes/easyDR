@@ -28,7 +28,9 @@ jobs:
       # to be installed before the book renders, not after.
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, local::.
+          # meta draws the forest plots in the book, so the runner needs it
+          # even though it is only a Suggests dependency of the package.
+          extra-packages: any::rcmdcheck, any::meta, local::.
 
       - uses: quarto-dev/quarto-actions/setup@v2
 
