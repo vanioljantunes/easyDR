@@ -19,7 +19,8 @@ Depends:
 Suggests: 
     testthat (>= 3.0.0),
     dosresmeta,
-    meta
+    meta,
+    netmeta
 Config/testthat/edition: 3
 URL: https://github.com/vanioljantunes/easyDR, https://vanioljantunes.github.io/easyDR/
 BugReports: https://github.com/vanioljantunes/easyDR/issues

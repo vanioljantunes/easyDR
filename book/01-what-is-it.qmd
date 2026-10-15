@@ -65,6 +65,7 @@ group, they do.
 
 ```{r}
 #| label: fig-standard-ma
+#| echo: false
 #| fig-cap: "What a standard meta-analysis produces from four studies: one estimate each, pooled into a single summary. Drawn with `meta::forest()` so it is the plot this literature already knows how to read. The numbers are schematic."
 #| fig-width: 8.5
 #| fig-height: 2.8
@@ -98,6 +99,7 @@ exposure levels rather than one contrast.
 
 ```{r}
 #| label: fig-dose-response-data
+#| echo: false
 #| fig-cap: "What a dose-response meta-analysis produces from the same kind of evidence. Each dotted line is one study, with a point per exposure level it reported; the solid line is the relationship pooled across them. There is no single row per study here, and no diamond, because the answer is a curve. Schematic."
 #| fig-width: 7.5
 #| fig-height: 3.2
@@ -153,6 +155,7 @@ guideline committees ask, and it is unanswerable without a curve.
 
 ```{r}
 #| label: fig-what-it-answers
+#| echo: false
 #| fig-cap: "The three questions a curve answers and a single estimate cannot. The threshold is where the effect separates from the null, the ceiling is where further dose stops buying benefit, and the recommended dose is an argument about where on the curve to stand. The dashed horizontal line is what a standard meta-analysis would have reported for the same evidence. Schematic."
 #| fig-width: 7.5
 #| fig-height: 3.6
@@ -211,6 +214,7 @@ never going to show one.
 
 ```{r}
 #| label: fig-curve-shapes
+#| echo: false
 #| fig-cap: "The five shapes, one panel each. The dashed line is the null. The names follow the literature: a curve that rises throughout is a positive association, one that rises and then flattens is an Emax curve, and one that turns is non-monotonic. These are exactly the labels `curve_shape()` returns. Schematic."
 #| fig-width: 10
 #| fig-height: 2.6
@@ -247,40 +251,53 @@ unrelated categories discards the one fact that makes them comparable: that 20
 is twice 10.
 
 ```{r}
-#| label: fig-not-nma
-#| fig-cap: "The same four doses, read two ways. A network meta-analysis ranks them as unrelated nodes, so nothing connects 10 mg to 20 mg and nothing can be said about the gap between them. A dose-response model uses the ordering, which is what lets it say something about a dose nobody trialled. Schematic."
+#| label: fig-nma-netsplit
+#| echo: false
+#| fig-cap: "What a network meta-analysis actually produces, drawn with `netmeta::netsplit()` on the Senn2013 diabetes network. For every pair of treatments it reports the direct evidence, the indirect evidence routed through the rest of the network, and the network estimate combining the two, then asks whether direct and indirect agree. Every row is a pair of nodes. Nothing in the model knows that one node might be twice the dose of another, so no row describes a shape."
 #| fig-width: 9
-#| fig-height: 3.4
+#| fig-height: 11.5
+#| message: false
+
+# 11 comparisons at three rows each, plus headers, so the chunk is tall:
+# anything shorter clips the column titles and the last comparison.
+library(netmeta)
+
+data(Senn2013)
+net <- netmeta(TE, seTE, treat1, treat2, studlab,
+               data = Senn2013, sm = "MD", common = FALSE, random = TRUE)
+
+forest(netsplit(net), show = "both")
+```
+
+Node splitting is the check that makes a network trustworthy, and it is worth
+knowing for its own sake. It is also the clearest demonstration of the gap: the
+whole apparatus is about whether two routes to the same comparison agree, and
+never about what happens between the doses.
+
+```{r}
+#| label: fig-nma-vs-dr
+#| echo: false
+#| fig-cap: "The same four doses, read as a dose-response question. The ordering is now information rather than labels, which is what lets the model say anything about the gaps between the studied doses. Schematic."
+#| fig-width: 7.5
+#| fig-height: 3.0
 
 d <- c(5, 10, 20, 40)
 e <- c(0.22, 0.44, 0.68, 0.74)
-
-par(mfrow = c(1, 2), mar = c(3.0, 3.0, 2.0, 0.8), mgp = c(1.7, 0.5, 0),
-    tcl = -0.2, cex.axis = 0.75)
-
-plot(seq_along(d), e, xlim = c(0.5, 4.5), ylim = c(0, 0.95), axes = FALSE,
-     xlab = "Dose, as separate nodes", ylab = "Effect", pch = 16,
-     col = accent, cex = 1.5, cex.lab = 0.82)
-segments(seq_along(d), e - 0.07, seq_along(d), e + 0.07, col = accent, lwd = 2)
-text(seq_along(d), e + 0.15, paste0("rank ", c(4, 3, 2, 1)), cex = 0.68,
-     col = "#5f6b72")
-axis(1, at = seq_along(d), labels = paste0(d, " mg"), col = frame)
-axis(2, col = frame)
-box(col = frame)
-title(main = "Network meta-analysis", cex.main = 0.92, line = 0.6)
-
-plot(d, e, xlim = c(0, 45), ylim = c(0, 0.95), axes = FALSE,
-     xlab = "Dose (mg)", ylab = "Effect", pch = 16, col = accent, cex = 1.3,
-     cex.lab = 0.82)
 xx <- seq(0, 45, length.out = 200)
 yy <- 0.86 * xx / (xx + 10)
+
+par(mar = c(3.0, 3.0, 1.2, 0.8), mgp = c(1.7, 0.5, 0), tcl = -0.2,
+    cex.axis = 0.75)
+plot(d, e, xlim = c(0, 45), ylim = c(0, 0.95), axes = FALSE, pch = 16,
+     col = accent, cex = 1.4, xlab = "Dose (mg)", ylab = "Effect",
+     cex.lab = 0.85)
 dr_band(xx, yy, 0.07)
-lines(xx, yy, col = accent, lwd = 2.6)
-arrows(28, 0.38, 28, 0.86 * 28 / 38 - 0.05, length = 0.06, col = accent2, lwd = 2)
-text(28, 0.31, "a dose nobody\ntrialled", cex = 0.68, col = accent2)
+lines(xx, yy, col = accent, lwd = 2.8)
+arrows(28, 0.38, 28, 0.86 * 28 / 38 - 0.05, length = 0.07, col = accent2,
+       lwd = 2)
+text(28, 0.30, "a dose nobody trialled", cex = 0.72, col = accent2)
 axis(1, col = frame); axis(2, col = frame)
 box(col = frame)
-title(main = "Dose-response meta-analysis", cex.main = 0.92, line = 0.6)
 ```
 
 Model-based network meta-analysis closes this gap deliberately, by fitting a
@@ -304,6 +321,7 @@ arbitrary.
 
 ```{r}
 #| label: fig-not-metareg
+#| echo: false
 #| fig-cap: "Three ways to put dose on the x-axis. Meta-regression uses one point per study at its average dose and fits a line through them. Subgroup analysis pools within arbitrary bands and leaves three unconnected numbers. Only the dose-response model uses the within-study comparisons, drawn here as the dotted segments, which is where the information about shape lives. Schematic."
 #| fig-width: 10
 #| fig-height: 3.2
@@ -383,6 +401,7 @@ result can be over-read.
 
 ```{r}
 #| label: fig-published-shapes
+#| echo: false
 #| fig-cap: "The shape each worked example reports, drawn to comparable axes. Benefit accrues fast and then levels off for physical activity, turns against higher doses for antidepressants, and keeps climbing with a band wide enough to argue about in the Burden of Proof studies. These are schematic redrawings of the reported shapes, not the published estimates; go to the papers for those."
 #| fig-width: 10
 #| fig-height: 3.0
@@ -440,6 +459,7 @@ a single contrast, or when the exposure is categorical in nature.
 
 ```{r}
 #| label: fig-viability
+#| echo: false
 #| fig-cap: "Condition 2, read off an extraction sheet. Each bar is one study's count of exposure levels; the dashed line is the three-level floor a two-stage fit needs. Studies below it are dropped by two-stage methods and kept by one-stage, so a sheet that looks like this argues for one-stage rather than for abandoning the review. Schematic."
 #| fig-width: 7.5
 #| fig-height: 3.0
@@ -487,6 +507,7 @@ enough to see where its author went past what the data supports.
 
 ```{r}
 #| label: fig-roadmap
+#| echo: false
 #| fig-cap: "The seven chapters, in the order the work happens. Each is also a class, and the two halves cover the same ground. This chapter is step 1."
 #| fig-width: 10
 #| fig-height: 1.9

@@ -30,7 +30,7 @@ jobs:
         with:
           # meta draws the forest plots in the book, so the runner needs it
           # even though it is only a Suggests dependency of the package.
-          extra-packages: any::rcmdcheck, any::meta, local::.
+          extra-packages: any::rcmdcheck, any::meta, any::netmeta, local::.
 
       - uses: quarto-dev/quarto-actions/setup@v2
 
