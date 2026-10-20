@@ -1,7 +1,9 @@
-# Registering on PROSPERO
+# Registering on PROSPERO and risk of bias
 
 A dose-response protocol has to commit to choices that a standard protocol never
-mentions. This chapter walks the registration field by field.
+mentions. This chapter walks the registration field by field, then rates the
+studies it will include: both belong to the same class, because the protocol is
+where the risk of bias plan is declared and declaring it later is not a plan.
 
 ::: {.callout-warning}
 Draft. The section structure below is fixed and matches the class; the prose is
@@ -39,5 +41,30 @@ conclusion.
 
 The registration for the physical activity review [@garcia2023] read as a model
 to copy.
+
+## Why risk of bias is part of the protocol
+
+A rating scheme chosen after seeing the studies is a rating scheme chosen to get
+an answer. The protocol is the only place it costs nothing to commit.
+
+## Picking a tool for the designs you have
+
+Dose-response reviews are usually built from cohorts, so ROBINS-E rather than
+RoB 2. What changes when a trial arm sneaks into the set.
+
+## Rating a study, domain by domain
+
+Confounding, exposure measurement, missing data, and the domains that bite hardest
+when the exposure is a dose rather than a group.
+
+## Exposure measurement is the domain that matters most
+
+A mismeasured dose does not blur the curve evenly; it flattens it. Why this
+domain outranks the others here.
+
+## Carrying the ratings into the analysis
+
+Pre-specifying the high-risk sensitivity analysis, and how the ratings feed the
+GRADE assessment rather than sitting in a supplementary table.
 
 {{< include _cta.qmd >}}

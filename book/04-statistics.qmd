@@ -1,6 +1,7 @@
-# Statistics theory
+# Statistics theory and code
 
-What the model is doing, in enough detail to defend it in review, and no more.
+What the model is doing, in enough detail to defend it in review, and then the
+same analysis run end to end on published data you can download.
 
 ::: {.callout-warning}
 Draft. The section structure below is fixed and matches the class; the prose is
@@ -10,6 +11,11 @@ Every `##` section gets its own figure, as in Chapter 1. One H2 is one slide, so
 the figure is also that slide's visual, and a section without one leaves the
 deck with a blank.
 :::
+
+Theory first, then the code that fits it. The two were separate classes until
+2026-10-20; they are one now, because nobody defends a model they have not run
+and nobody trusts a fit they cannot explain. The code sections follow the same
+order as the theory, so each fit lands next to the reason for it.
 
 ## The problem: correlated estimates within a study
 
@@ -44,5 +50,35 @@ What heterogeneity means when the thing varying is a curve rather than a number.
 
 Robust error meta-regression [@xu2018], Bayesian formulations [@hamza2021], and
 when each is the better answer.
+
+## The worked example
+
+What the physical activity review asked, and why it is a good first dataset.
+
+## Getting the data into shape
+
+The extraction sheet as an R data frame, and the viability check before fitting.
+
+## Fitting a linear dose-response model
+
+The simplest defensible fit, with `dosresmeta` [@dosresmeta].
+
+## Fitting a spline model
+
+Restricted cubic splines, knot placement, and comparing fit against the linear
+model.
+
+## Plotting the curve
+
+Building the figure that will carry the paper, with the confidence band and the
+observed exposure range marked.
+
+## Naming the shape
+
+Using `curve_shape()` so the results paragraph and the figure agree.
+
+## Sensitivity analyses in code
+
+Varying knots, dropping influential studies, and switching to one-stage.
 
 {{< include _cta.qmd >}}

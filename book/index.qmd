@@ -21,20 +21,18 @@ package `easyDR` for the checks that come before and after the model.
 
 ## How this book is organised {.unnumbered .no-slide}
 
-Seven chapters, in the order you would actually do the work:
+Five chapters, in the order you would actually do the work:
 
 | Chapter | Question it answers |
 |---|---|
 | 1 | What is a dose-response meta-analysis, and should you run one? |
 | 2 | Can your studies support one, and how do you extract the data? |
-| 3 | How do you register it? |
-| 4 | What is the model doing? |
-| 5 | How do you run it? |
-| 6 | How do you check it before submitting? |
-| 7 | How do you write it up and read it honestly? |
+| 3 | How do you register it, and how do you rate the studies? |
+| 4 | What is the model doing, and how do you run it? |
+| 5 | How do you check it, write it up and read it honestly? |
 
 Each chapter is the written half of a class. The chapters and the videos follow
-the same seven steps, in the same order, so they can be used together or apart.
+the same five steps, in the same order, so they can be used together or apart.
 
 ## Conventions {.unnumbered .no-slide}
 

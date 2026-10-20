@@ -384,7 +384,7 @@ Three papers worth reading before writing your own protocol.
 `dosresmeta` with restricted cubic splines, pooling large prospective cohorts of
 non-occupational physical activity against cardiovascular disease, cancer and
 mortality. The analysis code is published, so it can be re-run rather than
-merely read. This is the worked example used in Chapter 5.
+merely read. This is the worked example used in Chapter 4.
 
 **Optimal antidepressant dose** [@furukawa2019]. A dose-response meta-analysis
 of double-blind randomised trials of SSRIs, venlafaxine and mirtazapine, asking
@@ -395,7 +395,7 @@ is what makes the curve turn.
 **The Burden of Proof studies** [@gbd2022tobacco; @gbd2022vegetables]. A
 different toolchain, a different modelling philosophy, and an instructive public
 dispute about whether the modelling choices drive the conclusions
-[@burdenofproofconcerns2023]. Read the critique alongside the papers. Chapter 7
+[@burdenofproofconcerns2023]. Read the critique alongside the papers. Chapter 5
 returns to it, because it is the best available lesson in how a dose-response
 result can be over-read.
 
@@ -508,12 +508,12 @@ enough to see where its author went past what the data supports.
 ```{r}
 #| label: fig-roadmap
 #| echo: false
-#| fig-cap: "The seven chapters, in the order the work happens. Each is also a class, and the two halves cover the same ground. This chapter is step 1."
+#| fig-cap: "The five chapters, in the order the work happens. Each is also a class, and the two halves cover the same ground. This chapter is step 1."
 #| fig-width: 10
-#| fig-height: 1.9
+#| fig-height: 2.1
 
-steps <- c("What it is", "Viability", "PROSPERO", "Statistics\ntheory",
-           "Statistics\ncode", "Checklist", "Writing")
+steps <- c("What it is", "Viability", "PROSPERO\nand risk of bias",
+           "Statistics\ntheory and code", "Checklist,\nwriting")
 n <- length(steps)
 par(mar = c(0.2, 0.2, 0.2, 0.2))
 plot(NA, xlim = c(0, n), ylim = c(0, 1), axes = FALSE, xlab = "", ylab = "")

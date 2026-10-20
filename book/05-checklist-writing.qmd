@@ -1,6 +1,7 @@
-# Writing and interpretation
+# Checklist, writing and interpretation
 
-How to report a curve honestly, and how to read one critically.
+What to verify before submitting, and how to report a curve honestly once it
+survives that check.
 
 ::: {.callout-warning}
 Draft. The section structure below is fixed and matches the class; the prose is
@@ -10,6 +11,35 @@ Every `##` section gets its own figure, as in Chapter 1. One H2 is one slide, so
 the figure is also that slide's visual, and a section without one leaves the
 deck with a blank.
 :::
+
+The checklist comes first: run it before writing a word, since every item is
+something a reviewer can check and you cannot fix after submission. The writing
+sections then say how to put the result on the page without claiming more than
+it earned. The two were separate classes until 2026-10-20.
+
+## Before extraction
+
+Protocol registered, dose metric declared, reference handling decided.
+
+## After extraction
+
+Viability check run, doses harmonised, covariance inputs complete.
+
+## Model specification
+
+Functional form justified, knots declared, two-stage versus one-stage defended.
+
+## Reporting the fit
+
+What numbers belong in the paper, and in what units.
+
+## The figure
+
+Exposure range, confidence band, reference point, and what not to extrapolate.
+
+## Common failures
+
+The errors found most often in the published audit, each with the fix.
 
 ## Writing the methods
 
