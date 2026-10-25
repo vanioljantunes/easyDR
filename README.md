@@ -11,12 +11,9 @@ Sponsored by [Meta-Analysis Academy](https://metaanalysisacademy.com).
 |:---|:---|
 | **[1 · The book](#1-the-book)**<br><sub>Free, six chapters, the whole method in the order of the work</sub> | [Read it](https://vanioljantunes.github.io/easyDR/) · [Chapters](#what-is-in-it) |
 | **[2 · What this package is](#2-what-this-package-is)**<br><sub>Two functions, and why it is only two</sub> | |
-| **[3 · How to install it](#3-how-to-install-it)**<br><sub>One line from GitHub</sub> | |
-| **[4 · Data preparation](#4-data-preparation)**<br><sub>One row per exposure level per study</sub> | [Columns](#the-columns) · [Doses](#doses-must-already-be-comparable) |
-| **[5 · Before the model](#5-before-the-model-dr_viability)**<br><sub>Can these studies support a dose-response at all?</sub> | [`dr_viability()`](#5-before-the-model-dr_viability) · [One-stage](#when-the-answer-is-no-it-may-be-an-argument-for-one-stage) |
-| **[6 · The model itself](#6-the-model-itself-dosresmeta)**<br><sub>Delegated to dosresmeta, with one label to watch</sub> | [Fit](#6-the-model-itself-dosresmeta) · [Gotcha](#the-coefficient-is-not-an-intercept) |
-| **[7 · After the model](#7-after-the-model-curve_shape)**<br><sub>Name the curve in the words the literature uses</sub> | [`curve_shape()`](#7-after-the-model-curve_shape) · [Scales](#ratio-scales) |
-| **[8 · Build the book locally](#8-build-the-book-locally)**<br><sub>Quarto, and why the package has to be installed first</sub> | |
+| **[3 to 5 · Install, data, and the check](#3-to-5-install-data-and-the-viability-check)**<br><sub>From a sheet to <code>dr_viability()</code></sub> | |
+| **[6 and 7 · Fit it, then name it](#6-and-7-fit-the-model-then-name-the-curve)**<br><sub>dosresmeta, then <code>curve_shape()</code></sub> | |
+| **[8 · Validation](#8-validation-reproduce-a-published-analysis)**<br><sub>Paste it in, and check the numbers against this page</sub> | [Run it](#run-it) · [What you should see](#what-you-should-see) |
 
 <sub>[References](#references) · [License](#license)</sub>
 
@@ -41,165 +38,50 @@ Six chapters, in the order the work actually happens:
 | [4 · Statistics theory and code](book/04-statistics.qmd) | The two-stage and one-stage models, splines, and the R to fit them |
 | [5 · Checklist, writing and interpretation](book/05-checklist-writing.qmd) | Reporting it, and what the curve does and does not license |
 
-The book text is CC BY-NC-SA 4.0. The package code is MIT. See
-[License](#license).
+The source is in [`book/`](book) as Quarto files; `quarto render book` builds
+it locally, after `R CMD INSTALL .` so the chunks can call the package.
 
 ---
 
 ## 2. What this package is
 
-`easyDR` is the package the book leans on, and it is deliberately small. It
-carries the two steps students repeatedly get wrong, and leaves the modelling
-to [dosresmeta](https://github.com/alecri/dosresmeta) by Crippa and Orsini,
-which is validated, peer reviewed, and already does that job well.
-
-| Function | Does |
-|---|---|
-| `dr_viability()` | Checks whether a dataset can support a dose-response model at all, before any fitting |
-| `curve_shape()` | Names the shape of a fitted curve in the vocabulary the literature uses |
-
-**What you get:**
-
-- **A check that runs before the model.** The commonest reason a dose-response
-  meta-analysis fails is not the model; it is that the included studies never
-  could have supported one. `dr_viability()` reports that per study, with the
-  reason, rather than letting a fit fail later for a reason that reads as
-  numerical.
-- **A name for the curve.** `curve_shape()` returns one of five labels, so the
-  results paragraph and the figure agree with each other, and with the words
-  the field already uses.
-- **No estimator of its own.** Every estimate in the book comes from
-  `dosresmeta`. This package prepares and interprets; it does not compute a
-  pooled slope, and it does not wrap `dosresmeta` in a layer you then have to
-  learn.
-
-**What you do not get**, so you are not surprised: no fitting function, no
-plotting, no bundled datasets. The fitting examples below use `dosresmeta` and
-the data `dosresmeta` ships.
+![What easyDR is: two functions, and why it is only two](man/figures/overview.png)
 
 ---
 
-## 3. How to install it
+## 3 to 5. Install, data, and the viability check
+
+![Install easyDR, lay the data out one row per exposure level per study, and run dr_viability](man/figures/workflow.png)
+
+---
+
+## 6 and 7. Fit the model, then name the curve
+
+![Fit with dosresmeta, read the dose slope correctly, and name the curve with curve_shape](man/figures/curve.png)
+
+---
+
+## 8. Validation: reproduce a published analysis
+
+The pages above are pictures. This section is not: paste it in and you should
+get the numbers printed here, on your own machine.
+
+The example is the one `dosresmeta` ships and the book uses: eight prospective
+cohorts of alcohol intake and colorectal cancer, analysed in Orsini et al.
+(2012).
+
+### Run it
 
 ```r
+install.packages("dosresmeta")
 # install.packages("remotes")
 remotes::install_github("vanioljantunes/easyDR")
 ```
 
-The package itself needs only base R (>= 4.1). To run the fitting section of
-this page, and the code in the book's statistics chapter, install the engine
-too:
-
-```r
-install.packages("dosresmeta")
-```
-
-It is in `Suggests` rather than `Imports`, because the two functions here do not
-call it.
-
----
-
-## 4. Data preparation
-
-One row per exposure level per study, in long form. This is the layout the
-book's extraction sheet produces and the layout `dosresmeta` expects, so
-nothing has to be reshaped between them.
-
-### The columns
-
-| Column | Holds |
-|---|---|
-| `study` | Study label. Rows sharing a label are one study |
-| `dose` | The exposure assigned to that category, in a unit shared across studies |
-| `cases` | Events in the category |
-| `n` | The denominator: group size, or person-time for rate data |
-
-Each study needs a reference category, conventionally the row with the lowest
-dose, against which its other categories are compared.
-
-### Doses must already be comparable
-
-`dr_viability()` checks structure, not units. If one study reports grams per day
-and another cups per week, the frame will pass every check and the pooled curve
-will be meaningless. Converting to a common unit is extraction work, and the
-book's second chapter covers it.
-
----
-
-## 5. Before the model: `dr_viability()`
-
-Two-stage methods need at least three exposure levels per study. A study with
-two points carries no information about curvature, and its within-study
-covariance cannot be reconstructed (Greenland and Longnecker, 1992). That is
-the floor `dr_viability()` checks, and three is its default.
+**Step 1. Can these studies support a dose-response at all?**
 
 ```r
 library(easyDR)
-
-good <- data.frame(
-  study = rep(c("Allen 2011", "Brown 2014", "Chen 2019"), each = 4),
-  dose  = rep(c(0, 5, 15, 30), 3),
-  cases = c(12, 19, 28, 41, 8, 14, 22, 33, 15, 21, 30, 44),
-  n     = rep(c(200, 190, 185, 180), 3)
-)
-
-dr_viability(good)
-```
-
-```text
-Dose-response viability
-
-       study levels has_reference two_stage_ok
-1 Allen 2011      4          TRUE         TRUE
-2 Brown 2014      4          TRUE         TRUE
-3  Chen 2019      4          TRUE         TRUE
-
-No blocking problems found.
-```
-
-A dataset with a two-level study and a missing count reports both, and says what
-each one costs you:
-
-```r
-bad <- data.frame(
-  study = c("Allen 2011", "Allen 2011", "Allen 2011",
-            "Brown 2014", "Brown 2014",
-            "Chen 2019", "Chen 2019", "Chen 2019"),
-  dose  = c(0, 10, 20, 0, 15, 0, 8, 16),
-  cases = c(10, 20, 31, 5, 9, 11, NA, 25),
-  n     = c(100, 100, 100, 50, 50, 120, 120, 120)
-)
-
-dr_viability(bad)
-```
-
-```text
-Dose-response viability
-
-       study levels has_reference two_stage_ok
-1 Allen 2011      3          TRUE         TRUE
-2 Brown 2014      2          TRUE        FALSE
-3  Chen 2019      3          TRUE         TRUE
-
-Problems:
- - 1 study(ies) with fewer than 3 exposure levels (Brown 2014): a two-stage fit drops these. Consider one-stage.
- - missing values in 'cases': the within-study covariance cannot be reconstructed without it.
-```
-
-The object is a plain list, so the per-study table is there to use:
-
-```r
-v <- dr_viability(good)
-
-v$ok        # TRUE when nothing blocking was found
-v$summary   # one row per study: levels, has_reference, two_stage_ok
-v$problems  # character vector, empty when ok
-```
-
-Column names other than the defaults are given as arguments, which is how you
-point it at a frame written for the engine:
-
-```r
 library(dosresmeta)
 data(alcohol_crc)
 
@@ -223,141 +105,89 @@ Dose-response viability
 No blocking problems found.
 ```
 
-### When the answer is no, it may be an argument for one-stage
+Eight studies, six exposure levels each, every one clearing the floor of three.
 
-A dataset that fails the two-stage check is not useless. One-stage methods keep
-studies with two exposure levels, and that is precisely their selling point
-(Crippa et al., 2019). Lowering the floor shows what a one-stage model would
-have to work with:
+**Step 2. Fit it.**
 
 ```r
-dr_viability(bad, min_levels = 2)
-```
-
-```text
-Dose-response viability
-
-       study levels has_reference two_stage_ok
-1 Allen 2011      3          TRUE         TRUE
-2 Brown 2014      2          TRUE         TRUE
-3  Chen 2019      3          TRUE         TRUE
-
-Problems:
- - missing values in 'cases': the within-study covariance cannot be reconstructed without it.
-```
-
-The missing count is still reported, because no choice of model recovers it.
-
----
-
-## 6. The model itself: `dosresmeta`
-
-This package does not fit anything. The book's statistics chapter fits with
-`dosresmeta`, and so does this page:
-
-```r
-library(dosresmeta)
-data(alcohol_crc)
-
 fit <- dosresmeta(formula = logrr ~ dose, type = type, id = id,
                   se = se, cases = cases, n = peryears,
                   data = alcohol_crc)
 
-summary(fit)$coefficients
+round(summary(fit)$coefficients, 7)
 ```
 
 ```text
-               Estimate  Std. Error        z     Pr(>|z|)    95%ci.lb    95%ci.ub
-(Intercept) 0.006437538 0.001352042 4.761344 1.923078e-06 0.003787584 0.009087492
+             Estimate Std. Error        z Pr(>|z|)  95%ci.lb  95%ci.ub
+(Intercept) 0.0064375   0.001352 4.761344  1.9e-06 0.0037876 0.0090875
 ```
 
-### The coefficient is not an intercept
+Remember what that row is: the dose slope on the log scale, not an intercept.
 
-Look at that row name. The model has no intercept: it is suppressed, because
-every contrast is against the study's own reference category. So the number
-labelled `(Intercept)` is the **dose slope**, on the log scale, per unit of
-dose. Here it is 0.006438 per gram per day, which exponentiates to a rate ratio
-of 1.0065 per gram per day.
-
-Reporting it as an intercept is a mistake the label invites, and it is worth
-checking in any output you copy.
-
----
-
-## 7. After the model: `curve_shape()`
-
-A fitted curve has to be described in words at some point, and the words should
-be the ones the literature uses. `curve_shape()` takes the predicted effects
-and returns one of five labels:
+**Step 3. Read it as rate ratios at intakes people recognise.**
 
 ```r
-grid <- data.frame(dose = seq(0, 60, by = 10))
-predicted <- predict(fit, newdata = grid, expo = FALSE)
-
-curve_shape(grid$dose, predicted$pred)
-#> [1] "positive association"
-```
-
-The five labels, and the behaviour that earns each one:
-
-```r
-curve_shape(0:4, c(0,  0.20,  0.40,  0.60,  0.80))  # rises throughout
-curve_shape(0:4, c(0,  0.50,  0.80,  0.85,  0.86))  # rises, then flattens
-curve_shape(0:4, c(0,  0.50,  0.90,  0.40, -0.10))  # rises, then turns down
-curve_shape(0:4, c(0, -0.20, -0.40, -0.60, -0.80))  # falls throughout
-curve_shape(0:4, c(0,  0.01,  0.00,  0.01,  0.00))  # flat
+grid <- data.frame(dose = c(0, 10, 25, 50))
+pred <- predict(fit, newdata = grid, expo = TRUE)
+round(pred, 4)
 ```
 
 ```text
-rises throughout         -> positive association
-rises then flattens      -> Emax
-rises then turns down    -> non-monotonic
-falls throughout         -> inverse association
-flat                     -> no association
+  dose   pred  ci.lb  ci.ub
+1    0 1.0000 1.0000 1.0000
+2   10 1.0665 1.0386 1.0951
+3   25 1.1746 1.0993 1.2551
+4   50 1.3797 1.2085 1.5752
 ```
 
-`Emax` is judged against the curve's own steepest step rather than its overall
-range, which is what separates a genuine plateau from a curve that merely
-decelerates.
+Keep the reference dose in `newdata`. Without the `0` row, `predict()` treats
+the first row as the reference and every ratio comes out relative to 10 g/day
+instead of to no intake.
 
-### Ratio scales
-
-The labels describe how the effect **changes** from one dose to the next, not
-where the curve sits. So the answer is the same whether you pass log effects or
-the ratios themselves:
+**Step 4. Heterogeneity.**
 
 ```r
-rr <- c(1.00, 1.22, 1.49, 1.82, 2.23)
-
-curve_shape(0:4, log(rr))   # "positive association"
-curve_shape(0:4, rr)        # "positive association"
+q <- summary(fit)$qstat
+data.frame(Q = round(unname(q$Q), 4), df = unname(q$df),
+           p = round(unname(q$pvalue), 4))
 ```
 
-That is the behaviour you want from a shape: a dose-response is about movement
-with dose, and a curve that sits high but never moves has no dose-response
-whatever its level.
-
-Two arguments adjust where the thresholds fall, for when the defaults disagree
-with your reading of a curve: `tol`, the fraction of the total range below which
-one step counts as flat, and `plateau_frac`, how small the closing steps must be
-to earn `Emax`.
-
----
-
-## 8. Build the book locally
-
-```bash
-quarto render book
+```text
+       Q df      p
+1 4.7797  7 0.6868
 ```
 
-The rendered site lands in `book/_book`. Rendering executes the R chunks, and
-those chunks call this package, so install it first:
+**Step 5. Name the curve.**
 
-```bash
-R CMD INSTALL .
+```r
+curve_grid <- data.frame(dose = seq(0, 60, by = 10))
+curve_pred <- predict(fit, newdata = curve_grid, expo = FALSE)
+
+curve_shape(curve_grid$dose, curve_pred$pred)
 ```
 
-The statistics chapter also needs `dosresmeta`.
+```text
+[1] "positive association"
+```
+
+### What you should see
+
+| Quantity | Value |
+|---|---|
+| Studies, exposure levels each | 8, 6 |
+| Dose slope, log scale, per g/day | 0.0064375 |
+| Standard error | 0.0013520 |
+| Rate ratio at 10 g/day | 1.0665 (1.0386 to 1.0951) |
+| Rate ratio at 25 g/day | 1.1746 (1.0993 to 1.2551) |
+| Rate ratio at 50 g/day | 1.3797 (1.2085 to 1.5752) |
+| Cochran Q | 4.7797 on 7 df, p = 0.6868 |
+| Curve shape | positive association |
+
+Captured on R 4.6.0 with `dosresmeta` 2.2.0. The last digit or two can move
+with a different BLAS or engine version; the rate ratios should agree to three
+decimals. If they do not, something in your install differs, and the rest of
+the book will differ with it, so it is worth finding out before you trust a
+curve of your own.
 
 ---
 
@@ -394,9 +224,13 @@ CC BY-NC-SA 4.0 for the book text, figures and examples in `book/`. See
 ## Related
 
 Part of the MetaRank 4 catalog from the [Meta-Analysis
-Academy](https://metahub.metaanalysisacademy.com): one design, taught end to
-end, per repo. The book is free. The video course, templates and support are the
-paid half.
+Academy](https://metaanalysisacademy.com): one design, taught end to end, per
+repo. The book is free. The video course, templates and support are the paid
+half.
+
+The three pictures above are built from [`tutorial/`](tutorial): `Rscript
+tutorial/plot.R` for the figures, then `node tutorial/render.mjs <page>` for
+each of `overview`, `workflow` and `curve`.
 
 Questions and corrections:
 [issues](https://github.com/vanioljantunes/easyDR/issues).

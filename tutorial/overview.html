@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>easyDR overview</title>
+<style>
+  :root {
+    --navy: #1F2A44;
+    --red: #C0392B;
+    --grey: #8A939B;
+    --band: #EDEFF2;
+    --line: #C5C9CE;
+    --paper: #FFFFFF;
+    --page: #F4F1EC;
+    --muted: #5B6475;
+    --serif: Georgia, "Times New Roman", Times, serif;
+    --sans: "Segoe UI", Arial, Helvetica, sans-serif;
+    --mono: Consolas, "Cascadia Mono", "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--navy); font-family: var(--sans); }
+  .sheet { width: 1200px; margin: 20px auto; background: var(--paper);
+           border: 1px solid var(--line); }
+
+  header { padding: 34px 48px 26px; text-align: center; border-bottom: 1px solid var(--line); }
+  header h1 { font-family: var(--serif); font-size: 38px; margin: 0 0 6px; }
+  header p { margin: 0; font-family: var(--serif); font-size: 18px; color: var(--muted); }
+  .flow { display: flex; justify-content: center; align-items: center; gap: 12px;
+          margin-top: 22px; font-family: var(--serif); font-size: 15.5px; }
+  .flow .pill { border: 1px solid var(--line); background: var(--band); padding: 5px 14px;
+                border-radius: 999px; }
+  .flow .pill.own { border-color: var(--red); box-shadow: inset 3px 0 0 var(--red);
+                    background: #fff; font-weight: 700; font-family: var(--mono);
+                    font-size: 14px; }
+  .flow .arrow { color: var(--grey); font-size: 17px; }
+
+  section.step { padding: 28px 48px 32px; }
+  .step-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px;
+               background: var(--band); margin-left: -48px; margin-right: -48px;
+               padding: 12px 48px; }
+  .num { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--navy);
+         background: #fff; display: flex; align-items: center; justify-content: center;
+         font-weight: 700; font-size: 19px; flex: none; }
+  .step-head h2 { font-family: var(--serif); font-size: 25px; margin: 0; }
+
+  p.lede { font-size: 15.5px; line-height: 1.6; margin: 0 0 20px; }
+  code { font-family: var(--mono); }
+
+  .fns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .fn { border: 1px solid var(--line); border-left: 4px solid var(--red); padding: 14px 16px; }
+  .fn b { font-family: var(--mono); font-size: 16px; display: block; margin-bottom: 6px; }
+  .fn span { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+  h3 { font-family: var(--serif); font-size: 19px; margin: 26px 0 12px; }
+  .gets { display: grid; gap: 12px; }
+  .get { border: 1px solid var(--line); padding: 13px 16px; display: grid;
+         grid-template-columns: 26px 1fr; gap: 12px; align-items: start; }
+  .get .tick { color: var(--red); font-weight: 700; font-size: 17px; line-height: 1.3; }
+  .get b { font-size: 14.5px; }
+  .get p { margin: 3px 0 0; font-size: 14px; color: var(--muted); line-height: 1.5; }
+  .get p code, .get b code { color: var(--navy); }
+
+  .nots { margin-top: 18px; border: 1px dashed var(--grey); background: #FCFCFD;
+          padding: 13px 16px; font-size: 14px; color: var(--muted); line-height: 1.55; }
+  .nots b { color: var(--navy); }
+  .nots code { color: var(--navy); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <h1>easyDR</h1>
+    <p>Two functions, and why it is only two</p>
+    <div class="flow">
+      <span class="pill">extract</span>
+      <span class="arrow">&rarr;</span>
+      <span class="pill own">dr_viability()</span>
+      <span class="arrow">&rarr;</span>
+      <span class="pill">dosresmeta</span>
+      <span class="arrow">&rarr;</span>
+      <span class="pill own">curve_shape()</span>
+      <span class="arrow">&rarr;</span>
+      <span class="pill">write it up</span>
+    </div>
+  </header>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="num">2</div>
+      <h2>What this package is</h2>
+    </div>
+
+    <p class="lede">
+      <code>easyDR</code> is the package the book leans on, and it is deliberately
+      small. It carries the two steps students repeatedly get wrong, and leaves the
+      modelling to <b>dosresmeta</b> by Crippa and Orsini, which is validated, peer
+      reviewed, and already does that job well.
+    </p>
+
+    <div class="fns">
+      <div class="fn">
+        <b>dr_viability()</b>
+        <span>Checks whether a dataset can support a dose-response model at all,
+        before any fitting.</span>
+      </div>
+      <div class="fn">
+        <b>curve_shape()</b>
+        <span>Names the shape of a fitted curve in the vocabulary the literature
+        uses.</span>
+      </div>
+    </div>
+
+    <h3>What you get</h3>
+    <div class="gets">
+      <div class="get">
+        <div class="tick">&#10003;</div>
+        <div>
+          <b>A check that runs before the model.</b>
+          <p>The commonest reason a dose-response meta-analysis fails is not the
+          model; it is that the included studies never could have supported one.
+          <code>dr_viability()</code> reports that per study, with the reason,
+          rather than letting a fit fail later for a reason that reads as
+          numerical.</p>
+        </div>
+      </div>
+      <div class="get">
+        <div class="tick">&#10003;</div>
+        <div>
+          <b>A name for the curve.</b>
+          <p><code>curve_shape()</code> returns one of five labels, so the results
+          paragraph and the figure agree with each other, and with the words the
+          field already uses.</p>
+        </div>
+      </div>
+      <div class="get">
+        <div class="tick">&#10003;</div>
+        <div>
+          <b>No estimator of its own.</b>
+          <p>Every estimate in the book comes from <code>dosresmeta</code>. This
+          package prepares and interprets; it does not compute a pooled slope, and
+          it does not wrap <code>dosresmeta</code> in a layer you then have to
+          learn.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="nots">
+      <b>What you do not get</b>, so you are not surprised: no fitting function, no
+      plotting, no bundled datasets. The examples use <code>dosresmeta</code> and
+      the data <code>dosresmeta</code> ships.
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
