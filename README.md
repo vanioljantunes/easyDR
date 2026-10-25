@@ -3,6 +3,8 @@
 **Dose-response meta-analysis, made teachable: a free book, and the two checks
 that belong either side of the model.**
 
+Sponsored by [Meta-Analysis Academy](https://metaanalysisacademy.com).
+
 ## Contents
 
 | Section | Jump to |
@@ -22,19 +24,9 @@ that belong either side of the model.**
 
 ## 1. The book
 
-The book is the main thing in this repository. It is free, it is online, and it
-teaches dose-response meta-analysis end to end:
-
-### **[Read it: vanioljantunes.github.io/easyDR](https://vanioljantunes.github.io/easyDR/)**
-
-Most meta-analysis teaching stops at a single pooled estimate, which answers
-"treated versus untreated" and nothing else. A dose-response meta-analysis asks
-a different question: how does the effect change as the dose changes? The answer
-is a curve, not a number, and almost everything that makes it hard sits around
-the model rather than in it.
-
-The source is in [`book/`](book) in this same folder, as Quarto `.qmd` files.
-The rendered site is what the link above serves.
+This repository holds a book that teaches dose-response meta-analysis end to
+end, free to read:
+**[open the book](https://vanioljantunes.github.io/easyDR/)**.
 
 ### What is in it
 
