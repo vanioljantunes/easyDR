@@ -48,14 +48,16 @@ it locally, after `R CMD INSTALL .` so the chunks can call the package.
 
 ![One call and four things to do with it: easyDR has no formula argument, and folds the viability check and the curve label into the fit](man/figures/overview.png)
 
-<details open>
-<summary><code>{r the-one-call}</code> &mdash; the fit, the check that preceded it, the name of the curve</summary>
+<details>
+<summary><b>The one call, and what it returns</b>: <code>{r what-this-is}</code></summary>
 
 ```r
+# One entry point. Paste the whole block into R.
 library(easyDR)
 
 fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
               dose.unit = "g/day", at = c(10, 25, 50))
+
 fit                 # the whole answer, printed at once
 summary(fit)        # the same, plus the coefficient and the per-study rows
 fit$viability       # the check that runs before the model
@@ -70,16 +72,21 @@ fit$curve_label     # the name the curve earned: "monotonic increasing"
 
 ![Install easyDR, lay the data out one row per exposure level per study, and let sm choose which columns are read](man/figures/data.png)
 
-<details open>
-<summary><code>{r install-and-look}</code> &mdash; install it, then look at the two bundled tables</summary>
+<details>
+<summary><b>Install it, then look at the data</b>: <code>{r install-and-data}</code></summary>
 
 ```r
+# Paste the whole block into R.
 # install.packages("remotes")
 remotes::install_github("vanioljantunes/easyDR")
+
 library(easyDR)
 
 head(alcohol_cancer)   # a binary outcome, one row per intake category
 head(aripiprazole)     # a continuous one: mean.e, sd.e, n.e
+
+# sm decides which columns are read, how the within-study covariance is
+# reconstructed, and whether the effect is drawn on a log axis.
 ```
 
 </details>
@@ -90,16 +97,21 @@ head(aripiprazole)     # a continuous one: mean.e, sd.e, n.e
 
 ![easydr() in one call, the five shapes you can name, and easydr_curve() with its arguments](man/figures/api.png)
 
-<details open>
-<summary><code>{r fit-and-draw}</code> &mdash; the call, the refusal when <code>shape</code> is missing, and the curve</summary>
+<details>
+<summary><b>The call, the refusal, and the curve</b>: <code>{r fit-and-draw}</code></summary>
 
 ```r
+# Paste the whole block into R.
+library(easyDR)
+
+# at = names the doses to report effects at. The curve marks and ticks them.
 fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
               dose.unit = "g/day", at = c(10, 25, 50))
+fit
 
 # shape has no default. Leave it out and the error lists what you may write:
 # "linear", "log", "quadratic", "rcs", "fp".
-easydr(alcohol_cancer, sm = "RR")
+try(easydr(alcohol_cancer, sm = "RR"))
 
 # the curve, with every argument the picture used
 easydr_curve(fit,
@@ -119,11 +131,18 @@ easydr_curve(fit,
 
 ![easydr_forest, easydr_loo and easydr_funnel, all taking the object easydr returned](man/figures/plots.png)
 
-<details open>
-<summary><code>{r three-questions}</code> &mdash; what each study gave, whether one is carrying it, whether the small ones differ</summary>
+<details>
+<summary><b>Forest, leave-one-out, funnel</b>: <code>{r three-questions}</code></summary>
 
 ```r
-cvd <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
+# Paste the whole block into R. Three questions, three calls, each taking the
+# object easydr() returned.
+library(easyDR)
+
+fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+              dose.unit = "g/day", at = c(10, 25, 50))
+rcs <- easydr(alcohol_cancer, sm = "RR", shape = "rcs", dose.unit = "g/day")
+cvd <- easydr(alcohol_cvd,    sm = "RR", shape = "linear", dose.unit = "g/day")
 
 # what each study contributed
 easydr_forest(fit)$table                 # draws it, and the table prints itself
@@ -143,173 +162,59 @@ easydr_funnel(fit, labels = TRUE)$egger  # Egger's test, printed as a test
 
 ## 6. Validation: reproduce a published analysis
 
-Everything above is a picture. This section is not. Paste it in and you should
-get the numbers printed here, on your own machine.
+Everything above is a picture. This section is not. Run the script and you
+should get the values printed below, on your own machine.
 
 The example is the one the book uses: eight prospective cohorts of alcohol
 intake and colorectal cancer, analysed in Orsini et al. (2012) and bundled as
 `alcohol_cancer`.
 
-### Run it
+### Run it yourself
 
-<details open>
-<summary><code>{r setup}</code> &mdash; install and attach</summary>
+Paste the script into a fresh R session, or run it from the package root with
+`Rscript validation/reproduce.R`. It needs easyDR and nothing else: no data
+files, and it runs in a couple of seconds.
+
+<details>
+<summary><b>The whole analysis</b>: <code>validation/reproduce.R</code></summary>
 
 ```r
-# install.packages("remotes")
-remotes::install_github("vanioljantunes/easyDR")
+# easyDR: reproduce the published alcohol and colorectal cancer analysis.
+# Eight prospective cohorts, analysed in Orsini et al. (2012) and bundled as
+# alcohol_cancer. Paste the whole file into R; no data files are needed.
+# install.packages("remotes"); remotes::install_github("vanioljantunes/easyDR")
+
 library(easyDR)
-```
 
-</details>
-
-<details open>
-<summary><code>{r step-1-fit}</code> &mdash; one call, and the whole answer prints</summary>
-
-```r
+# One call. No formula argument and no logrr column: sm = "RR" tells easyDR to
+# read the counts and the reported risk ratios, derive the contrasts, and
+# reconstruct the within-study covariances.
 fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
               dose.unit = "g/day", at = c(10, 25, 50))
 fit
-```
 
-```text
-Dose-response meta-analysis (risk ratio)
-Pooling: two-stage random effects, reml. Covariance: Greenland and Longnecker.
-
-Per 1 g/day increase:  RR 1.006  (95% CI 1.004 to 1.009)
-Reference dose: 0 g/day
-Curve shape: monotonic increasing
-
-Departure from linearity: not estimable
-  a linear fit has one term, so there is nothing to test it against
-  8 of 8 studies have three or more dose levels
-
-Heterogeneity: Q = 4.78 (df = 7), p = 0.687; I-squared = 0%
-
-Predicted RR
- dose (g/day) RR        95% CI         95% PI
-  0           reference reference      reference
- 10           1.066     1.039 to 1.095 1.033 to 1.101
- 25           1.175     1.099 to 1.255 1.084 to 1.272
- 50           1.380     1.208 to 1.575 1.176 to 1.619
-
-8 studies, 48 dose categories, dose range 0 to 60.6 g/day
-Viability: 8 of 8 studies carry 3 or more dose levels.
-Defaults applied:
-  - intake: reported effect with limits, counts used for the covariance
-```
-
-</details>
-
-No `formula` argument, and no `logrr` column. `sm = "RR"` tells easyDR to read
-the counts and the reported risk ratios, then derive the contrasts and
-reconstruct the within-study covariances. The risk ratios at 10, 25 and 50
-g/day are in that same print, each one measured against the reference dose,
-which is why the reference row stays in the table.
-
-<details open>
-<summary><code>{r step-2-summary}</code> &mdash; the coefficient, the fit, and what each cohort gave</summary>
-
-```r
+# The coefficient on the log scale, the goodness of fit, and what each cohort
+# contributed. This is the number to quote in a methods section.
 summary(fit)
-```
 
-```text
-[everything the fit printed above, then:]
+# The rows behind the forest plot, with weights. The figure is drawn and the
+# table prints itself; the stored values keep full precision.
+easydr_forest(fit)$table
 
-Goodness of fit: deviance D = 48.21 (df = 39), p = 0.148
-  R-squared 0.32, adjusted 0.302
-  deviance of the fitted model against a saturated fit
-
-Pooled trend on the log scale, per 1 g/day
-  b = 0.0064373,  SE = 0.0013521,  p < 0.001
-  no intercept: every contrast runs against the study's own reference category
-
-Per-study contribution
- study levels dose range design slope (log scale) SE
- atm   6      0 to 58.43 ir      0.007141         0.003912
- hpm   6      0 to 59.4  ir      0.009169         0.003044
- io    6      0 to 60.6  ir      0.002359         0.004106
- n1    6      0 to 58.4  ir     -0.002127         0.006536
- n2    6      0 to 57.6  ir      0.004905         0.004073
- nt    6      0 to 50.33 ir      0.012630         0.005995
- ntm   6      0 to 56.23 ir      0.006131         0.003314
- nym   6      0 to 57    ir      0.006880         0.002990
-```
-
-</details>
-
-The coefficient on the log scale is the number to quote in a methods section,
-and the one to check an install against. `summary()` reports it, so nothing has
-to be pulled out of the fitted object and rounded by hand.
-
-<details open>
-<summary><code>{r step-3-forest}</code> &mdash; the rows behind the forest plot, with weights</summary>
-
-```r
-easydr_forest(fit)$table     # draws the forest, and the table prints itself
-```
-
-```text
- study levels dose range trend      SE        weight %
- atm   6      0 to 58.4   0.0071406 0.0039123 11.94
- hpm   6      0 to 59.4   0.0091691 0.0030437 19.73
- io    6      0 to 60.6   0.0023590 0.0041061 10.84
- n1    6      0 to 58.4  -0.0021265 0.0065361  4.28
- n2    6      0 to 57.6   0.0049053 0.0040725 11.02
- nt    6      0 to 50.3   0.0126300 0.0059954  5.09
- ntm   6      0 to 56.2   0.0061313 0.0033139 16.65
- nym   6      0 to 57     0.0068797 0.0029901 20.45
-```
-
-</details>
-
-Each plot returns the table it drew. These rows are the engine's own
-first-stage estimates. The printing rounds, the stored values do not, so
-`as.data.frame()` gives them back untouched.
-
-<details open>
-<summary><code>{r step-4-funnel}</code> &mdash; small-study effects</summary>
-
-```r
+# Small-study effects. Egger's regression, printed as a test result with its
+# power warning. Deeks' test belongs to diagnostic test accuracy.
 easydr_funnel(fit)$egger
-```
 
-```text
-Egger's test for small-study effects
-  intercept -1.0879 (SE 1.2204)
-  t = -0.89 on 6 df, p = 0.407
-  8 studies: fewer than 10, so the test has little power and a null result means very little
-```
-
-</details>
-
-Egger's regression. Deeks' test belongs to diagnostic test accuracy, so it does
-not apply here. The figure prints the same power warning above its panel.
-
-<details open>
-<summary><code>{r step-5-checks}</code> &mdash; the two checks easyDR ran for you</summary>
-
-```r
+# The two checks easyDR ran before and after the model.
 fit$curve_label
 fit$viability
-```
 
-```text
-[1] "monotonic increasing"
-Dose-response viability
-
- study levels has_reference two_stage_ok
- atm   6      TRUE          TRUE
- hpm   6      TRUE          TRUE
- io    6      TRUE          TRUE
- n1    6      TRUE          TRUE
- n2    6      TRUE          TRUE
- nt    6      TRUE          TRUE
- ntm   6      TRUE          TRUE
- nym   6      TRUE          TRUE
-
-No blocking problems found.
+# The curve, with every argument the README figure used.
+easydr_curve(fit,
+             main  = "Alcohol and colorectal cancer",
+             xlab  = "Alcohol intake (g/day)",
+             ylab  = "Risk ratio",
+             round = 2)
 ```
 
 </details>

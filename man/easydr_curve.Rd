@@ -50,7 +50,8 @@ are the ones named in \code{at}.}
 reference dose.}
 
 \item{rug}{\code{TRUE}, the default, ticks the doses the fit reports along the
-bottom, so the axis carries them as well as the curve.}
+bottom: the ones \code{at} named in \code{\link[=easydr]{easydr()}}, and the reference. It marks
+where the reported effects sit on the axis, not where the data is.}
 
 \item{result}{\code{TRUE}, the default, prints the pooled result in the top left
 of the panel: the effect with its confidence interval, its p value, and
