@@ -1,0 +1,23 @@
+Dose-response meta-analysis (standardised mean difference)
+Pooling: two-stage random effects, reml. Covariance: standardised mean differences.
+
+Per 1 mg/day increase:  SMD 0.015  (95% CI 0.010 to 0.020)
+Reference dose: 0 mg/day
+
+Departure from linearity: not estimable
+  a linear fit has one term, so there is nothing to test it against
+  5 of 5 studies have three or more dose levels
+
+Heterogeneity: Q = 2.85 (df = 4), p = 0.583; I-squared = 0%
+
+Predicted SMD
+ dose (mg/day) SMD       95% CI         95% PI        
+  0.0          reference reference      reference     
+  7.5          0.115     0.077 to 0.153 0.061 to 0.169
+ 15.0          0.230     0.154 to 0.306 0.122 to 0.338
+ 22.5          0.345     0.230 to 0.459 0.183 to 0.507
+ 30.0          0.460     0.307 to 0.612 0.243 to 0.676
+
+5 studies, 18 dose categories, dose range 0 to 30 mg/day
+Defaults applied:
+  - intake: means with standard deviations

@@ -7,3 +7,4 @@ book/_book/
 book/.quarto/
 book/*_files/
 .quarto/
+.tmp/

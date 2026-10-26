@@ -14,8 +14,6 @@
 #' @param dose Numeric vector of exposure values, ascending.
 #' @param effect Numeric vector of fitted effects at those exposures, on the
 #'   scale you intend to plot (log scale for ratio measures).
-#' @param null_value The value meaning "no effect": 0 on a log scale, 1 on a
-#'   ratio scale.
 #' @param tol Fraction of the total effect range below which a single step
 #'   counts as flat.
 #' @param plateau_frac A curve is called Emax when its closing steps are
@@ -26,14 +24,14 @@
 #' @return A single string: "positive association", "inverse association",
 #'   "non-monotonic", "Emax", or "no association".
 #'
-#' @examples
-#' curve_shape(0:4, c(0, 0.2, 0.4, 0.6, 0.8))
-#' curve_shape(0:4, c(0, 0.5, 0.8, 0.85, 0.86))
-#' curve_shape(0:4, c(0, 0.5, 0.9, 0.4, -0.1))
+#' The labels describe how the effect *changes* from one dose to the next, not
+#' where the curve sits, so a monotone curve earns the same name on the log
+#' scale and on the ratio scale. [easydr()] passes the log scale, and carries
+#' the answer on the `curve_label` slot of its result.
 #'
-#' @export
-curve_shape <- function(dose, effect, null_value = 0, tol = 0.05,
-                        plateau_frac = 0.25) {
+#' @keywords internal
+#' @noRd
+curve_shape <- function(dose, effect, tol = 0.05, plateau_frac = 0.25) {
   stopifnot(length(dose) == length(effect), length(dose) >= 3)
   ord <- order(dose)
   effect <- effect[ord]

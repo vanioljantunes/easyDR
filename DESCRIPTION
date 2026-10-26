@@ -4,23 +4,33 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Vanio", "Antunes", email = "vanio.antunes.md@gmail.com",
            role = c("aut", "cre"))
-Description: Helpers for conducting and reporting dose-response
-    meta-analyses, built alongside the companion book at
-    <https://vanioljantunes.github.io/easyDR/>. The package wraps the
-    steps that students repeatedly get wrong: checking whether a set of
-    studies can support a dose-response model at all, and naming the
-    shape of a fitted curve. Modelling itself is delegated to
-    'dosresmeta'.
-License: MIT + file LICENSE
+Description: A front end for dose-response meta-analysis, argued like the
+    'meta' package. One call takes a long table of exposure categories and a
+    summary measure such as "RR" or "SMD", derives the contrasts and the
+    within-study covariances, pools them, and reports the pooled
+    dose-response with its heterogeneity, prediction interval and predicted
+    effects. Companion plots cover the curve, a forest of study trends,
+    leave-one-out, meta-regression with bubble plots, and a funnel with
+    Egger's test. Estimation is delegated to 'dosresmeta'. Built alongside
+    the free book at <https://vanioljantunes.github.io/easyDR/>.
+License: GPL-2
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Depends: 
-    R (>= 4.1)
+    R (>= 4.2)
+Imports: 
+    dosresmeta (>= 2.2.0),
+    metafor,
+    mixmeta,
+    Hmisc,
+    graphics,
+    grDevices,
+    stats,
+    utils
 Suggests: 
     testthat (>= 3.0.0),
-    dosresmeta,
-    meta,
-    netmeta
+    withr
+LazyData: true
 Config/testthat/edition: 3
 URL: https://github.com/vanioljantunes/easyDR, https://vanioljantunes.github.io/easyDR/
 BugReports: https://github.com/vanioljantunes/easyDR/issues
