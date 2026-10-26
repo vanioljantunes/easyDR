@@ -7,3 +7,8 @@
 ^\.Rproj\.user$
 ^\.quarto$
 ^tutorial$
+^\.claude$
+^docs$
+^LICENSE\.md$
+^LICENSE$
+^\.tmp$

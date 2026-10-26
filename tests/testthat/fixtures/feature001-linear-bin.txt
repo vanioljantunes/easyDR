@@ -1,0 +1,23 @@
+Dose-response meta-analysis (incidence rate ratio)
+Pooling: two-stage random effects, reml. Covariance: Greenland and Longnecker.
+
+Per 1 g/day increase:  IRR 1.006  (95% CI 1.004 to 1.009)
+Reference dose: 0 g/day
+
+Departure from linearity: not estimable
+  a linear fit has one term, so there is nothing to test it against
+  8 of 8 studies have three or more dose levels
+
+Heterogeneity: Q = 4.78 (df = 7), p = 0.687; I-squared = 0%
+
+Predicted IRR
+ dose (g/day) IRR       95% CI         95% PI        
+  0.00        reference reference      reference     
+ 15.15        1.102     1.059 to 1.148 1.050 to 1.157
+ 30.30        1.215     1.122 to 1.317 1.103 to 1.339
+ 45.45        1.340     1.188 to 1.511 1.159 to 1.549
+ 60.60        1.477     1.258 to 1.734 1.217 to 1.793
+
+8 studies, 48 dose categories, dose range 0 to 60.6 g/day
+Defaults applied:
+  - intake: reported effect with limits, counts used for the covariance
