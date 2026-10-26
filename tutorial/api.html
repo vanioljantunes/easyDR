@@ -152,7 +152,13 @@ a reason beside it. Name one of:
           every number on the picture; these arguments choose what appears and
           how.
         </p>
-<pre class="code"><span class="c"># the defaults</span>
+<pre class="code"><span class="c"># at = names the doses. The curve marks and ticks them.</span>
+fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"RR"</span>,
+               <span class="a">shape</span> = <span class="s">"linear"</span>,
+               <span class="a">dose.unit</span> = <span class="s">"g/day"</span>,
+               <span class="a">at</span> = <span class="f">c</span>(10, 25, 50))
+
+<span class="c"># the defaults</span>
 <span class="f">easydr_curve</span>(fit)
 
 <span class="c"># titled, labelled, pinned, with the prediction band</span>
@@ -177,7 +183,7 @@ a reason beside it. Name one of:
           <tr><td class="m">prediction</td><td><code>TRUE</code> adds the prediction band, when the fit has one.</td></tr>
           <tr><td class="m">points</td><td>Marks the doses named in <code>at</code>.</td></tr>
           <tr><td class="m">reference</td><td>Null line, and the reference dose.</td></tr>
-          <tr><td class="m">rug</td><td>Ticks the doses the fit reports along the bottom.</td></tr>
+          <tr><td class="m">rug</td><td>Ticks the doses <code>at</code> named, and the reference, along the bottom.</td></tr>
           <tr><td class="m">result</td><td>The box in the corner: the effect, its interval, its p value and I2.</td></tr>
         </table>
       </div>

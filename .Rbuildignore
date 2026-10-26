@@ -13,3 +13,4 @@
 ^LICENSE$
 ^\.tmp$
 ^Rplots\.pdf$
+^validation$

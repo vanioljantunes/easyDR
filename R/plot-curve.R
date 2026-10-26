@@ -39,7 +39,8 @@
 #' @param reference `TRUE`, the default, draws the null line and marks the
 #'   reference dose.
 #' @param rug `TRUE`, the default, ticks the doses the fit reports along the
-#'   bottom, so the axis carries them as well as the curve.
+#'   bottom: the ones `at` named in [easydr()], and the reference. It marks
+#'   where the reported effects sit on the axis, not where the data is.
 #' @param result `TRUE`, the default, prints the pooled result in the top left
 #'   of the panel: the effect with its confidence interval, its p value, and
 #'   the heterogeneity. The figure then carries its own numbers.
@@ -152,16 +153,10 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   }
 
   if (isTRUE(rug)) {
-    # Where the data is, thinned. A tick per exposure category put forty-eight
-    # of them under an eight-study figure and they read as noise, so a table
-    # with more than a dozen distinct doses is sampled down to eleven. The
-    # ticks are still doses some study reported, never interpolated ones.
-    u <- sort(unique(x$frame$dose))
-    if (length(u) > 12L) {
-      u <- unique(stats::quantile(u, probs = seq(0, 1, length.out = 11L),
-                                  type = 1L, names = FALSE))
-    }
-    obs <- data.frame(dose = u)
+    # The doses the fit reports, which are the ones `at` named, plus the
+    # reference. A tick per exposure category put forty-eight of them under an
+    # eight-study figure and read as a band rather than as marks.
+    obs <- data.frame(dose = sort(unique(x$predicted$dose)))
     p <- p + ggplot2::geom_rug(data = obs, inherit.aes = FALSE,
                                ggplot2::aes(x = .data$dose), sides = "b",
                                colour = "grey25", linewidth = 0.5,
