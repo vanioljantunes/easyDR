@@ -115,6 +115,46 @@ dr_study_effects <- function(x, at = NULL, what = "this plot") {
        one_term = one_term && is.na(at_used))
 }
 
+#' The pooled effect for one contrast, from the fitted model alone
+#'
+#' `dr_study_effects()` needs the per-study coefficients, which a one-stage fit
+#' never produces. The curve has to be able to report its own result whatever
+#' the pooling stage was, so this reads `coef()` and `vcov()` and nothing else.
+#'
+#' A one-term shape with no dose named reports its slope. Anything else reports
+#' the predicted effect at a dose, and says which dose that was.
+#'
+#' @keywords internal
+#' @noRd
+dr_pooled_at <- function(x, at = NULL) {
+  one_term <- x$shape$terms == 1L
+  xref <- x$reference$curve
+  unit <- if (is.null(x$dose_unit)) "dose unit" else x$dose_unit
+
+  if (one_term && is.null(at)) {
+    cvec    <- matrix(1, nrow = 1L, ncol = 1L)
+    label   <- dr_label(x$sm, x$dose_unit)
+    at_used <- NA_real_
+  } else {
+    if (is.null(at)) {
+      cand    <- x$predicted$dose[!x$predicted$is_ref]
+      at_used <- if (length(cand) > 0L) cand[1L] else max(x$frame$dose)
+    } else {
+      at_used <- at
+    }
+    cvec  <- dr_contrast(x$shape, at_used, xref)
+    label <- paste0(x$sm, " at ", at_used, " ", unit)
+  }
+
+  b  <- as.numeric(coef(x$fit))
+  V  <- as.matrix(vcov(x$fit))
+  est <- as.numeric(cvec %*% b)
+  se  <- sqrt(as.numeric(cvec %*% V %*% t(cvec)))
+  z   <- stats::qnorm(1 - (1 - x$provenance$level) / 2)
+  list(est = est, se = se, lb = est - z * se, ub = est + z * se,
+       p = 2 * stats::pnorm(-abs(est / se)), label = label, at = at_used)
+}
+
 #' Leave a margin round a range, multiplicatively on a ratio scale
 #'
 #' A log axis needs a multiplicative margin: adding a constant to a ratio makes
@@ -201,6 +241,18 @@ dr_p <- function(p, digits = 3) {
   if (length(p) != 1L || !is.finite(p)) return("NA")
   if (p < 0.001) return("< 0.001")
   format(round(p, digits), nsmall = digits)
+}
+
+#' A p value with its own relational operator
+#'
+#' `dr_p()` returns "< 0.001" for a small p, so a caller that writes "p = "
+#' in front of it produces "p = < 0.001". This writes the whole label.
+#'
+#' @keywords internal
+#' @noRd
+dr_p_lab <- function(p, digits = 3) {
+  v <- dr_p(p, digits)
+  if (startsWith(v, "<")) paste("p", v) else paste("p =", v)
 }
 
 #' The theme every panel shares

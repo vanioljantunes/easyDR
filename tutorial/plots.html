@@ -10,7 +10,7 @@
 
   <header>
     <h1>What to do with the fit</h1>
-    <p>Four questions, four calls, each taking the object <span style="font-family:Consolas,monospace">easydr()</span> returned</p>
+    <p>Three questions, three calls, each taking the object <span style="font-family:Consolas,monospace">easydr()</span> returned</p>
   </header>
 
   <section class="step">
@@ -31,17 +31,17 @@
 <span class="c"># rows become one dose</span>
 <span class="f">easydr_forest</span>(rcs, <span class="a">at</span> = 25)</pre>
         <p class="note" style="margin-top:12px">
-          A dose-response study contributes a <b>trend</b>, not an effect, so
-          that is what a row shows: the study's own slope from the two-stage
-          first stage. These are the engine's own estimates, not something
-          recomputed for the picture, and the function hands the table back so
-          you can check them.
+          Each row is one study's own slope, taken from the two-stage first
+          stage. That slope is what a dose-response study contributes: a
+          <b>trend</b> across its exposure categories. The function hands the
+          table back, so you can check the numbers against the fit.
         </p>
         <div class="warn">
           <b>A one-stage fit has no rows.</b><br><br>
           It estimates every study inside a single model and never produces a
-          per-study coefficient. Rather than draw the pooled line eight times,
-          this refuses and says to refit with <code>proc = "2stage"</code>.
+          per-study coefficient. Drawing the pooled line once per study would
+          look like data, so this stops instead and says to refit with
+          <code>proc = "2stage"</code>.
         </div>
       </div>
       <figure class="plotcard">
@@ -76,13 +76,13 @@
 loo &lt;- <span class="f">easydr_loo</span>(cvd, <span class="a">quiet</span> = <span class="s">TRUE</span>, <span class="a">plot</span> = <span class="s">FALSE</span>)
 loo$table</pre>
         <p class="note" style="margin-top:12px">
-          Curve <b>A</b> is the fit without Bianchi, and it is the one that
-          walks away from the black line. Dropping that cohort takes I-squared
-          from 71% to nothing: it was most of the heterogeneity.
+          Curve <b>A</b> is the fit without Bianchi, and it walks furthest
+          from the black line. Dropping that cohort takes I2 from 71% to
+          nothing, so most of the heterogeneity was that one study.
         </p>
         <p class="note">
-          The rows carry no p value. The refits share almost all their data, so
-          they are not independent and a shift is not a test.
+          The rows carry no p value. The refits share almost all their data,
+          so a shift between them describes the data rather than testing it.
         </p>
       </div>
     </div>
@@ -91,55 +91,6 @@ loo$table</pre>
   <section class="step">
     <div class="step-head">
       <div class="num">3</div>
-      <h2>Does a characteristic explain it? <span class="mono">easydr_metareg()</span> and <span class="mono">easydr_bubble()</span></h2>
-    </div>
-
-    <div class="g2">
-      <div>
-<pre class="code">mr &lt;- <span class="f">easydr_metareg</span>(cvd, ~ design)
-mr
-
-<span class="f">easydr_bubble</span>(mr, <span class="a">labels</span> = <span class="s">TRUE</span>)</pre>
-        <div class="console" style="margin-top:10px">Moderator analysis (risk ratio)
-Moderator: design (categorical,
-  reference level case-control)
-Inherited: linear in dose; two-stage reml
-
-A moderator coefficient is an effect on the
-dose-response, not on the outcome.
-
- term                     estimate  95% CI
- slope at design =        -0.000684 -0.016088
-   case-control                      to 0.014720
- change in slope,         -0.009907 -0.035154
-   cumulative incidence              to 0.015339
-
-<span class="hl">Moderator test: X2 = 0.59 (df = 1), p = 0.442</span>
-
-Heterogeneity: Q = 13.02 (df = 4), p = 0.0112
-  without the moderator: Q = 14.15 (df = 5),
-  p = 0.0147</div>
-      </div>
-      <div>
-        <figure class="plotcard">
-          <img src="../man/figures/fig-bubble.png" alt="Bubble plot of study trends against study design">
-          <figcaption>Bubble area is the weight; the red bars are the fitted
-          level means with their intervals.</figcaption>
-        </figure>
-        <div class="good" style="margin-top:14px">
-          <b>The line is the regression's own.</b><br><br>
-          The bubbles are the unadjusted study trends and the red bars come
-          from <code>easydr_metareg()</code>, not from a fresh regression
-          through the points. That is why a study can sit off the bar: the
-          distance is the residual heterogeneity the printout quantifies.
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="step">
-    <div class="step-head">
-      <div class="num">4</div>
       <h2>Are the small studies different? <span class="mono">easydr_funnel()</span></h2>
     </div>
 
@@ -154,15 +105,15 @@ f$egger
 <span class="c">#&gt; $p           0.4070</span></pre>
         <div class="warn" style="margin-top:12px">
           <b>Egger, not Deeks.</b><br><br>
-          Deeks' funnel asymmetry test is for diagnostic test accuracy, where
-          the effective sample size is the sensible axis, and it does not apply
-          here. A dose-response review has one trend per study with a standard
-          error, which is the setting Egger's regression was written for.
+          Deeks' funnel asymmetry test belongs to diagnostic test accuracy,
+          where the effective sample size is the sensible axis. A dose-response
+          review has one trend per study with a standard error, which is the
+          setting Egger wrote his regression for.
         </div>
         <p class="note" style="margin-top:12px">
-          With eight studies the test has little power, so the figure says so
-          above the panel rather than leaving it to be remembered. Asymmetry
-          has several causes and publication bias is only one.
+          With eight studies the test has little power. The figure prints that
+          warning above the panel. Asymmetry has several causes and publication
+          bias is only one of them.
         </p>
       </div>
       <figure class="plotcard">
@@ -174,8 +125,8 @@ f$egger
   </section>
 
   <footer>
-    Every one of these returns the table it drew, so the numbers behind a
-    picture can be checked against the fit they came from.
+    Each of these returns the table it drew, so you can check the numbers
+    behind a picture against the fit they came from.
   </footer>
 
 </div>

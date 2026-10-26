@@ -39,7 +39,6 @@ capture_to("easydr", print(fit))
 capture_to("summary", print(summary(fit)))
 capture_to("rcs", print(rcs))
 capture_to("loo", print(easydr_loo(cvd, quiet = TRUE, plot = FALSE)))
-capture_to("metareg", print(easydr_metareg(cvd, ~ design)))
 capture_to("shape-error",
            print(try(easydr(alcohol_cancer, sm = "IRR"), silent = TRUE)))
 
@@ -70,10 +69,6 @@ grDevices::dev.off()
 
 px("fig-funnel.png", 5.6, 6.0)
 easydr_funnel(fit, labels = TRUE)
-grDevices::dev.off()
-
-px("fig-bubble.png", 6.6, 4.6)
-easydr_bubble(easydr_metareg(cvd, ~ design), labels = TRUE)
 grDevices::dev.off()
 
 # The six labels easydr() uses to name a curve. Drawn by hand because the

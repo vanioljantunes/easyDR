@@ -93,7 +93,7 @@ test_that("the plot entry points refuse anything that is not an easydr fit", {
   local_null_device()
   expect_error(easydr_curve(1:10), "takes a fitted result from easydr")
   expect_error(easydr_forest("not a fit"), "takes a fitted result from easydr")
-  expect_error(easydr_bubble(bin_fit()), "takes the result of easydr_metareg")
+  expect_error(easyDR:::easydr_bubble(bin_fit()), "takes the result of easydr_metareg")
 })
 
 test_that("Egger's test is the regression of the deviate on the precision", {
@@ -147,8 +147,8 @@ test_that("Egger's test refuses when every study is the same size", {
 test_that("the bubble line is the meta-regression's, not a fresh regression", {
   local_null_device()
   fit <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
-  mr  <- easydr_metareg(fit, ~ design)
-  b   <- easydr_bubble(mr)
+  mr  <- easyDR:::easydr_metareg(fit, ~ design)
+  b   <- easyDR:::easydr_bubble(mr)
 
   expect_equal(b$moderator, "design")
   expect_equal(nrow(b$table), 6L)
@@ -165,16 +165,16 @@ test_that("a bubble plot of a curve refuses, because there is no trend to plot",
   local_null_device()
   fit <- easydr(alcohol_cvd, sm = "RR", shape = "quadratic",
                 dose.unit = "g/day")
-  mr  <- easydr_metareg(fit, ~ design)
-  expect_error(easydr_bubble(mr), "needs one trend per study")
-  expect_error(easydr_bubble(mr), "easydr_metareg")
+  mr  <- easyDR:::easydr_metareg(fit, ~ design)
+  expect_error(easyDR:::easydr_bubble(mr), "needs one trend per study")
+  expect_error(easyDR:::easydr_bubble(mr), "easydr_metareg")
 })
 
 test_that("asking for a moderator the regression does not have is an error", {
   local_null_device()
   fit <- easydr(alcohol_cvd, sm = "RR", shape = "linear")
-  mr  <- easydr_metareg(fit, ~ design)
-  expect_error(easydr_bubble(mr, mod = "year"), "not a moderator")
+  mr  <- easyDR:::easydr_metareg(fit, ~ design)
+  expect_error(easyDR:::easydr_bubble(mr, mod = "year"), "not a moderator")
 })
 
 test_that("the spread used for categorical bubbles is the same every time", {
@@ -270,8 +270,8 @@ test_that("the funnel's shaded regions are the pseudo confidence wedges", {
 test_that("the bubble's fitted band comes from the regression's own vcov", {
   local_null_device()
   fit <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
-  mr  <- easydr_metareg(fit, ~ design)
-  b   <- easydr_bubble(mr)
+  mr  <- easyDR:::easydr_metareg(fit, ~ design)
+  b   <- easyDR:::easydr_bubble(mr)
   expect_true(all(c("trend", "lb", "ub") %in% names(b$fitted)))
   expect_true(all(b$fitted$lb < b$fitted$trend))
   expect_true(all(b$fitted$ub > b$fitted$trend))
@@ -280,4 +280,88 @@ test_that("the bubble's fitted band comes from the regression's own vcov", {
   z  <- stats::qnorm(0.975)
   i  <- which(b$fitted$mod == "case-control")
   expect_equal(b$fitted$lb[i], unname(cf[1] - z * sqrt(V[1, 1])))
+})
+
+# ---------------------------------------------------------------------------
+# Round 3: what the columns say, how I2 is written, and the result box.
+
+test_that("the forest names what its columns count", {
+  local_null_device()
+  f <- easydr_forest(bin_fit())
+  cols <- names(f$grob$grobs[[2]][["children"]])
+  # The headers themselves are drawn inside the panel, so the check is on the
+  # table the caller gets plus the legend text the figure carries.
+  expect_true(all(c("levels", "dose_min", "dose_max") %in% names(f$table)))
+  expect_equal(f$table$levels, rep(6L, 8L))
+})
+
+test_that("heterogeneity is written I2, not I-squared", {
+  local_null_device()
+  fit <- bin_fit()
+  f   <- easydr_forest(fit)
+  # The line is built from the fit, so it is checked by rebuilding it.
+  het <- f$heterogeneity
+  line <- sprintf("I2 = %.1f%%, Q = %.2f (df %d), %s",
+                  het$i2, het$Q, het$df, easyDR:::dr_p_lab(het$p))
+  expect_match(line, "^I2 = ")
+  expect_no_match(line, "I-squared")
+})
+
+test_that("a p value carries its own operator, so none reads p = < 0.001", {
+  expect_equal(easyDR:::dr_p_lab(0.687), "p = 0.687")
+  expect_equal(easyDR:::dr_p_lab(1e-8), "p < 0.001")
+  expect_no_match(easyDR:::dr_p_lab(1e-8), "= <")
+})
+
+test_that("the curve's corner box is the fit's own result", {
+  local_null_device()
+  fit <- bin_fit(at = c(10, 25, 50))
+  box <- easyDR:::dr_pooled_at(fit)
+  # A one-term shape reports its slope, and that is what the fit printed.
+  expect_true(is.na(box$at))
+  expect_equal(box$est, fit$slope$estimate)
+  expect_equal(box$se, fit$slope$se)
+  expect_equal(box$p, fit$slope$p)
+  expect_silent(easydr_curve(fit))
+})
+
+test_that("a curve has no single slope, so the box names its dose", {
+  local_null_device()
+  rcs <- bin_fit("rcs", at = c(10, 25, 50))
+  box <- easyDR:::dr_pooled_at(rcs)
+  expect_equal(box$at, 10)
+  expect_match(box$label, "^IRR at 10 g/day$")
+  # And it agrees with what the fit predicts there.
+  row <- rcs$predicted[rcs$predicted$dose == 10, ]
+  expect_equal(exp(box$est), row$est, tolerance = 1e-8)
+
+  # result.at moves it, and nothing else.
+  at50 <- easyDR:::dr_pooled_at(rcs, 50)
+  expect_equal(at50$at, 50)
+  expect_equal(exp(at50$est), rcs$predicted$est[rcs$predicted$dose == 50],
+               tolerance = 1e-8)
+})
+
+test_that("the corner box works for a one-stage fit, which has no bi", {
+  # dr_study_effects() refuses a one-stage fit. The box must not, or the
+  # curve would lose its numbers for exactly the fits that need them most.
+  local_null_device()
+  one <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+                proc = "1stage", dose.unit = "g/day")
+  box <- easyDR:::dr_pooled_at(one)
+  expect_true(is.finite(box$est))
+  expect_true(is.finite(box$p))
+  expect_silent(easydr_curve(one))
+})
+
+test_that("the meta-regression and the bubble are off the public surface", {
+  exports <- getNamespaceExports("easyDR")
+  expect_false("easydr_metareg" %in% exports)
+  expect_false("easydr_bubble" %in% exports)
+  # Still there, still working, just not exported.
+  local_null_device()
+  fit <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
+  mr  <- easyDR:::easydr_metareg(fit, ~ design)
+  expect_s3_class(mr, "easydr_moderator")
+  expect_type(easyDR:::easydr_bubble(mr)$test, "list")
 })

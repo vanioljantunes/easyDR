@@ -31,8 +31,8 @@ fit &lt;- <span class="f">easydr</span>(alcohol_cancer,
 fit</pre>
         <p class="note" style="margin-top:12px">
           Eight prospective cohorts of alcohol intake and colorectal cancer,
-          from Orsini and colleagues. The whole answer prints at once: nothing
-          else has to be called to write the results paragraph.
+          from Orsini and colleagues. Everything you need for the results
+          paragraph prints from this one call.
         </p>
         <table class="lab" style="margin-top:12px">
           <tr><th style="width:30%">Argument</th><th>Does what</th></tr>
@@ -77,12 +77,12 @@ Defaults applied:
   - intake: reported effect with limits, counts
     used for the covariance</div>
         <div class="warn" style="margin-top:14px">
-          <b>That slope is not an effect of being exposed.</b><br><br>
-          An <code>IRR</code> of 1.006 per 1 g/day does not mean drinkers are
-          at 1.006 times the rate. It means each gram per day multiplies the
-          rate by about 1.006, measured against the reference dose, which is
-          why the reference is always printed. Change the reference and every
-          predicted effect changes with it.
+          <b>Read the slope as a step, not a group.</b><br><br>
+          An <code>IRR</code> of 1.006 per 1 g/day does not mean drinkers run
+          1.006 times the rate. Each gram per day multiplies the rate by about
+          1.006, measured against the reference dose. easyDR prints that
+          reference every time, because moving it moves every predicted
+          effect.
         </div>
       </div>
     </div>
@@ -105,12 +105,11 @@ Defaults applied:
           <tr><td class="l">"fp"</td><td>a fractional polynomial; <code>powers</code> chooses the pair</td><td>2</td></tr>
         </table>
         <p class="note" style="margin-top:14px">
-          There is no default and nothing is ranked for you. The shape is a
-          claim about the biology, and it belongs in your protocol with a
-          reason beside it: the dose range your readers care about, whether a
-          threshold or a flattening is plausible for this exposure, what
-          comparable reviews fitted. Leave it out and the error tells you what
-          you may write.
+          The shape is a claim about the biology, so it belongs in your
+          protocol with a reason beside it: the dose range your readers care
+          about, whether a threshold or a flattening is plausible here, what
+          comparable reviews fitted. easyDR has no default and ranks nothing.
+          Leave the argument out and the error lists what you may write.
         </p>
       </div>
       <div>
@@ -149,9 +148,9 @@ a reason beside it. Name one of:
     <div class="g2 wide">
       <div>
         <p class="note">
-          It takes the object <code>easydr()</code> returned and nothing else:
-          every number on the picture was computed by the fit. These arguments
-          choose what appears and how.
+          It takes the object <code>easydr()</code> returned. The fit computed
+          every number on the picture; these arguments choose what appears and
+          how.
         </p>
 <pre class="code"><span class="c"># the defaults</span>
 <span class="f">easydr_curve</span>(fit)
@@ -163,7 +162,10 @@ a reason beside it. Name one of:
              <span class="a">ylab</span>  = <span class="s">"Rate ratio"</span>,
              <span class="a">ylim</span>  = <span class="f">c</span>(0.9, 1.8),
              <span class="a">round</span> = 2,
-             <span class="a">prediction</span> = <span class="s">TRUE</span>)</pre>
+             <span class="a">prediction</span> = <span class="s">TRUE</span>)
+
+<span class="c"># the corner box off, if the caption carries the numbers</span>
+<span class="f">easydr_curve</span>(fit, <span class="a">result</span> = <span class="s">FALSE</span>)</pre>
       </div>
       <div>
         <table class="lab">
@@ -176,6 +178,7 @@ a reason beside it. Name one of:
           <tr><td class="m">points</td><td>Marks the doses named in <code>at</code>.</td></tr>
           <tr><td class="m">reference</td><td>Null line, and the reference dose.</td></tr>
           <tr><td class="m">rug</td><td>Ticks the exposure categories the studies reported.</td></tr>
+          <tr><td class="m">result</td><td>The box in the corner: the effect, its interval, its p value and I2.</td></tr>
         </table>
       </div>
     </div>
@@ -195,7 +198,7 @@ a reason beside it. Name one of:
   </section>
 
   <footer>
-    Every estimate here comes from dosresmeta. easyDR chose none of them.
+    dosresmeta produced every estimate on this page.
   </footer>
 
 </div>

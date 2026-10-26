@@ -191,9 +191,8 @@ dr_sens_row <- function(label, studies, got, base, reason) {
 #'   `$table`, the refits themselves in `$refits` so any row can be inspected
 #'   without repeating the work, and the inherited settings in `$inherited`.
 #'
-#' @seealso [easydr_metareg()] for whether a study characteristic explains the
-#'   differences, and [easydr_forest()] for what each study contributed before
-#'   any of them was left out.
+#' @seealso [easydr_forest()] for what each study contributed before any of
+#'   them was left out.
 #'
 #' @examples
 #' fit <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")

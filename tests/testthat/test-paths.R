@@ -102,10 +102,10 @@ test_that("every analysis of feature 003 is reached on both entry points", {
   ari$arm <- ifelse(ari$studlab %in% u[1:2], "fixed", "flexible")
   for (shape in c("linear", "quadratic")) {
     expect_s3_class(
-      easydr_metareg(easydrbin(alcohol_cvd, sm = "RR", shape = shape), ~ design),
+      easyDR:::easydr_metareg(easydrbin(alcohol_cvd, sm = "RR", shape = shape), ~ design),
       "easydr_moderator")
     expect_s3_class(
-      easydr_metareg(easydrcont(ari, sm = "SMD", shape = shape), ~ arm),
+      easyDR:::easydr_metareg(easydrcont(ari, sm = "SMD", shape = shape), ~ arm),
       "easydr_moderator")
   }
 })
@@ -117,11 +117,11 @@ test_that("the exported surface is exactly what the constitution allows", {
   plain <- funs[!startsWith(funs, "print.") & !startsWith(funs, "summary.")]
 
   expect_setequal(plain, c("easydr", "easydr_forest", "easydr_curve",
-                           "easydr_loo", "easydr_metareg", "easydr_bubble",
-                           "easydr_funnel"))
+                           "easydr_loo", "easydr_funnel"))
   # One entry point and seven things to do with its result. The workers behind
   # it, and the cumulative analysis, stay internal.
   expect_false(any(c("easydrbin", "easydrcont", "dr_cumul", "dr_viability",
-                     "curve_shape", "easydr_select") %in% plain))
+                     "curve_shape", "easydr_select", "easydr_metareg",
+                     "easydr_bubble") %in% plain))
   expect_lte(length(plain), 12L)
 })

@@ -85,7 +85,6 @@ loo$table[, c("label", "estimate", "shift", "i2")]
 
 }
 \seealso{
-\code{\link[=easydr_metareg]{easydr_metareg()}} for whether a study characteristic explains the
-differences, and \code{\link[=easydr_forest]{easydr_forest()}} for what each study contributed before
-any of them was left out.
+\code{\link[=easydr_forest]{easydr_forest()}} for what each study contributed before any of
+them was left out.
 }

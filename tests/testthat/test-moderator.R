@@ -13,7 +13,7 @@
 
 test_that("a moderator reproduces the captured coefficients and tests", {
   fit <- easydrbin(alcohol_cvd, sm = "RR", dose.unit = "g/day")
-  m   <- easydr_metareg(fit, ~ design)
+  m   <- easyDR:::easydr_metareg(fit, ~ design)
 
   expect_s3_class(m, "easydr_moderator")
   expect_equal(nrow(m$terms), 2)
@@ -28,7 +28,7 @@ test_that("a moderator reproduces the captured coefficients and tests", {
 
 test_that("the residual heterogeneity is reported beside the heterogeneity without", {
   fit <- easydrbin(alcohol_cvd, sm = "RR", dose.unit = "g/day")
-  m   <- easydr_metareg(fit, ~ design)
+  m   <- easyDR:::easydr_metareg(fit, ~ design)
 
   expect_equal(m$heterogeneity$Q, cvd_mod_Q, tolerance = 1e-5)
   expect_identical(as.integer(m$heterogeneity$df), cvd_mod_df)
@@ -41,7 +41,7 @@ test_that("the residual heterogeneity is reported beside the heterogeneity witho
 
 test_that("easydr labels the coefficients and never leaves them as the engine does", {
   fit <- easydrbin(alcohol_cvd, sm = "RR", dose.unit = "g/day")
-  m   <- easydr_metareg(fit, ~ design)
+  m   <- easyDR:::easydr_metareg(fit, ~ design)
 
   # What the engine calls them. Both would be misread: the first looks like a
   # baseline risk and the second like a risk difference. Both are slopes.
@@ -57,7 +57,7 @@ test_that("easydr labels the coefficients and never leaves them as the engine do
 
 test_that("the reference level is named, because a coefficient without it cannot be read", {
   fit <- easydrbin(alcohol_cvd, sm = "RR", dose.unit = "g/day")
-  m   <- easydr_metareg(fit, ~ design)
+  m   <- easyDR:::easydr_metareg(fit, ~ design)
 
   expect_identical(m$reference_levels$design, cvd_mod_reference)
   out <- paste(capture.output(print(m)), collapse = "\n")
@@ -69,7 +69,7 @@ test_that("the printed output says what a coefficient is and that it is observat
   # guarantee to a later change and only a pinned assertion caught it, so
   # these get a test rather than the memory of a reviewer.
   fit <- easydrbin(alcohol_cvd, sm = "RR", dose.unit = "g/day")
-  out <- paste(capture.output(print(easydr_metareg(fit, ~ design))),
+  out <- paste(capture.output(print(easyDR:::easydr_metareg(fit, ~ design))),
                collapse = "\n")
 
   expect_match(out,
@@ -85,7 +85,7 @@ test_that("a multi-term shape gets one moderator coefficient per shape term", {
   d <- alcohol_cancer
   d$year <- c(1990, 1995, 1998, 2001, 2004, 2007, 2010, 2013)[
     match(d$studlab, unique(d$studlab))]
-  m <- easydr_metareg(easydrbin(d, sm = "IRR", shape = "quadratic"), ~ year)
+  m <- easyDR:::easydr_metareg(easydrbin(d, sm = "IRR", shape = "quadratic"), ~ year)
 
   expect_equal(nrow(m$terms), 4)
   expect_equal(sum(m$terms$moderator), 2)
@@ -106,8 +106,8 @@ test_that("a continuous moderator is centred, which moves only the reference coe
   dc <- d
   dc$year <- dc$year - mean(yrs)
 
-  m  <- easydr_metareg(easydrbin(d,  sm = "IRR"), ~ year)
-  mc <- easydr_metareg(easydrbin(dc, sm = "IRR"), ~ year)
+  m  <- easyDR:::easydr_metareg(easydrbin(d,  sm = "IRR"), ~ year)
+  mc <- easyDR:::easydr_metareg(easydrbin(dc, sm = "IRR"), ~ year)
 
   expect_equal(m$terms$estimate[2], mc$terms$estimate[2], tolerance = 1e-10)
   expect_equal(m$test$chi2, mc$test$chi2, tolerance = 1e-10)
@@ -123,7 +123,7 @@ test_that("V19 stops a covariate that varies inside a study", {
   bad <- alcohol_cvd
   bad$site <- seq_len(nrow(bad))
   fit <- easydrbin(alcohol_cvd, sm = "RR")
-  err <- tryCatch(easydr_metareg(fit, ~ site, data = bad),
+  err <- tryCatch(easyDR:::easydr_metareg(fit, ~ site, data = bad),
                   error = conditionMessage)
 
   expect_match(err, "takes 5 different values inside study Bianchi")
@@ -134,7 +134,7 @@ test_that("V20 stops a covariate that is the same in every study", {
   con <- alcohol_cvd
   con$one <- "same"
   fit <- easydrbin(alcohol_cvd, sm = "RR")
-  err <- tryCatch(easydr_metareg(fit, ~ one, data = con),
+  err <- tryCatch(easyDR:::easydr_metareg(fit, ~ one, data = con),
                   error = conditionMessage)
 
   expect_match(err, "takes the same value")
@@ -145,7 +145,7 @@ test_that("V21 stops when the model needs as many coefficients as there are stud
   four <- alcohol_cvd[alcohol_cvd$studlab %in%
     c("Bianchi", "Bobak", "Vliegenthart-wine", "Vliegenthart-beer"), ]
   fit <- easydrbin(four, sm = "RR", shape = "quadratic")
-  err <- tryCatch(easydr_metareg(fit, ~ design), error = conditionMessage)
+  err <- tryCatch(easyDR:::easydr_metareg(fit, ~ design), error = conditionMessage)
 
   expect_match(err, "needs 4 coefficients")
   expect_match(err, "only 4 studies")
@@ -158,7 +158,7 @@ test_that("V23 flags a continuous moderator whose range rests on one study", {
   d$year[d$studlab == unique(d$studlab)[1]] <- 1890
   fit <- easydrbin(d, sm = "IRR")
 
-  expect_warning(m <- easydr_metareg(fit, ~ year), "rests on one study")
+  expect_warning(m <- easyDR:::easydr_metareg(fit, ~ year), "rests on one study")
   expect_identical(m$narrow, "year")
   out <- paste(capture.output(print(m)), collapse = "\n")
   expect_match(out, "rests on one study")
@@ -166,15 +166,15 @@ test_that("V23 flags a continuous moderator whose range rests on one study", {
 
 test_that("a moderator must be a one-sided formula naming columns that exist", {
   fit <- easydrbin(alcohol_cvd, sm = "RR")
-  expect_error(easydr_metareg(fit, ~ nope), "not in the data")
-  expect_error(easydr_metareg(fit, y ~ design), "must be one-sided")
-  expect_error(easydr_metareg(fit, "design"), "one-sided formula")
+  expect_error(easyDR:::easydr_metareg(fit, ~ nope), "not in the data")
+  expect_error(easyDR:::easydr_metareg(fit, y ~ design), "must be one-sided")
+  expect_error(easyDR:::easydr_metareg(fit, "design"), "one-sided formula")
 })
 
 test_that("the moderator fit inherits the model it was handed", {
   fit <- easydrbin(alcohol_cvd, sm = "RR", dose.unit = "g/day",
                    proc = "1stage", method.tau = "ML")
-  m   <- easydr_metareg(fit, ~ design)
+  m   <- easyDR:::easydr_metareg(fit, ~ design)
 
   expect_identical(m$inherited$proc, "1stage")
   expect_identical(m$inherited$method, fit$provenance$method)
@@ -189,7 +189,7 @@ test_that("two moderators at once are labelled and tested together", {
   d$region <- ifelse(d$studlab %in% u[1:4], "europe", "america")
   d$year   <- c(1990, 1995, 1998, 2001, 2004, 2007, 2010, 2013)[
     match(d$studlab, u)]
-  m <- easydr_metareg(easydrbin(d, sm = "IRR"), ~ region + year)
+  m <- easyDR:::easydr_metareg(easydrbin(d, sm = "IRR"), ~ region + year)
 
   expect_equal(nrow(m$terms), 3)
   expect_equal(sum(m$terms$moderator), 2)

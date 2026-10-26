@@ -1,7 +1,7 @@
 # easyDR
 
 **Dose-response meta-analysis in one call, argued the way the `meta` package
-argues. With a free book.**
+argues. The book that teaches it is free.**
 
 Sponsored by [Meta-Analysis Academy](https://metaanalysisacademy.com).
 
@@ -10,10 +10,10 @@ Sponsored by [Meta-Analysis Academy](https://metaanalysisacademy.com).
 | Section | Jump to |
 |:---|:---|
 | **[1 · The book](#1-the-book)**<br><sub>Free, six chapters, the whole method in the order of the work</sub> | [Read it](https://vanioljantunes.github.io/easyDR/) · [Chapters](#what-is-in-it) |
-| **[2 · What this package is](#2-what-this-package-is)**<br><sub>One entry point, six things to do with what it returns</sub> | |
+| **[2 · What this package is](#2-what-this-package-is)**<br><sub>One entry point, four things to do with what it returns</sub> | |
 | **[3 · Install, data, and what <code>sm</code> decides](#3-install-data-and-what-sm-decides)**<br><sub>From a spreadsheet to a table easyDR reads</sub> | |
 | **[4 · Fit it](#4-fit-it)**<br><sub><code>easydr()</code>, and why <code>shape</code> has no default</sub> | |
-| **[5 · What to do with the fit](#5-what-to-do-with-the-fit)**<br><sub>Forest, leave-one-out, meta-regression, bubble, funnel</sub> | |
+| **[5 · What to do with the fit](#5-what-to-do-with-the-fit)**<br><sub>Forest, leave-one-out, funnel</sub> | |
 | **[6 · Validation](#6-validation-reproduce-a-published-analysis)**<br><sub>Paste it in, and check the numbers against this page</sub> | [Run it](#run-it) · [What you should see](#what-you-should-see) |
 
 <sub>[References](#references) · [License](#license)</sub>
@@ -22,8 +22,8 @@ Sponsored by [Meta-Analysis Academy](https://metaanalysisacademy.com).
 
 ## 1. The book
 
-This repository holds a book that teaches dose-response meta-analysis end to
-end, free to read:
+The book in this repository teaches dose-response meta-analysis end to end,
+and it is free to read:
 **[open the book](https://vanioljantunes.github.io/easyDR/)**.
 
 ### What is in it
@@ -46,7 +46,7 @@ it locally, after `R CMD INSTALL .` so the chunks can call the package.
 
 ## 2. What this package is
 
-![One call and six things to do with it: easyDR has no formula argument, and folds the viability check and the curve label into the fit](man/figures/overview.png)
+![One call and four things to do with it: easyDR has no formula argument, and folds the viability check and the curve label into the fit](man/figures/overview.png)
 
 ```r
 library(easyDR)
@@ -101,7 +101,7 @@ easydr_curve(fit,
 
 ## 5. What to do with the fit
 
-![easydr_forest, easydr_loo, easydr_metareg, easydr_bubble and easydr_funnel, all taking the object easydr returned](man/figures/plots.png)
+![easydr_forest, easydr_loo and easydr_funnel, all taking the object easydr returned](man/figures/plots.png)
 
 ```r
 cvd <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
@@ -114,11 +114,6 @@ easydr_forest(rcs, at = 25)              # a curve has no single trend
 easydr_loo(cvd, quiet = TRUE)            # draws the curves and the table
 easydr_loo(cvd, quiet = TRUE, plot = FALSE)$table   # the table alone
 
-# does a study characteristic explain it
-mr <- easydr_metareg(cvd, ~ design)
-mr
-easydr_bubble(mr, labels = TRUE)
-
 # are the small studies different
 f <- easydr_funnel(fit, labels = TRUE)
 f$egger
@@ -128,7 +123,7 @@ f$egger
 
 ## 6. Validation: reproduce a published analysis
 
-The pages above are pictures. This section is not: paste it in and you should
+Everything above is a picture. This section is not. Paste it in and you should
 get the numbers printed here, on your own machine.
 
 The example is the one the book uses: eight prospective cohorts of alcohol
@@ -178,9 +173,9 @@ Defaults applied:
   - intake: reported effect with limits, counts used for the covariance
 ```
 
-There is no `formula` argument and no `logrr` column. `sm = "IRR"` is what
-tells easyDR to read the counts and the reported rate ratios, derive the
-contrasts, and reconstruct the within-study covariances.
+No `formula` argument, and no `logrr` column. `sm = "IRR"` tells easyDR to
+read the counts and the reported rate ratios, then derive the contrasts and
+reconstruct the within-study covariances.
 
 **Step 2. The pooled trend, to more digits.**
 
@@ -193,9 +188,9 @@ round(c(slope = fit$slope$estimate, se = fit$slope$se), 7)
 0.0064373 0.0013521
 ```
 
-That is the dose slope on the log scale, per gram per day. It is not an
-intercept, and the model has none: every contrast is against the study's own
-reference category.
+That is the dose slope on the log scale, per gram per day. The model has no
+intercept, because every contrast runs against the study's own reference
+category.
 
 **Step 3. Read it as rate ratios at intakes people recognise.**
 
@@ -211,8 +206,8 @@ round(fit$predicted[, c("dose", "est", "ci.lb", "ci.ub")], 4)
 4   50 1.3797 1.2085 1.5752
 ```
 
-The reference dose is always in the table, because every one of those ratios
-is measured against it.
+The reference dose stays in the table, because every one of those ratios is
+measured against it.
 
 **Step 4. What each cohort contributed.**
 
@@ -233,8 +228,8 @@ data.frame(study = f$table$study, round(f$table[, c("est", "se", "weight")], 5))
 8   nym  0.00688 0.00299 20.44642
 ```
 
-Every plot returns the table it drew, so the numbers behind a picture can be
-checked. These are the engine's own first-stage estimates.
+Each plot returns the table it drew. These rows are the engine's own
+first-stage estimates, so you can check them against the fit.
 
 **Step 5. Small-study effects.**
 
@@ -248,9 +243,9 @@ intercept        se         t         p
   -1.0879    1.2204   -0.8914    0.4070
 ```
 
-Egger's regression, not Deeks': Deeks' test is for diagnostic test accuracy
-and does not apply here. With eight studies it has little power, and the figure
-says so above the panel.
+Egger's regression. Deeks' test belongs to diagnostic test accuracy, so it
+does not apply here. With eight studies Egger has little power, and the figure
+prints that warning above the panel.
 
 **Step 6. The two checks easyDR ran for you.**
 
@@ -292,11 +287,11 @@ No blocking problems found.
 | Egger intercept | -1.0879 (SE 1.2204), p = 0.407 |
 | Curve shape | monotonic increasing |
 
-Captured on R 4.6.0 with `dosresmeta` 2.2.0. The last digit or two can move
-with a different BLAS or engine version; the rate ratios should agree to three
-decimals. If they do not, something in your install differs, and the rest of
-the book will differ with it, so it is worth finding out before you trust a
-curve of your own.
+Captured on R 4.6.0 with `dosresmeta` 2.2.0. A different BLAS or engine
+version can move the last digit or two, but the rate ratios should agree to
+three decimals. If they do not, something in your install differs, and the rest
+of the book will differ with it. Worth finding out before you trust a curve of
+your own.
 
 ---
 
@@ -327,8 +322,7 @@ The book's full bibliography is in [`book/references.bib`](book/references.bib).
 ## License
 
 GPL-2 for the code in `R/`, `man/` and `tests/`. See [`LICENSE`](LICENSE).
-easyDR imports `dosresmeta`, which is GPL-2, so the package it is part of has
-to be as well.
+easyDR imports `dosresmeta`, which is GPL-2, so easyDR has to be GPL-2 too.
 
 CC BY-NC-SA 4.0 for the book text, figures and examples in `book/`. See
 [`LICENSE-text.md`](LICENSE-text.md).
@@ -345,8 +339,7 @@ half.
 The four pictures above are built from [`tutorial/`](tutorial): `Rscript
 tutorial/figures.R` draws the figures and captures the console blocks, then
 `node tutorial/render.mjs <page>` for each of `overview`, `data`, `api` and
-`plots`. The plots are laid out to the easyDTA standard, with `metafor` as the
-reference for the funnel and the bubble.
+`plots`. The layout follows easyDTA, and the funnel follows `metafor`.
 
 Questions and corrections:
 [issues](https://github.com/vanioljantunes/easyDR/issues).

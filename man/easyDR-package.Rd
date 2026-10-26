@@ -23,9 +23,6 @@ which columns are read.}
 a forest plot.}
 \item{\code{\link[=easydr_curve]{easydr_curve()}}}{the fitted dose-response with its band.}
 \item{\code{\link[=easydr_loo]{easydr_loo()}}}{leave one study out at a time.}
-\item{\code{\link[=easydr_metareg]{easydr_metareg()}}}{does a study characteristic explain the
-differences.}
-\item{\code{\link[=easydr_bubble]{easydr_bubble()}}}{that meta-regression, drawn.}
 \item{\code{\link[=easydr_funnel]{easydr_funnel()}}}{small-study effects, with Egger's test.}
 }
 }

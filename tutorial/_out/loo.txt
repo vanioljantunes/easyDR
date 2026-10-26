@@ -1,5 +1,5 @@
 Leave-one-out sensitivity (risk ratio)
-6 refits, 6 fitted, 0 failed, 0.2 seconds
+6 refits, 6 fitted, 0 failed, 0.5 seconds
 Inherited: linear in dose; two-stage reml; reference 0 g/day
 Ordered by the absolute shift in the slope, RR per 1 g/day. Full fit: 0.9956
 
