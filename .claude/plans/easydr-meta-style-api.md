@@ -1,6 +1,6 @@
 # easyDR meta-style API
 
-Progress: 37/38 weighted (97%)
+Progress: 38/38 weighted (100%)
 Started: 2026-10-26 BRT   Updated: 2026-10-26 BRT
 
 ## Goal
@@ -70,7 +70,7 @@ a rendered picture.
 ### Phase 6 - green and shipped
 - [x] 32. devtools::test 0 failures
 - [x] 33. R CMD check 0 errors 0 warnings 0 notes
-- [ ] 34. commit and push to origin main
+- [x] 34. commit and push to origin main (9201c4f, 9fb326b)
 
 ## Notes
 
@@ -101,8 +101,8 @@ Three layout defects the rendered figures found: the forest null line ran into
 the title, the curve band touched the top of the frame, and categorical bubbles
 were drawn on top of one another.
 
-Still open: step 34, the push, which waits on the operator because this is main
-and the change is not small.
+Step 34 done: the operator approved the push on 2026-10-26. Both commits are on
+origin/main.
 
 Weights: steps 5-8 are w=2 (ports of 3500 lines plus 18 test files).
 Total weight 38; percentage is weighted.
