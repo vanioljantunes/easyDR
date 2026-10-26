@@ -1,6 +1,6 @@
 # easyDR meta-style API
 
-Progress: 19/38 weighted (50%)
+Progress: 37/38 weighted (97%)
 Started: 2026-10-26 BRT   Updated: 2026-10-26 BRT
 
 ## Goal
@@ -29,7 +29,7 @@ a rendered picture.
 ### Phase 1 - repo and licence
 - [x] 1. DESCRIPTION: GPL-2, dosresmeta/metafor/mixmeta/Hmisc to Imports
 - [x] 2. LICENSE replaced with GPL-2 pointer; LICENSE-text.md untouched
-- [ ] 3. README licence section rewritten to say GPL-2 for code
+- [x] 3. README licence section rewritten to say GPL-2 for code
 - [x] 4. .Rbuildignore covers tutorial, book, docs, .claude
 
 ### Phase 2 - port the validated engine (w=2 each)
@@ -49,27 +49,27 @@ a rendered picture.
 - [x] 16. tests: shape omitted is an error, never a silent default
 
 ### Phase 4 - the plots
-- [ ] 17. easydr_forest(): per-study trend, pooled diamond, meta layout
-- [ ] 18. easydr_curve(): main, xlab, ylab, xlim, ylim, round, prediction
-- [ ] 19. easydr_loo(): wraps loo_dr, returns table plus refits
-- [ ] 20. easydr_metareg(): wraps moderator_dr, meta-style printout
-- [ ] 21. easydr_bubble(): moderator on x, study trend on y, size = precision
-- [ ] 22. easydr_funnel(): trend against SE plus Egger regression test
-- [ ] 23. tests for all six, including the Egger numbers
-- [ ] 24. snapshot-free plot tests (return value, not pixels)
+- [x] 17. easydr_forest(): per-study trend, pooled diamond, meta layout
+- [x] 18. easydr_curve(): main, xlab, ylab, xlim, ylim, round, prediction
+- [x] 19. easydr_loo(): wraps loo_dr, returns table plus refits
+- [x] 20. easydr_metareg(): wraps moderator_dr, meta-style printout
+- [x] 21. easydr_bubble(): moderator on x, study trend on y, size = precision
+- [x] 22. easydr_funnel(): trend against SE plus Egger regression test
+- [x] 23. tests for all six, including the Egger numbers
+- [x] 24. snapshot-free plot tests (return value, not pixels)
 
 ### Phase 5 - docs and pictures
-- [ ] 25. roxygen pages for the eight exported functions
-- [ ] 26. tutorial/plot.R extended: forest, curve, bubble, funnel figures
-- [ ] 27. tutorial/api.html: easydr() and easydr_select()
-- [ ] 28. tutorial/plots.html: the five plot functions
-- [ ] 29. render both to man/figures
-- [ ] 30. README rewritten around the new API with the new pictures
-- [ ] 31. README validation section rerun against easydr(), numbers verified
+- [x] 25. roxygen pages for the eight exported functions
+- [x] 26. tutorial/figures.R: every figure and console block from one run
+- [x] 27. tutorial/api.html: easydr() and easydr_select()
+- [x] 28. tutorial/data.html and plots.html; sheet.css shared by all four
+- [x] 29. render both to man/figures
+- [x] 30. README rewritten around the new API with the new pictures
+- [x] 31. README validation section rerun against easydr(), numbers verified
 
 ### Phase 6 - green and shipped
-- [ ] 32. devtools::test 0 failures
-- [ ] 33. R CMD check 0 errors 0 warnings 0 notes
+- [x] 32. devtools::test 0 failures
+- [x] 33. R CMD check 0 errors 0 warnings 0 notes
 - [ ] 34. commit and push to origin main
 
 ## Notes
@@ -84,6 +84,25 @@ easydr() vs the raw dosresmeta call in the old README: slope 0.0064373 against
 for the covariance, whereas the old chunk pooled dosresmeta's own logrr column.
 Rate ratios agree to five decimals. The README validation numbers have to be
 regenerated from easydr(), not copied across.
+
+Deviations: step 26 replaced tutorial/plot.R rather than extending it, because
+plot.R drew its figures from a raw dosresmeta call that no longer matches the
+documented API. curve.html and workflow.html were deleted for the same reason.
+A fourth picture, data.png, was added: the sm-to-columns table had nowhere else
+to live once workflow.html went.
+
+One defect the tests found and fixed: dr_egger() errored with a subscript out
+of bounds instead of reporting not-estimable when every study had the same
+standard error. The precision column is then constant, the regression is rank
+deficient, and there is no intercept to read. That is a real answer about the
+data, so it is now reported as one.
+
+Three layout defects the rendered figures found: the forest null line ran into
+the title, the curve band touched the top of the frame, and categorical bubbles
+were drawn on top of one another.
+
+Still open: step 34, the push, which waits on the operator because this is main
+and the change is not small.
 
 Weights: steps 5-8 are w=2 (ports of 3500 lines plus 18 test files).
 Total weight 38; percentage is weighted.

@@ -1,0 +1,25 @@
+Dose-response meta-analysis (incidence rate ratio)
+Pooling: two-stage random effects, reml. Covariance: Greenland and Longnecker.
+
+Shape: restricted cubic spline, knots at 1.8, 20.27, 57.68
+No single slope describes this shape. Read the predicted effects below.
+Reference dose: 0 g/day
+Curve shape: positive association
+
+Departure from linearity: X2 = 3.92 (df = 1), p = 0.0477
+  Wald test on the 1 nonlinear term against the linear fit
+  Goodness of fit: deviance D = 43.84 (df = 38), p = 0.238; R-squared 0.381
+
+Heterogeneity: Q = 14.43 (df = 14), p = 0.418; I-squared = 3%
+
+Predicted IRR
+ dose (g/day) IRR       95% CI         95% PI        
+  0           reference reference      reference     
+ 10           1.002     0.936 to 1.074 0.864 to 1.163
+ 25           1.059     0.934 to 1.202 0.811 to 1.384
+ 50           1.409     1.230 to 1.614 1.181 to 1.681
+
+8 studies, 48 dose categories, dose range 0 to 60.6 g/day
+Viability: 8 of 8 studies carry 3 or more dose levels.
+Defaults applied:
+  - intake: reported effect with limits, counts used for the covariance

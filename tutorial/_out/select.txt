@@ -1,0 +1,24 @@
+Shape selection for a dose-response meta-analysis
+42 candidates tried, 42 fitted, 0 failed, 3.4 seconds
+Ranked on AIC. Lower is better.
+Refitted one-stage by maximum likelihood. Restricted maximum
+  likelihood cannot compare models with different dose terms, and a
+  two-stage criterion moves with the scale of those terms.
+
+ rank shape              terms AIC  BIC  deviance p
+  1   fp powers 0.5, 0.5 2     -7.3  1.2 0.337     
+  2   fp powers -0.5, 1  2     -7.3  1.2 0.337     
+  3   fp powers 0, 1     2     -7.3  1.2 0.337     
+  4   fp powers -1, 1    2     -6.9  1.5 0.324     
+  5   fp powers 0, 0.5   2     -6.9  1.5 0.323     
+  6   fp powers 0.5, 1   2     -6.8  1.7 0.318     
+  7   fp powers -2, 2    2     -6.7  1.8 0.313     
+  8   fp powers -1, 2    2     -6.3  2.2 0.298     
+  9   fp powers -2, 1    2     -6.2  2.2 0.298     
+ 10   linear             1     -6.1 -2.8 0.148     
+... 10 of 42 fitted candidates shown
+
+Within 2 AIC of the best: fp powers 0.5, 0.5; fp powers -0.5, 1; fp powers 0, 1; fp powers -1, 1; fp powers 0, 0.5; fp powers 0.5, 1; fp powers -2, 2; fp powers -1, 2; fp powers -2, 1; linear; fp powers 1, 1; fp powers -0.5, 2; fp powers -0.5, 0.5; fp powers 0, 2
+This ranking is a proposal, not a decision. To adopt the best-ranked
+shape, state it yourself:
+  easydr(data, ..., shape = "fp", powers = c(0.5, 0.5))
