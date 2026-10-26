@@ -7,20 +7,21 @@
 #'
 #' @section What the two bands mean:
 #' The confidence band describes where the pooled curve lies. The prediction
-#' band describes where a new study's curve would fall, so it is wider, and a
-#' common-effect fit has none at all because it assumes there is no
-#' between-study variation for one to describe. Showing the prediction band and
-#' calling it uncertainty about the pooled curve is the usual mistake.
+#' band describes where a new study's curve would fall, which makes it wider.
+#' A common-effect fit has no prediction band at all, because it assumes there
+#' is no between-study variation for one to describe. Showing the prediction
+#' band and calling it uncertainty about the pooled curve is the usual
+#' mistake.
 #'
 #' Doses beyond the observed range are drawn, because [easydr()] will predict
 #' there if asked, but they are marked: the model has no data to support that
 #' part of the curve.
 #'
 #' @section Reading the axis:
-#' A ratio measure is drawn on a log axis, because a halving and a doubling
-#' should be the same distance from the null. The dashed horizontal is the
-#' null, at 1 for a ratio and 0 for a difference, and the dotted vertical marks
-#' the reference dose every effect is measured against.
+#' A ratio measure goes on a log axis, so that a halving and a doubling sit
+#' the same distance from the null. The dashed horizontal is that null, at 1
+#' for a ratio and 0 for a difference. The dotted vertical marks the reference
+#' dose every effect is measured against.
 #'
 #' @param x a fitted result from [easydr()].
 #' @param main plot title. `NULL` writes one naming the shape; `FALSE` draws
@@ -39,6 +40,13 @@
 #'   reference dose.
 #' @param rug `TRUE`, the default, ticks the observed dose categories along the
 #'   bottom, so a gap in the data is visible under the curve drawn through it.
+#' @param result `TRUE`, the default, prints the pooled result in the top left
+#'   of the panel: the effect with its confidence interval, its p value, and
+#'   the heterogeneity. The figure then carries its own numbers.
+#' @param result.at the dose that box reports, for a shape with more than one
+#'   term. `NULL` uses the first dose the fit reports. Ignored for a straight
+#'   line, which has one slope.
+#' @param digits digits for the numbers in that box.
 #' @param col,fill.ci,fill.pi colours for the curve, the confidence band and
 #'   the prediction band.
 #' @param legend optional free text drawn under the figure, one line per
@@ -70,7 +78,8 @@
 easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          xlim = NULL, ylim = NULL, round = NULL,
                          prediction = FALSE, points = TRUE, reference = TRUE,
-                         rug = TRUE, col = "#1F2A44", fill.ci = "grey75",
+                         rug = TRUE, result = TRUE, result.at = NULL,
+                         digits = 3, col = "#1F2A44", fill.ci = "grey75",
                          fill.pi = "grey90", legend = NULL) {
   if (!inherits(x, "easydr_result")) {
     stop("easydr: easydr_curve() takes a fitted result from easydr().",
@@ -115,6 +124,31 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   }
   p <- p + ggplot2::geom_line(ggplot2::aes(y = .data$est), colour = col,
                               linewidth = 0.9)
+
+  # The result, in the corner, so the figure can be read without the printout
+  # beside it. Every number here comes from the fit.
+  if (isTRUE(result)) {
+    pooled <- dr_pooled_at(x, result.at)
+    back   <- if (x$ratio) exp else identity
+    fmt    <- function(v) format(round(back(v), digits), nsmall = digits)
+    lines  <- c(
+      paste0(pooled$label, ": ", fmt(pooled$est)),
+      paste0(format(100 * x$provenance$level), "% CI ", fmt(pooled$lb),
+             " to ", fmt(pooled$ub), ",  ", dr_p_lab(pooled$p)),
+      if (isTRUE(x$heterogeneity$estimable)) {
+        sprintf("I2 = %.1f%%, Q = %.2f (df %d), %s",
+                x$heterogeneity$i2, x$heterogeneity$Q, x$heterogeneity$df,
+                dr_p_lab(x$heterogeneity$p))
+      } else {
+        paste0("I2: not estimable (", x$heterogeneity$reason, ")")
+      })
+    p <- p + ggplot2::annotate(
+      "label", x = -Inf, y = Inf, hjust = -0.04, vjust = 1.12,
+      label = paste(lines, collapse = "
+"), size = 2.9, lineheight = 1.25,
+      colour = "grey15", fill = "white", alpha = 0.85,
+      label.r = grid::unit(2, "pt"))
+  }
 
   if (isTRUE(rug)) {
     obs <- data.frame(dose = sort(unique(x$frame$dose)))

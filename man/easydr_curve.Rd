@@ -16,6 +16,9 @@ easydr_curve(
   points = TRUE,
   reference = TRUE,
   rug = TRUE,
+  result = TRUE,
+  result.at = NULL,
+  digits = 3,
   col = "#1F2A44",
   fill.ci = "grey75",
   fill.pi = "grey90",
@@ -49,6 +52,16 @@ reference dose.}
 \item{rug}{\code{TRUE}, the default, ticks the observed dose categories along the
 bottom, so a gap in the data is visible under the curve drawn through it.}
 
+\item{result}{\code{TRUE}, the default, prints the pooled result in the top left
+of the panel: the effect with its confidence interval, its p value, and
+the heterogeneity. The figure then carries its own numbers.}
+
+\item{result.at}{the dose that box reports, for a shape with more than one
+term. \code{NULL} uses the first dose the fit reports. Ignored for a straight
+line, which has one slope.}
+
+\item{digits}{digits for the numbers in that box.}
+
 \item{col, fill.ci, fill.pi}{colours for the curve, the confidence band and
 the prediction band.}
 
@@ -67,10 +80,11 @@ Every number was computed by \code{\link[=easydr]{easydr()}}; this chooses what 
 \section{What the two bands mean}{
 
 The confidence band describes where the pooled curve lies. The prediction
-band describes where a new study's curve would fall, so it is wider, and a
-common-effect fit has none at all because it assumes there is no
-between-study variation for one to describe. Showing the prediction band and
-calling it uncertainty about the pooled curve is the usual mistake.
+band describes where a new study's curve would fall, which makes it wider.
+A common-effect fit has no prediction band at all, because it assumes there
+is no between-study variation for one to describe. Showing the prediction
+band and calling it uncertainty about the pooled curve is the usual
+mistake.
 
 Doses beyond the observed range are drawn, because \code{\link[=easydr]{easydr()}} will predict
 there if asked, but they are marked: the model has no data to support that
@@ -79,10 +93,10 @@ part of the curve.
 
 \section{Reading the axis}{
 
-A ratio measure is drawn on a log axis, because a halving and a doubling
-should be the same distance from the null. The dashed horizontal is the
-null, at 1 for a ratio and 0 for a difference, and the dotted vertical marks
-the reference dose every effect is measured against.
+A ratio measure goes on a log axis, so that a halving and a doubling sit
+the same distance from the null. The dashed horizontal is that null, at 1
+for a ratio and 0 for a difference. The dotted vertical marks the reference
+dose every effect is measured against.
 }
 
 \examples{

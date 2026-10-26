@@ -17,9 +17,6 @@
 #'     a forest plot.}
 #'   \item{[easydr_curve()]}{the fitted dose-response with its band.}
 #'   \item{[easydr_loo()]}{leave one study out at a time.}
-#'   \item{[easydr_metareg()]}{does a study characteristic explain the
-#'     differences.}
-#'   \item{[easydr_bubble()]}{that meta-regression, drawn.}
 #'   \item{[easydr_funnel()]}{small-study effects, with Egger's test.}
 #' }
 #'

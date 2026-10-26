@@ -125,5 +125,5 @@ test_that("the workers leave the two new slots empty, so refits print as before"
 test_that("an easydr fit can still be handed to the sensitivity analyses", {
   fit <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
   expect_s3_class(easydr_loo(fit, quiet = TRUE), "easydr_sensitivity")
-  expect_s3_class(easydr_metareg(fit, ~ design), "easydr_moderator")
+  expect_s3_class(easyDR:::easydr_metareg(fit, ~ design), "easydr_moderator")
 })

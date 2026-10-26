@@ -118,8 +118,8 @@ Three is the conventional floor for a two-stage fit and the default.}
 \value{
 An object of class \code{easydr_result}. Print it for the whole answer;
 \link[=summary.easydr_result]{summary()} adds the per-study contributions.
-Pass it to \code{\link[=easydr_curve]{easydr_curve()}}, \code{\link[=easydr_forest]{easydr_forest()}}, \code{\link[=easydr_loo]{easydr_loo()}},
-\code{\link[=easydr_metareg]{easydr_metareg()}}, \code{\link[=easydr_bubble]{easydr_bubble()}} or \code{\link[=easydr_funnel]{easydr_funnel()}}.
+Pass it to \code{\link[=easydr_curve]{easydr_curve()}}, \code{\link[=easydr_forest]{easydr_forest()}}, \code{\link[=easydr_loo]{easydr_loo()}} or
+\code{\link[=easydr_funnel]{easydr_funnel()}}.
 }
 \description{
 Pools a dose-response relationship across studies. Give it one long table,
@@ -130,9 +130,9 @@ effects, a viability check on the studies, and a name for the curve.
 
 The arguments are the ones a \code{meta} user already knows: \code{sm}, \code{studlab},
 \code{event.e}, \code{n.e}, \code{TE}, \code{lower}, \code{upper}, \code{method.tau}, \code{level},
-\code{common} and \code{random}. There is no \code{formula} argument. You do not write
-\code{logrr ~ dose}; you write \code{sm = "RR"}, and the contrasts, the standard
-errors and the within-study covariances are derived from the table.
+\code{common} and \code{random}. You write \code{sm = "RR"} where another package would
+ask for \code{logrr ~ dose}, and easyDR derives the contrasts, the standard
+errors and the within-study covariances from your table.
 }
 \section{Which measure, and so which columns}{
 
@@ -153,12 +153,11 @@ guesses are printed. Naming them is always allowed and never penalised.
 
 \section{Why the categories inside one study are correlated}{
 
-A study does not report independent effects. Every category is compared with
-the same reference category, so the reference group's random error is shared
-by all of that study's estimates. Treating them as independent understates
-the uncertainty of the slope. This is the problem dose-response
-meta-analysis exists to solve, and ignoring it is a common error in
-published reviews.
+A study does not report independent effects. Every category is compared
+with the same reference category, so the reference group's random error is
+shared by all of that study's estimates. Treat them as independent and the
+slope looks more certain than it is. Published reviews get this wrong
+often.
 
 Published tables almost never include those covariances, so they are
 reconstructed. With counts, the Greenland and Longnecker method recovers a
@@ -195,11 +194,11 @@ no single slope, because no single number describes a curve.
 
 A linear fit reports one slope per unit of dose, measured against a
 reference dose. A rate ratio of 1.07 per 10 g/day does not mean the exposed
-are at 1.07 times the rate; it means each 10 g/day step multiplies the rate
-by about 1.07, relative to the reference. Change the reference and every
-predicted effect changes with it, which is why the reference dose is always
-printed. A curve has no single slope, so none is printed: the predicted
-effects carry the interpretation.
+run 1.07 times the rate. Each 10 g/day step multiplies the rate by about
+1.07, relative to the reference, and moving that reference moves every
+predicted effect. easyDR prints the reference for that reason. A curve has
+no single slope, so it prints none, and the predicted effects carry the
+interpretation.
 }
 
 \examples{

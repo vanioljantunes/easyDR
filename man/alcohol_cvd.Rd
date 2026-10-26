@@ -50,7 +50,7 @@ The designs differ. Four studies are case-control and two report cumulative
 incidence. Each keeps its own covariance approximation, \code{sm} names the scale
 the reported ratios are pooled on, and the printed output says which designs
 are present. Design is therefore a real study-level covariate here, which is
-what \code{\link[=easydr_metareg]{easydr_metareg()}} takes.
+a study-level characteristic to compare the cohorts on.
 }
 \examples{
 head(alcohol_cvd)

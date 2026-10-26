@@ -9,7 +9,7 @@
 <div class="sheet">
 
   <header>
-    <h1>One call, and six things to do with it</h1>
+    <h1>One call, and four things to do with it</h1>
     <p>Dose-response meta-analysis argued the way the <span style="font-family:Consolas,monospace">meta</span> package argues</p>
   </header>
 
@@ -30,9 +30,9 @@ fit &lt;- <span class="f">dosresmeta</span>(<span class="a">formula</span> = log
                   <span class="a">cases</span> = cases, <span class="a">n</span> = peryears,
                   <span class="a">data</span> = d)</pre>
         <p class="note" style="margin-top:12px">
-          Every one of those columns is something you had to derive first, and
-          <code>logrr ~ dose</code> is a sentence about your spreadsheet rather
-          than about your review.
+          You had to derive every one of those columns yourself.
+          <code>logrr ~ dose</code> describes your spreadsheet. It says nothing
+          about the review you are writing.
         </p>
       </div>
       <div>
@@ -44,11 +44,11 @@ fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span
                <span class="a">dose.unit</span> = <span class="s">"g/day"</span>,
                <span class="a">at</span> = <span class="f">c</span>(10, 25, 50))</pre>
         <div class="good" style="margin-top:12px">
-          <b>sm decides everything downstream.</b><br><br>
-          It says which columns are read, which covariance approximation is
-          available, and what scale every reported number comes back on. The
-          contrasts, the standard errors and the within-study covariances are
-          derived for you, from the table you already extracted.
+          <b>sm picks the columns.</b><br><br>
+          It also fixes which covariance approximation is available and what
+          scale the results come back on. easyDR derives the contrasts, the
+          standard errors and the within-study covariances from the table you
+          already extracted.
         </div>
       </div>
     </div>
@@ -61,9 +61,8 @@ fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span
     </div>
 
     <p class="note">
-      One function fits. The other six take what it returned. Nothing else is
-      exported, and nothing in the package asks you to call a second thing to
-      get the first answer.
+      One function fits. The other four take what it returned. The package
+      exports nothing else.
     </p>
 
     <table class="lab">
@@ -96,18 +95,6 @@ fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span
         <td>Attach a p value. The refits are not independent.</td>
       </tr>
       <tr>
-        <td class="l">easydr_metareg()</td>
-        <td>A study characteristic regressed on the dose-response, with the
-            between-moderator test and the residual heterogeneity.</td>
-        <td>Call the association causal.</td>
-      </tr>
-      <tr>
-        <td class="l">easydr_bubble()</td>
-        <td>That regression drawn: study trends against the moderator, bubble
-            area the weight.</td>
-        <td>Fit its own line. The line is the regression's.</td>
-      </tr>
-      <tr>
         <td class="l">easydr_funnel()</td>
         <td>The study trends against their standard errors, with Egger's
             regression test for asymmetry.</td>
@@ -125,16 +112,15 @@ fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span
     <div class="g2 wide">
       <div>
         <p class="note">
-          A dose-response review goes wrong twice. Before the model, because
-          the included studies never could have supported one. After it,
-          because the curve gets described in words the literature does not
-          use.
+          Two things go wrong in a dose-response review. The included studies
+          could never have supported a model in the first place, or the fitted
+          curve gets described in words the literature does not use.
         </p>
         <p class="note">
-          Both checks run inside <code>easydr()</code> and both appear in the
-          output. The viability check reads the prepared analysis frame, so it
-          reports the reference category the fit actually used rather than
-          guessing that a zero dose is one.
+          <code>easydr()</code> runs both checks and prints both. The
+          viability check reads the prepared analysis frame, so it reports the
+          reference category the fit used. It does not guess that a zero dose
+          is one.
         </p>
 <pre class="code">fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"IRR"</span>,
                <span class="a">shape</span> = <span class="s">"linear"</span>)
@@ -171,8 +157,8 @@ Defaults applied:
   </section>
 
   <footer>
-    Estimation is delegated to dosresmeta. easyDR prepares the data, calls it
-    once, and reports the answer in the words a systematic reviewer uses.
+    dosresmeta does the estimation. easyDR prepares the data and reports what
+    comes back in the words a systematic reviewer uses.
   </footer>
 
 </div>

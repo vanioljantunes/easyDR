@@ -196,62 +196,14 @@ dr_mod_labels <- function(coef_names, shape_terms, mod_cols, vars, one_term,
   }, character(1), USE.NAMES = FALSE)
 }
 
-#' Test whether a study characteristic explains the differences
-#'
-#' Adds study-level covariates to the model and reports their effect, the test
-#' for them, and the heterogeneity that is left. Read the coefficients
-#' carefully: the model regresses each study's dose-response coefficients on
-#' the covariate, so a moderator coefficient is a change in the dose-response
-#' and not an effect on the outcome. The association is observational across
-#' studies, whatever the studies themselves were.
-#'
-#' @section What this answers:
-#' Studies of the same exposure often disagree, and the next question is
-#' whether something about the studies explains it: the design, the sex of the
-#' participants, the length of follow-up. This adds one or more study-level
-#' covariates to the model and reports their effect, the test for them, and the
-#' heterogeneity that is left.
-#'
-#' @section What a moderator coefficient is:
-#' Not an effect on the outcome. The second stage of the model treats each
-#' study's dose-response coefficients as the thing to be explained and
-#' regresses those on the covariate. So a moderator coefficient is a change in
-#' the dose-response: how much steeper or shallower the dose-response is in
-#' studies with that characteristic. For a one-term shape the engine labels the
-#' dose slope `(Intercept)` and the moderator effect by the covariate name;
-#' easydr relabels both, because reading the first as a baseline risk and the
-#' second as a risk difference would be wrong by a whole level.
-#'
-#' @section What it does not license:
-#' A moderator association across studies is observational, whatever the
-#' studies themselves were. Studies are not assigned their characteristics at
-#' random, so a covariate that explains heterogeneity has not been shown to
-#' cause it, and anything correlated with it across those studies explains the
-#' same variation equally well. With few studies the test has little power, and
-#' a handful of candidate moderators will produce a significant one by chance.
-#' Decide which moderators to examine before looking.
-#'
-#' @param object a fitted result from [easydr()].
-#' @param mods a one-sided formula of study-level covariates, for example
-#'   `~ design` or `~ sex + years`.
-#' @param data where to find the covariates. Defaults to the table the fit was
-#'   made from.
-#' @param level confidence level for the reported intervals. Defaults to the
-#'   level of the fit.
-#'
-#' @return An object of class `easydr_moderator`.
-#'
-#' @seealso [easydr_loo()] for the influence of individual
-#'   studies rather than of their characteristics.
-#'
-#' @examples
-#' fit <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
-#'
-#' # Four of these studies are case-control and two report cumulative
-#' # incidence. Does the design explain how much they disagree?
-#' easydr_metareg(fit, ~ design)
-#'
-#' @export
+# The meta-regression, and the bubble plot that draws it, are kept internal.
+# The source this package teaches from does not present them, and a reader who
+# met a moderator model here would have nowhere to read about it. The code and
+# its tests stay: exposing it again is one roxygen tag.
+
+#' Fit a study-level moderator through the engine
+#' @keywords internal
+#' @noRd
 easydr_metareg <- function(object, mods, data = NULL, level = NULL) {
   inh <- dr_inherited(object)
   if (!inherits(mods, "formula")) {
@@ -358,17 +310,12 @@ easydr_metareg <- function(object, mods, data = NULL, level = NULL) {
 
 #' Print a moderator analysis
 #'
-#' The two sentences about what a coefficient is and what the association is
-#' are part of the output, not decoration. A reader who saw only the table
-#' would have no way to tell either.
+#' Registered so the object prints, but given no help page: the analysis it
+#' belongs to is internal.
 #'
-#' @param x an object from [easydr_metareg()].
-#' @param digits digits for the reported coefficients.
-#' @param ... ignored.
-#'
-#' @return `x`, invisibly.
-#'
-#' @export
+#' @keywords internal
+#' @noRd
+#' @exportS3Method print easydr_moderator
 print.easydr_moderator <- function(x, digits = 6, ...) {
   fmt <- function(v) dr_fmt(v, digits)
 

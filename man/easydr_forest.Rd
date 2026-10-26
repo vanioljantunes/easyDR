@@ -58,26 +58,28 @@ The plotted table, invisibly: one row per study with \code{est}, \code{se},
 was drawn. Returned so the numbers behind the picture can be checked.
 }
 \description{
-One row per study, laid out the way a published forest is: the study label
-and what it brought on the left, a square sized by its weight with its
-confidence interval in the middle, the value and the weight on the right,
-and the pooled estimate as a diamond underneath with the heterogeneity below
-it.
+One row per study, laid out the way a published forest is. The study label
+and what it brought sit on the left, a square sized by its weight carries
+its confidence interval in the middle, and the value and the weight sit on
+the right. The pooled estimate is the diamond underneath, with the
+heterogeneity below it.
 }
 \section{What each row is}{
 
-A dose-response study contributes a trend, not an effect, so that is what a
-row shows: the study's own slope per unit of dose, from the two-stage first
-stage. For a shape with more than one term there is no single slope, so the
-row becomes the predicted effect at one dose against the fit's reference
-dose, and the heading names the dose. Pass \code{at} to choose it, for any shape.
+Each row is the study's own slope per unit of dose, from the two-stage
+first stage. A trend across its exposure categories is what a dose-response
+study contributes. A shape with more than one term has no single slope, so
+the row becomes the predicted effect at one dose against the fit's
+reference dose, and the heading names that dose. Pass \code{at} to choose it,
+for any shape.
 }
 
 \section{Why some fits cannot be drawn this way}{
 
 A one-stage fit estimates every study inside a single model and never
-produces a per-study coefficient vector. There is nothing to put on the rows,
-so this refuses rather than drawing the pooled line once per study.
+produces a per-study coefficient vector. Nothing can go on the rows, and
+drawing the pooled line once per study would look like data, so this
+stops.
 }
 
 \examples{

@@ -9,9 +9,9 @@
 #'
 #' The arguments are the ones a `meta` user already knows: `sm`, `studlab`,
 #' `event.e`, `n.e`, `TE`, `lower`, `upper`, `method.tau`, `level`,
-#' `common` and `random`. There is no `formula` argument. You do not write
-#' `logrr ~ dose`; you write `sm = "RR"`, and the contrasts, the standard
-#' errors and the within-study covariances are derived from the table.
+#' `common` and `random`. You write `sm = "RR"` where another package would
+#' ask for `logrr ~ dose`, and easyDR derives the contrasts, the standard
+#' errors and the within-study covariances from your table.
 #'
 #' @section Which measure, and so which columns:
 #' `sm` decides what kind of outcome this is and therefore which columns are
@@ -29,12 +29,11 @@
 #' guesses are printed. Naming them is always allowed and never penalised.
 #'
 #' @section Why the categories inside one study are correlated:
-#' A study does not report independent effects. Every category is compared with
-#' the same reference category, so the reference group's random error is shared
-#' by all of that study's estimates. Treating them as independent understates
-#' the uncertainty of the slope. This is the problem dose-response
-#' meta-analysis exists to solve, and ignoring it is a common error in
-#' published reviews.
+#' A study does not report independent effects. Every category is compared
+#' with the same reference category, so the reference group's random error is
+#' shared by all of that study's estimates. Treat them as independent and the
+#' slope looks more certain than it is. Published reviews get this wrong
+#' often.
 #'
 #' Published tables almost never include those covariances, so they are
 #' reconstructed. With counts, the Greenland and Longnecker method recovers a
@@ -67,11 +66,11 @@
 #' @section Reading the slope and its reference dose:
 #' A linear fit reports one slope per unit of dose, measured against a
 #' reference dose. A rate ratio of 1.07 per 10 g/day does not mean the exposed
-#' are at 1.07 times the rate; it means each 10 g/day step multiplies the rate
-#' by about 1.07, relative to the reference. Change the reference and every
-#' predicted effect changes with it, which is why the reference dose is always
-#' printed. A curve has no single slope, so none is printed: the predicted
-#' effects carry the interpretation.
+#' run 1.07 times the rate. Each 10 g/day step multiplies the rate by about
+#' 1.07, relative to the reference, and moving that reference moves every
+#' predicted effect. easyDR prints the reference for that reason. A curve has
+#' no single slope, so it prints none, and the predicted effects carry the
+#' interpretation.
 #'
 #' @param data A data frame in long form, one row per dose category per study.
 #'   It is never required to be reshaped, sorted or aggregated.
@@ -134,8 +133,8 @@
 #'
 #' @return An object of class `easydr_result`. Print it for the whole answer;
 #'   [summary()][summary.easydr_result()] adds the per-study contributions.
-#'   Pass it to [easydr_curve()], [easydr_forest()], [easydr_loo()],
-#'   [easydr_metareg()], [easydr_bubble()] or [easydr_funnel()].
+#'   Pass it to [easydr_curve()], [easydr_forest()], [easydr_loo()] or
+#'   [easydr_funnel()].
 #'
 #' @references
 #' Greenland S, Longnecker MP (1992). Methods for trend estimation from

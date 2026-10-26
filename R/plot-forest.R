@@ -1,23 +1,25 @@
 #' Forest plot of the study trends and the pooled one
 #'
 #' @description
-#' One row per study, laid out the way a published forest is: the study label
-#' and what it brought on the left, a square sized by its weight with its
-#' confidence interval in the middle, the value and the weight on the right,
-#' and the pooled estimate as a diamond underneath with the heterogeneity below
-#' it.
+#' One row per study, laid out the way a published forest is. The study label
+#' and what it brought sit on the left, a square sized by its weight carries
+#' its confidence interval in the middle, and the value and the weight sit on
+#' the right. The pooled estimate is the diamond underneath, with the
+#' heterogeneity below it.
 #'
 #' @section What each row is:
-#' A dose-response study contributes a trend, not an effect, so that is what a
-#' row shows: the study's own slope per unit of dose, from the two-stage first
-#' stage. For a shape with more than one term there is no single slope, so the
-#' row becomes the predicted effect at one dose against the fit's reference
-#' dose, and the heading names the dose. Pass `at` to choose it, for any shape.
+#' Each row is the study's own slope per unit of dose, from the two-stage
+#' first stage. A trend across its exposure categories is what a dose-response
+#' study contributes. A shape with more than one term has no single slope, so
+#' the row becomes the predicted effect at one dose against the fit's
+#' reference dose, and the heading names that dose. Pass `at` to choose it,
+#' for any shape.
 #'
 #' @section Why some fits cannot be drawn this way:
 #' A one-stage fit estimates every study inside a single model and never
-#' produces a per-study coefficient vector. There is nothing to put on the rows,
-#' so this refuses rather than drawing the pooled line once per study.
+#' produces a per-study coefficient vector. Nothing can go on the rows, and
+#' drawing the pooled line once per study would look like data, so this
+#' stops.
 #'
 #' @param x a fitted result from [easydr()].
 #' @param at a dose at which to compare studies, instead of their trends.
@@ -96,19 +98,24 @@ easydr_forest <- function(x, at = NULL, main = NULL, xlab = NULL, xlim = NULL,
   lab_cols  <- list(Study = c(tab$study, "Pooled"))
   lab_right <- FALSE
   if (isTRUE(columns)) {
+    # "Levels" on its own told a reader nothing. The column counts the
+    # exposure categories a study reported, and the range needs its unit or
+    # the two numbers are bare.
+    unit <- if (is.null(x$dose_unit)) "" else paste0(" (", x$dose_unit, ")")
     lab_cols <- c(lab_cols, list(
-      Levels = c(as.character(tab$levels), ""),
-      `Dose range` = c(paste0(signif(tab$dose_min, 3), " to ",
-                              signif(tab$dose_max, 3)), "")))
+      `Dose levels` = c(as.character(tab$levels), ""),
+      x = c(paste0(signif(tab$dose_min, 3), " to ",
+                   signif(tab$dose_max, 3)), "")))
+    names(lab_cols)[3L] <- paste0("Dose range", unit)
     lab_right <- c(FALSE, TRUE, TRUE)
   }
 
   het <- e$heterogeneity
   het_text <- if (isTRUE(het$estimable)) {
-    sprintf("I-squared = %.1f%%, Q = %.2f (df %d), p = %s",
-            het$i2, het$Q, het$df, dr_p(het$p))
+    sprintf("I2 = %.1f%%, Q = %.2f (df %d), %s",
+            het$i2, het$Q, het$df, dr_p_lab(het$p))
   } else {
-    paste0("I-squared: not estimable (", het$reason, ")")
+    paste0("I2: not estimable (", het$reason, ")")
   }
 
   het_note <- list(list(y = het_y, label = het_text))
@@ -186,6 +193,10 @@ easydr_forest <- function(x, at = NULL, main = NULL, xlab = NULL, xlim = NULL,
 
   body_h <- grid::unit((ylim[2] - ylim[1]) * row.height, "inches") +
     grid::unit(0.40, "inches")
+  if (is.null(legend) && isTRUE(columns)) {
+    legend <- paste0("Dose levels: exposure categories the study reported. ",
+                     "Dose range: its lowest to its highest dose.")
+  }
   g <- dr_draw_stack(body, body_h, title = main, footer = legend,
                      body_w = grid::unit(lab_w + effect.width + val_w,
                                          "inches"))

@@ -53,7 +53,7 @@
 #' incidence. Each keeps its own covariance approximation, `sm` names the scale
 #' the reported ratios are pooled on, and the printed output says which designs
 #' are present. Design is therefore a real study-level covariate here, which is
-#' what [easydr_metareg()] takes.
+#' a study-level characteristic to compare the cohorts on.
 #'
 #' @format A data frame with 25 rows and 9 columns.
 #' \describe{

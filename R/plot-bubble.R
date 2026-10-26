@@ -1,54 +1,8 @@
+# Drawn by easydr_metareg(), and internal for the same reason it is.
+
 #' Bubble plot of a dose-response meta-regression
-#'
-#' @description
-#' Each study's own trend against the moderator, with the bubble area
-#' proportional to the weight the study carries and the regression's fitted
-#' line drawn through them with its confidence band, in the manner of
-#' `metafor::regplot()`. A categorical moderator gets one column of bubbles per
-#' level with the fitted level means drawn across them.
-#'
-#' @section What the line is:
-#' The line comes from the meta-regression in `x`, not from an ordinary
-#' regression through the bubbles. The bubbles are the observed study trends
-#' from the unadjusted fit, which is why a study can sit off the line: that
-#' distance is the residual heterogeneity the printed output quantifies.
-#'
-#' @section Why only one-term shapes:
-#' A bubble plot needs one number per study on the vertical axis. A curve has
-#' no single trend, so there is nothing to put there, and projecting it onto
-#' one dose would quietly answer a different question from the regression the
-#' line comes from. For curves, read [easydr_metareg()]'s table instead.
-#'
-#' @param x an object from [easydr_metareg()].
-#' @param mod which moderator to draw, when the regression has more than one.
-#'   `NULL` uses the first.
-#' @param main plot title. `NULL` writes one naming the moderator; `FALSE`
-#'   draws none.
-#' @param xlab,ylab axis labels. `NULL` writes them from the moderator and the
-#'   summary measure.
-#' @param ylim axis limits on the reported scale.
-#' @param ci `TRUE`, the default, draws the confidence band around the fitted
-#'   line, or the interval on each fitted level mean.
-#' @param labels `TRUE` writes the study labels beside the bubbles.
-#' @param col,col.line colours for the bubbles and the fitted line.
-#' @param legend optional free text drawn under the figure.
-#'
-#' @return Invisibly, a list with the plotted `table` (study, moderator value,
-#'   trend, standard error, weight), the `fitted` line or level means, and the
-#'   between-moderator `test`.
-#'
-#' @seealso [easydr_metareg()], which fits it and reports the test.
-#'
-#' @references
-#' Viechtbauer W (2010). Conducting meta-analyses in R with the metafor
-#' package. Journal of Statistical Software 36(3), 1-48.
-#'
-#' @examples
-#' fit <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
-#' mr <- easydr_metareg(fit, ~ design)
-#' easydr_bubble(mr, labels = TRUE)
-#'
-#' @export
+#' @keywords internal
+#' @noRd
 easydr_bubble <- function(x, mod = NULL, main = NULL, xlab = NULL,
                           ylab = NULL, ylim = NULL, ci = TRUE, labels = FALSE,
                           col = "#4E7CA8", col.line = "#C0392B",
@@ -210,7 +164,7 @@ easydr_bubble <- function(x, mod = NULL, main = NULL, xlab = NULL,
 
   test <- if (isTRUE(x$test$estimable)) {
     paste0("Between-moderator test: X2 = ", round(x$test$chi2, 2),
-           " on ", x$test$df, " df, p = ", dr_p(x$test$p), ".")
+           " on ", x$test$df, " df, ", dr_p_lab(x$test$p), ".")
   } else {
     "Between-moderator test: not estimable."
   }

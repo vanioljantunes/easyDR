@@ -7,20 +7,19 @@
 #' underneath.
 #'
 #' @section Why Egger and not Deeks:
-#' Deeks' funnel plot asymmetry test is for diagnostic test accuracy, where the
-#' effective sample size rather than the standard error is the sensible
-#' horizontal axis. It does not apply here. A dose-response review has one
-#' trend estimate per study with a standard error, which is exactly the setting
-#' Egger's regression was written for: regress each study's standard normal
-#' deviate on its precision and read the intercept.
+#' Deeks' funnel plot asymmetry test belongs to diagnostic test accuracy,
+#' where the effective sample size rather than the standard error is the
+#' sensible horizontal axis. It does not apply here. A dose-response review
+#' has one trend estimate per study with a standard error, which is the
+#' setting Egger wrote his regression for: regress each study's standard
+#' normal deviate on its precision and read the intercept.
 #'
 #' @section What asymmetry is and is not:
 #' A funnel plot asks whether small studies sit away from the pooled value. It
 #' cannot say why. Publication bias produces that pattern, and so do real
-#' differences between small and large studies, poorer methods in smaller ones,
-#' and chance. Below about ten studies the test has little power and a null
-#' result means almost nothing, which the figure says rather than leaving it to
-#' be remembered.
+#' differences between small and large studies, poorer methods in the smaller
+#' ones, and chance. Below about ten studies the test has little power and a
+#' null result means almost nothing. The figure prints that warning.
 #'
 #' A curve has no single trend, so for a shape with more than one term the
 #' comparison is the predicted effect at one dose, named on the axis.
