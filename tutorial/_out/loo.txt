@@ -1,0 +1,17 @@
+Leave-one-out sensitivity (risk ratio)
+6 refits, 6 fitted, 0 failed, 0.2 seconds
+Inherited: linear in dose; two-stage reml; reference 0 g/day
+Ordered by the absolute shift in the slope, RR per 1 g/day. Full fit: 0.9956
+
+ omitted           n RR     95% CI           shift   I-squared
+ Bianchi           5 0.9883 0.9815 to 0.9952 -0.0074  0.0%    
+ Bobak             5 0.9992 0.9857 to 1.0129 +0.0035 41.7%    
+ Vliegenthart-wine 5 0.9974 0.9834 to 1.0115 +0.0017 70.2%    
+ Vliegenthart-beer 5 0.9968 0.9832 to 1.0106 +0.0011 71.1%    
+ Malarcher-beer    5 0.9949 0.9830 to 1.0070 -0.0007 71.0%    
+ Malarcher-wine    5 0.9957 0.9840 to 1.0076 +0.0001 71.7%    
+
+Defaults applied:
+  - comparison quantity: the slope, because this shape has one term
+  - the shift is on the log scale, which the model is fitted on, and the rows are ordered on that same quantity
+  - a shift carries no p value: the refits are not independent, so this describes the data rather than testing it

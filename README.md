@@ -1,7 +1,7 @@
 # easyDR
 
-**Dose-response meta-analysis, made teachable: a free book, and the two checks
-that belong either side of the model.**
+**Dose-response meta-analysis in one call, argued the way the `meta` package
+argues. With a free book.**
 
 Sponsored by [Meta-Analysis Academy](https://metaanalysisacademy.com).
 
@@ -10,10 +10,11 @@ Sponsored by [Meta-Analysis Academy](https://metaanalysisacademy.com).
 | Section | Jump to |
 |:---|:---|
 | **[1 · The book](#1-the-book)**<br><sub>Free, six chapters, the whole method in the order of the work</sub> | [Read it](https://vanioljantunes.github.io/easyDR/) · [Chapters](#what-is-in-it) |
-| **[2 · What this package is](#2-what-this-package-is)**<br><sub>Two functions, and why it is only two</sub> | |
-| **[3 to 5 · Install, data, and the check](#3-to-5-install-data-and-the-viability-check)**<br><sub>From a sheet to <code>dr_viability()</code></sub> | |
-| **[6 and 7 · Fit it, then name it](#6-and-7-fit-the-model-then-name-the-curve)**<br><sub>dosresmeta, then <code>curve_shape()</code></sub> | |
-| **[8 · Validation](#8-validation-reproduce-a-published-analysis)**<br><sub>Paste it in, and check the numbers against this page</sub> | [Run it](#run-it) · [What you should see](#what-you-should-see) |
+| **[2 · What this package is](#2-what-this-package-is)**<br><sub>One entry point, seven things to do with what it returns</sub> | |
+| **[3 · Install, data, and what <code>sm</code> decides](#3-install-data-and-what-sm-decides)**<br><sub>From a spreadsheet to a table easyDR reads</sub> | |
+| **[4 · Fit it](#4-fit-it)**<br><sub><code>easydr()</code>, and why <code>shape</code> has no default</sub> | |
+| **[5 · What to do with the fit](#5-what-to-do-with-the-fit)**<br><sub>Forest, leave-one-out, meta-regression, bubble, funnel</sub> | |
+| **[6 · Validation](#6-validation-reproduce-a-published-analysis)**<br><sub>Paste it in, and check the numbers against this page</sub> | [Run it](#run-it) · [What you should see](#what-you-should-see) |
 
 <sub>[References](#references) · [License](#license)</sub>
 
@@ -45,129 +46,176 @@ it locally, after `R CMD INSTALL .` so the chunks can call the package.
 
 ## 2. What this package is
 
-![What easyDR is: two functions, and why it is only two](man/figures/overview.png)
+![One call and seven things to do with it: easyDR has no formula argument, and folds the viability check and the curve label into the fit](man/figures/overview.png)
 
 ---
 
-## 3 to 5. Install, data, and the viability check
+## 3. Install, data, and what `sm` decides
 
-![Install easyDR, lay the data out one row per exposure level per study, and run dr_viability](man/figures/workflow.png)
-
----
-
-## 6 and 7. Fit the model, then name the curve
-
-![Fit with dosresmeta, read the dose slope correctly, and name the curve with curve_shape](man/figures/curve.png)
+![Install easyDR, lay the data out one row per exposure level per study, and let sm choose which columns are read](man/figures/data.png)
 
 ---
 
-## 8. Validation: reproduce a published analysis
+## 4. Fit it
+
+![easydr() in one call, why shape has no default, and the same studies fitted as a line and as a spline](man/figures/api.png)
+
+---
+
+## 5. What to do with the fit
+
+![easydr_forest, easydr_loo, easydr_metareg, easydr_bubble and easydr_funnel, all taking the object easydr returned](man/figures/plots.png)
+
+---
+
+## 6. Validation: reproduce a published analysis
 
 The pages above are pictures. This section is not: paste it in and you should
 get the numbers printed here, on your own machine.
 
-The example is the one `dosresmeta` ships and the book uses: eight prospective
-cohorts of alcohol intake and colorectal cancer, analysed in Orsini et al.
-(2012).
+The example is the one the book uses: eight prospective cohorts of alcohol
+intake and colorectal cancer, analysed in Orsini et al. (2012) and bundled as
+`alcohol_cancer`.
 
 ### Run it
 
 ```r
-install.packages("dosresmeta")
 # install.packages("remotes")
 remotes::install_github("vanioljantunes/easyDR")
-```
-
-**Step 1. Can these studies support a dose-response at all?**
-
-```r
 library(easyDR)
-library(dosresmeta)
-data(alcohol_crc)
-
-dr_viability(alcohol_crc, study = "id", dose = "dose",
-             cases = "cases", n = "peryears")
 ```
 
-```text
-Dose-response viability
-
-  study levels has_reference two_stage_ok
-1   atm      6          TRUE         TRUE
-2   hpm      6          TRUE         TRUE
-3    io      6          TRUE         TRUE
-4    n1      6          TRUE         TRUE
-5    n2      6          TRUE         TRUE
-6    nt      6          TRUE         TRUE
-7   ntm      6          TRUE         TRUE
-8   nym      6          TRUE         TRUE
-
-No blocking problems found.
-```
-
-Eight studies, six exposure levels each, every one clearing the floor of three.
-
-**Step 2. Fit it.**
+**Step 1. Fit it. One call, and the whole answer prints.**
 
 ```r
-fit <- dosresmeta(formula = logrr ~ dose, type = type, id = id,
-                  se = se, cases = cases, n = peryears,
-                  data = alcohol_crc)
-
-round(summary(fit)$coefficients, 7)
+fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+              dose.unit = "g/day", at = c(10, 25, 50))
+fit
 ```
 
 ```text
-             Estimate Std. Error        z Pr(>|z|)  95%ci.lb  95%ci.ub
-(Intercept) 0.0064375   0.001352 4.761344  1.9e-06 0.0037876 0.0090875
+Dose-response meta-analysis (incidence rate ratio)
+Pooling: two-stage random effects, reml. Covariance: Greenland and Longnecker.
+
+Per 1 g/day increase:  IRR 1.006  (95% CI 1.004 to 1.009)
+Reference dose: 0 g/day
+Curve shape: positive association
+
+Departure from linearity: not estimable
+  a linear fit has one term, so there is nothing to test it against
+  8 of 8 studies have three or more dose levels
+
+Heterogeneity: Q = 4.78 (df = 7), p = 0.687; I-squared = 0%
+
+Predicted IRR
+ dose (g/day) IRR       95% CI         95% PI
+  0           reference reference      reference
+ 10           1.066     1.039 to 1.095 1.033 to 1.101
+ 25           1.175     1.099 to 1.255 1.084 to 1.272
+ 50           1.380     1.208 to 1.575 1.176 to 1.619
+
+8 studies, 48 dose categories, dose range 0 to 60.6 g/day
+Viability: 8 of 8 studies carry 3 or more dose levels.
+Defaults applied:
+  - intake: reported effect with limits, counts used for the covariance
 ```
 
-Remember what that row is: the dose slope on the log scale, not an intercept.
+There is no `formula` argument and no `logrr` column. `sm = "IRR"` is what
+tells easyDR to read the counts and the reported rate ratios, derive the
+contrasts, and reconstruct the within-study covariances.
+
+**Step 2. The pooled trend, to more digits.**
+
+```r
+round(c(slope = fit$slope$estimate, se = fit$slope$se), 7)
+```
+
+```text
+    slope        se
+0.0064373 0.0013521
+```
+
+That is the dose slope on the log scale, per gram per day. It is not an
+intercept, and the model has none: every contrast is against the study's own
+reference category.
 
 **Step 3. Read it as rate ratios at intakes people recognise.**
 
 ```r
-grid <- data.frame(dose = c(0, 10, 25, 50))
-pred <- predict(fit, newdata = grid, expo = TRUE)
-round(pred, 4)
+round(fit$predicted[, c("dose", "est", "ci.lb", "ci.ub")], 4)
 ```
 
 ```text
-  dose   pred  ci.lb  ci.ub
+  dose    est  ci.lb  ci.ub
 1    0 1.0000 1.0000 1.0000
 2   10 1.0665 1.0386 1.0951
 3   25 1.1746 1.0993 1.2551
 4   50 1.3797 1.2085 1.5752
 ```
 
-Keep the reference dose in `newdata`. Without the `0` row, `predict()` treats
-the first row as the reference and every ratio comes out relative to 10 g/day
-instead of to no intake.
+The reference dose is always in the table, because every one of those ratios
+is measured against it.
 
-**Step 4. Heterogeneity.**
+**Step 4. What each cohort contributed.**
 
 ```r
-q <- summary(fit)$qstat
-data.frame(Q = round(unname(q$Q), 4), df = unname(q$df),
-           p = round(unname(q$pvalue), 4))
+f <- easydr_forest(fit)
+data.frame(study = f$table$study, round(f$table[, c("est", "se", "weight")], 5))
 ```
 
 ```text
-       Q df      p
-1 4.7797  7 0.6868
+  study      est      se   weight
+1   atm  0.00714 0.00391 11.94346
+2   hpm  0.00917 0.00304 19.73289
+3    io  0.00236 0.00411 10.84301
+4    n1 -0.00213 0.00654  4.27926
+5    n2  0.00491 0.00407 11.02227
+6    nt  0.01263 0.00600  5.08595
+7   ntm  0.00613 0.00331 16.64675
+8   nym  0.00688 0.00299 20.44642
 ```
 
-**Step 5. Name the curve.**
+Every plot returns the table it drew, so the numbers behind a picture can be
+checked. These are the engine's own first-stage estimates.
+
+**Step 5. Small-study effects.**
 
 ```r
-curve_grid <- data.frame(dose = seq(0, 60, by = 10))
-curve_pred <- predict(fit, newdata = curve_grid, expo = FALSE)
+fn <- easydr_funnel(fit)
+round(unlist(fn$egger[c("intercept", "se", "t", "p")]), 4)
+```
 
-curve_shape(curve_grid$dose, curve_pred$pred)
+```text
+intercept        se         t         p
+  -1.0879    1.2204   -0.8914    0.4070
+```
+
+Egger's regression, not Deeks': Deeks' test is for diagnostic test accuracy
+and does not apply here. With eight studies it has little power, and the plot
+says so.
+
+**Step 6. The two checks easyDR ran for you.**
+
+```r
+fit$curve_label
+fit$viability
 ```
 
 ```text
 [1] "positive association"
+Dose-response viability
+
+ study levels has_reference two_stage_ok
+ atm   6      TRUE          TRUE
+ hpm   6      TRUE          TRUE
+ io    6      TRUE          TRUE
+ n1    6      TRUE          TRUE
+ n2    6      TRUE          TRUE
+ nt    6      TRUE          TRUE
+ ntm   6      TRUE          TRUE
+ nym   6      TRUE          TRUE
+
+No blocking problems found.
 ```
 
 ### What you should see
@@ -175,12 +223,15 @@ curve_shape(curve_grid$dose, curve_pred$pred)
 | Quantity | Value |
 |---|---|
 | Studies, exposure levels each | 8, 6 |
-| Dose slope, log scale, per g/day | 0.0064375 |
-| Standard error | 0.0013520 |
+| Dose slope, log scale, per g/day | 0.0064373 |
+| Standard error | 0.0013521 |
 | Rate ratio at 10 g/day | 1.0665 (1.0386 to 1.0951) |
 | Rate ratio at 25 g/day | 1.1746 (1.0993 to 1.2551) |
 | Rate ratio at 50 g/day | 1.3797 (1.2085 to 1.5752) |
-| Cochran Q | 4.7797 on 7 df, p = 0.6868 |
+| Cochran Q | 4.78 on 7 df, p = 0.687 |
+| I-squared | 0% |
+| Largest contribution | nym, 20.4% |
+| Egger intercept | -1.0879 (SE 1.2204), p = 0.407 |
 | Curve shape | positive association |
 
 Captured on R 4.6.0 with `dosresmeta` 2.2.0. The last digit or two can move
@@ -208,13 +259,18 @@ approximations, and software. *American Journal of Epidemiology* 175(1), 66-73.
 Crippa A, Orsini N (2016). Multivariate dose-response meta-analysis: the
 dosresmeta R package. *Journal of Statistical Software* 72(1), 1-15.
 
+Egger M, Davey Smith G, Schneider M, Minder C (1997). Bias in meta-analysis
+detected by a simple, graphical test. *BMJ* 315(7109), 629-634.
+
 The book's full bibliography is in [`book/references.bib`](book/references.bib).
 
 ---
 
 ## License
 
-MIT for the code in `R/`, `man/` and `tests/`. See [`LICENSE`](LICENSE).
+GPL-2 for the code in `R/`, `man/` and `tests/`. See [`LICENSE`](LICENSE).
+easyDR imports `dosresmeta`, which is GPL-2, so the package it is part of has
+to be as well.
 
 CC BY-NC-SA 4.0 for the book text, figures and examples in `book/`. See
 [`LICENSE-text.md`](LICENSE-text.md).
@@ -228,9 +284,10 @@ Academy](https://metaanalysisacademy.com): one design, taught end to end, per
 repo. The book is free. The video course, templates and support are the paid
 half.
 
-The three pictures above are built from [`tutorial/`](tutorial): `Rscript
-tutorial/plot.R` for the figures, then `node tutorial/render.mjs <page>` for
-each of `overview`, `workflow` and `curve`.
+The four pictures above are built from [`tutorial/`](tutorial): `Rscript
+tutorial/figures.R` draws the figures and captures the console blocks, then
+`node tutorial/render.mjs <page>` for each of `overview`, `data`, `api` and
+`plots`.
 
 Questions and corrections:
 [issues](https://github.com/vanioljantunes/easyDR/issues).

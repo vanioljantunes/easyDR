@@ -8,3 +8,4 @@ book/.quarto/
 book/*_files/
 .quarto/
 .tmp/
+Rplots.pdf

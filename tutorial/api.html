@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>easyDR api</title>
+<link rel="stylesheet" href="sheet.css">
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <h1>Fit it</h1>
+    <p>One call, the whole answer, and a shape you had to name</p>
+  </header>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="num">1</div>
+      <h2>The call: <span class="mono">easydr()</span></h2>
+    </div>
+
+    <div class="g2 wide">
+      <div>
+<pre class="code"><span class="f">library</span>(easyDR)
+
+fit &lt;- <span class="f">easydr</span>(alcohol_cancer,
+               <span class="a">sm</span>        = <span class="s">"IRR"</span>,
+               <span class="a">shape</span>     = <span class="s">"linear"</span>,
+               <span class="a">dose.unit</span> = <span class="s">"g/day"</span>,
+               <span class="a">at</span>        = <span class="f">c</span>(10, 25, 50))
+fit</pre>
+        <p class="note" style="margin-top:12px">
+          Eight prospective cohorts of alcohol intake and colorectal cancer,
+          from Orsini and colleagues. The whole answer prints at once: nothing
+          else has to be called to write the results paragraph.
+        </p>
+        <table class="lab" style="margin-top:12px">
+          <tr><th style="width:30%">Argument</th><th>Does what</th></tr>
+          <tr><td class="m">sm</td><td>The measure, and so the columns, the covariance and the scale.</td></tr>
+          <tr><td class="m">shape</td><td>Required. No default and no guess.</td></tr>
+          <tr><td class="m">at</td><td>Doses to report effects at. Five across the range if you say nothing.</td></tr>
+          <tr><td class="m">dose.unit</td><td>A label. It changes no number.</td></tr>
+          <tr><td class="m">method.tau</td><td>REML by default; ML, mm and fixed available.</td></tr>
+          <tr><td class="m">proc</td><td>Two-stage by default; one-stage for sparse tables.</td></tr>
+          <tr><td class="m">common, random</td><td>Which model to fit, not which to display.</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="console">Dose-response meta-analysis (incidence rate ratio)
+Pooling: two-stage random effects, reml.
+Covariance: Greenland and Longnecker.
+
+<span class="hl">Per 1 g/day increase:  IRR 1.006  (95% CI 1.004 to 1.009)</span>
+Reference dose: 0 g/day
+Curve shape: positive association
+
+Departure from linearity: not estimable
+  a linear fit has one term, so there is nothing
+  to test it against
+  8 of 8 studies have three or more dose levels
+
+Heterogeneity: Q = 4.78 (df = 7), p = 0.687;
+  I-squared = 0%
+
+Predicted IRR
+ dose (g/day) IRR       95% CI         95% PI
+  0           reference reference      reference
+ 10           1.066     1.039 to 1.095 1.033 to 1.101
+ 25           1.175     1.099 to 1.255 1.084 to 1.272
+ 50           1.380     1.208 to 1.575 1.176 to 1.619
+
+8 studies, 48 dose categories,
+  dose range 0 to 60.6 g/day
+Viability: 8 of 8 studies carry 3 or more
+  dose levels.
+Defaults applied:
+  - intake: reported effect with limits, counts
+    used for the covariance</div>
+        <div class="warn" style="margin-top:14px">
+          <b>That slope is not an effect of being exposed.</b><br><br>
+          An <code>IRR</code> of 1.006 per 1 g/day does not mean drinkers are
+          at 1.006 times the rate. It means each gram per day multiplies the
+          rate by about 1.006, measured against the reference dose, which is
+          why the reference is always printed. Change the reference and every
+          predicted effect changes with it.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="num">2</div>
+      <h2>Why <span class="mono">shape</span> has no default</h2>
+    </div>
+
+    <div class="g2 narrow">
+      <div>
+        <p class="note">
+          It would be easy to rank the candidate shapes and fit the winner.
+          easyDR does not, because the ranking is only defensible under
+          conditions the default call does not meet.
+        </p>
+        <ul class="plain">
+          <li><b>REML cannot compare them.</b> It conditions on the fixed
+              effects, so a line and a curve are scored on different
+              likelihoods.</li>
+          <li><b>A two-stage criterion moves with the units.</b> Multiplying
+              the dose by 1000 changes no model at all and moves the two-stage
+              AIC on this data by over a hundred points.</li>
+          <li><b>The top of the table is usually a tie.</b> On these eight
+              cohorts, fourteen of the forty-two candidates sit within 2 AIC
+              of the best.</li>
+        </ul>
+        <p class="note">
+          So the shape is yours, chosen for reasons you can write down: the
+          biology, the dose range your readers care about, what comparable
+          reviews did. <code>easydr_select()</code> runs the comparison
+          properly when you want it, refitting one-stage by maximum likelihood
+          and saying so.
+        </p>
+<pre class="code">sel &lt;- <span class="f">easydr_select</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"IRR"</span>,
+                     <span class="a">dose.unit</span> = <span class="s">"g/day"</span>)</pre>
+      </div>
+      <div>
+        <div class="console">Shape selection for a dose-response meta-analysis
+42 candidates tried, 42 fitted, 0 failed, 3.3 seconds
+Ranked on AIC. Lower is better.
+Refitted one-stage by maximum likelihood. Restricted
+  maximum likelihood cannot compare models with
+  different dose terms, and a two-stage criterion
+  moves with the scale of those terms.
+
+ rank shape              terms AIC  BIC  deviance p
+  1   fp powers 0.5, 0.5 2     -7.3  1.2 0.337
+  2   fp powers -0.5, 1  2     -7.3  1.2 0.337
+  3   fp powers 0, 1     2     -7.3  1.2 0.337
+  4   fp powers -1, 1    2     -6.9  1.5 0.324
+  5   fp powers 0, 0.5   2     -6.9  1.5 0.323
+  6   fp powers 0.5, 1   2     -6.8  1.7 0.318
+  7   fp powers -2, 2    2     -6.7  1.8 0.313
+  8   fp powers -1, 2    2     -6.3  2.2 0.298
+  9   fp powers -2, 1    2     -6.2  2.2 0.298
+ 10   linear             1     -6.1 -2.8 0.148
+<span class="dim">... 10 of 42 fitted candidates shown</span>
+
+<span class="hl">Within 2 AIC of the best: fp powers 0.5, 0.5; fp
+powers -0.5, 1; fp powers 0, 1; ... and 11 more</span>
+This ranking is a proposal, not a decision. To adopt
+the best-ranked shape, state it yourself:
+  easydr(data, ..., shape = "fp", powers = c(0.5, 0.5))</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="num">3</div>
+      <h2>A line, and the same studies as a curve</h2>
+    </div>
+
+    <p class="note">
+      Changing one argument changes the model and nothing else. A curve prints
+      a departure-from-linearity test, which a straight line cannot, and prints
+      no single slope, because no single number describes it.
+    </p>
+
+    <div class="g2" style="margin-top:4px">
+      <figure class="plotcard">
+        <img src="../man/figures/fig-curve.png" alt="Fitted linear dose-response with its confidence band">
+        <figcaption><code>shape = "linear"</code>: one slope, read at 10, 25
+        and 50 g/day.</figcaption>
+      </figure>
+      <figure class="plotcard">
+        <img src="../man/figures/fig-curve-rcs.png" alt="The same studies fitted as a restricted cubic spline">
+        <figcaption><code>shape = "rcs"</code>, with the prediction band shown.
+        Wider, because it describes where a new study would fall.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <footer>
+    Every estimate here comes from dosresmeta. easyDR chose none of them.
+  </footer>
+
+</div>
+</body>
+</html>

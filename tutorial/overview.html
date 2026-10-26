@@ -3,154 +3,181 @@
 <head>
 <meta charset="utf-8">
 <title>easyDR overview</title>
-<style>
-  :root {
-    --navy: #1F2A44;
-    --red: #C0392B;
-    --grey: #8A939B;
-    --band: #EDEFF2;
-    --line: #C5C9CE;
-    --paper: #FFFFFF;
-    --page: #F4F1EC;
-    --muted: #5B6475;
-    --serif: Georgia, "Times New Roman", Times, serif;
-    --sans: "Segoe UI", Arial, Helvetica, sans-serif;
-    --mono: Consolas, "Cascadia Mono", "Courier New", monospace;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--page); color: var(--navy); font-family: var(--sans); }
-  .sheet { width: 1200px; margin: 20px auto; background: var(--paper);
-           border: 1px solid var(--line); }
-
-  header { padding: 34px 48px 26px; text-align: center; border-bottom: 1px solid var(--line); }
-  header h1 { font-family: var(--serif); font-size: 38px; margin: 0 0 6px; }
-  header p { margin: 0; font-family: var(--serif); font-size: 18px; color: var(--muted); }
-  .flow { display: flex; justify-content: center; align-items: center; gap: 12px;
-          margin-top: 22px; font-family: var(--serif); font-size: 15.5px; }
-  .flow .pill { border: 1px solid var(--line); background: var(--band); padding: 5px 14px;
-                border-radius: 999px; }
-  .flow .pill.own { border-color: var(--red); box-shadow: inset 3px 0 0 var(--red);
-                    background: #fff; font-weight: 700; font-family: var(--mono);
-                    font-size: 14px; }
-  .flow .arrow { color: var(--grey); font-size: 17px; }
-
-  section.step { padding: 28px 48px 32px; }
-  .step-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px;
-               background: var(--band); margin-left: -48px; margin-right: -48px;
-               padding: 12px 48px; }
-  .num { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--navy);
-         background: #fff; display: flex; align-items: center; justify-content: center;
-         font-weight: 700; font-size: 19px; flex: none; }
-  .step-head h2 { font-family: var(--serif); font-size: 25px; margin: 0; }
-
-  p.lede { font-size: 15.5px; line-height: 1.6; margin: 0 0 20px; }
-  code { font-family: var(--mono); }
-
-  .fns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .fn { border: 1px solid var(--line); border-left: 4px solid var(--red); padding: 14px 16px; }
-  .fn b { font-family: var(--mono); font-size: 16px; display: block; margin-bottom: 6px; }
-  .fn span { font-size: 14px; color: var(--muted); line-height: 1.5; }
-
-  h3 { font-family: var(--serif); font-size: 19px; margin: 26px 0 12px; }
-  .gets { display: grid; gap: 12px; }
-  .get { border: 1px solid var(--line); padding: 13px 16px; display: grid;
-         grid-template-columns: 26px 1fr; gap: 12px; align-items: start; }
-  .get .tick { color: var(--red); font-weight: 700; font-size: 17px; line-height: 1.3; }
-  .get b { font-size: 14.5px; }
-  .get p { margin: 3px 0 0; font-size: 14px; color: var(--muted); line-height: 1.5; }
-  .get p code, .get b code { color: var(--navy); }
-
-  .nots { margin-top: 18px; border: 1px dashed var(--grey); background: #FCFCFD;
-          padding: 13px 16px; font-size: 14px; color: var(--muted); line-height: 1.55; }
-  .nots b { color: var(--navy); }
-  .nots code { color: var(--navy); }
-</style>
+<link rel="stylesheet" href="sheet.css">
 </head>
 <body>
 <div class="sheet">
 
   <header>
-    <h1>easyDR</h1>
-    <p>Two functions, and why it is only two</p>
-    <div class="flow">
-      <span class="pill">extract</span>
-      <span class="arrow">&rarr;</span>
-      <span class="pill own">dr_viability()</span>
-      <span class="arrow">&rarr;</span>
-      <span class="pill">dosresmeta</span>
-      <span class="arrow">&rarr;</span>
-      <span class="pill own">curve_shape()</span>
-      <span class="arrow">&rarr;</span>
-      <span class="pill">write it up</span>
-    </div>
+    <h1>One call, and seven things to do with it</h1>
+    <p>Dose-response meta-analysis argued the way the <span style="font-family:Consolas,monospace">meta</span> package argues</p>
   </header>
 
   <section class="step">
     <div class="step-head">
-      <div class="num">2</div>
-      <h2>What this package is</h2>
+      <div class="num">1</div>
+      <h2>There is no <span class="mono">formula</span> argument</h2>
     </div>
 
-    <p class="lede">
-      <code>easyDR</code> is the package the book leans on, and it is deliberately
-      small. It carries the two steps students repeatedly get wrong, and leaves the
-      modelling to <b>dosresmeta</b> by Crippa and Orsini, which is validated, peer
-      reviewed, and already does that job well.
-    </p>
-
-    <div class="fns">
-      <div class="fn">
-        <b>dr_viability()</b>
-        <span>Checks whether a dataset can support a dose-response model at all,
-        before any fitting.</span>
+    <div class="g2">
+      <div>
+        <h3>What a dose-response usually asks of you</h3>
+<pre class="code"><span class="c"># reshape, compute the log ratio, compute its</span>
+<span class="c"># standard error, then describe the model as</span>
+<span class="c"># a formula over columns you just made</span>
+fit &lt;- <span class="f">dosresmeta</span>(<span class="a">formula</span> = logrr ~ dose,
+                  <span class="a">type</span> = type, <span class="a">id</span> = id, <span class="a">se</span> = se,
+                  <span class="a">cases</span> = cases, <span class="a">n</span> = peryears,
+                  <span class="a">data</span> = d)</pre>
+        <p class="note" style="margin-top:12px">
+          Every one of those columns is something you had to derive first, and
+          <code>logrr ~ dose</code> is a sentence about your spreadsheet rather
+          than about your review.
+        </p>
       </div>
-      <div class="fn">
-        <b>curve_shape()</b>
-        <span>Names the shape of a fitted curve in the vocabulary the literature
-        uses.</span>
-      </div>
-    </div>
-
-    <h3>What you get</h3>
-    <div class="gets">
-      <div class="get">
-        <div class="tick">&#10003;</div>
-        <div>
-          <b>A check that runs before the model.</b>
-          <p>The commonest reason a dose-response meta-analysis fails is not the
-          model; it is that the included studies never could have supported one.
-          <code>dr_viability()</code> reports that per study, with the reason,
-          rather than letting a fit fail later for a reason that reads as
-          numerical.</p>
+      <div>
+        <h3>What easyDR asks</h3>
+<pre class="code"><span class="c"># name the measure the studies report, and</span>
+<span class="c"># the shape you decided on</span>
+fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"IRR"</span>,
+               <span class="a">shape</span> = <span class="s">"linear"</span>,
+               <span class="a">dose.unit</span> = <span class="s">"g/day"</span>,
+               <span class="a">at</span> = <span class="f">c</span>(10, 25, 50))</pre>
+        <div class="good" style="margin-top:12px">
+          <b>sm decides everything downstream.</b><br><br>
+          It says which columns are read, which covariance approximation is
+          available, and what scale every reported number comes back on. The
+          contrasts, the standard errors and the within-study covariances are
+          derived for you, from the table you already extracted.
         </div>
       </div>
-      <div class="get">
-        <div class="tick">&#10003;</div>
-        <div>
-          <b>A name for the curve.</b>
-          <p><code>curve_shape()</code> returns one of five labels, so the results
-          paragraph and the figure agree with each other, and with the words the
-          field already uses.</p>
-        </div>
-      </div>
-      <div class="get">
-        <div class="tick">&#10003;</div>
-        <div>
-          <b>No estimator of its own.</b>
-          <p>Every estimate in the book comes from <code>dosresmeta</code>. This
-          package prepares and interprets; it does not compute a pooled slope, and
-          it does not wrap <code>dosresmeta</code> in a layer you then have to
-          learn.</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="nots">
-      <b>What you do not get</b>, so you are not surprised: no fitting function, no
-      plotting, no bundled datasets. The examples use <code>dosresmeta</code> and
-      the data <code>dosresmeta</code> ships.
     </div>
   </section>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="num">2</div>
+      <h2>The family</h2>
+    </div>
+
+    <p class="note">
+      One function fits. The other seven take what it returned. Nothing else is
+      exported, and nothing in the package asks you to call a second thing to
+      get the first answer.
+    </p>
+
+    <table class="lab">
+      <tr><th style="width:21%">Function</th><th style="width:34%">What it gives you</th><th>What it will not do</th></tr>
+      <tr>
+        <td class="l">easydr()</td>
+        <td>The pooled dose-response, its heterogeneity, the prediction
+            interval, the predicted effects, the viability check and a name for
+            the curve.</td>
+        <td>Choose the shape. <code>shape</code> has no default.</td>
+      </tr>
+      <tr>
+        <td class="l">easydr_select()</td>
+        <td>Around forty candidate shapes, ranked, with the ties shown and the
+            straight line among them.</td>
+        <td>Adopt the winner. It calls the result a proposal and leaves the
+            decision with you.</td>
+      </tr>
+      <tr>
+        <td class="l">easydr_forest()</td>
+        <td>One row per study: its own trend, its weight, and the pooled
+            diamond underneath.</td>
+        <td>Invent rows for a one-stage fit, which never produces per-study
+            estimates.</td>
+      </tr>
+      <tr>
+        <td class="l">easydr_curve()</td>
+        <td>The fitted curve with its confidence band, the reported doses
+            marked, the prediction band on request.</td>
+        <td>Hide that a dose sits beyond the observed range.</td>
+      </tr>
+      <tr>
+        <td class="l">easydr_loo()</td>
+        <td>The fit with each study left out in turn, ranked by how far the
+            result moved.</td>
+        <td>Attach a p value. The refits are not independent.</td>
+      </tr>
+      <tr>
+        <td class="l">easydr_metareg()</td>
+        <td>A study characteristic regressed on the dose-response, with the
+            between-moderator test and the residual heterogeneity.</td>
+        <td>Call the association causal.</td>
+      </tr>
+      <tr>
+        <td class="l">easydr_bubble()</td>
+        <td>That regression drawn: study trends against the moderator, bubble
+            area the weight.</td>
+        <td>Fit its own line. The line is the regression's.</td>
+      </tr>
+      <tr>
+        <td class="l">easydr_funnel()</td>
+        <td>The study trends against their standard errors, with Egger's
+            regression test for asymmetry.</td>
+        <td>Say the asymmetry is publication bias.</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="num">3</div>
+      <h2>Two checks you no longer have to remember</h2>
+    </div>
+
+    <div class="g2 wide">
+      <div>
+        <p class="note">
+          A dose-response review goes wrong twice. Before the model, because
+          the included studies never could have supported one. After it,
+          because the curve gets described in words the literature does not
+          use.
+        </p>
+        <p class="note">
+          Both checks run inside <code>easydr()</code> and both appear in the
+          output. The viability check reads the prepared analysis frame, so it
+          reports the reference category the fit actually used rather than
+          guessing that a zero dose is one.
+        </p>
+<pre class="code">fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"IRR"</span>,
+               <span class="a">shape</span> = <span class="s">"linear"</span>)
+
+fit$viability   <span class="c"># the per-study table</span>
+fit$curve_label <span class="c"># "positive association"</span></pre>
+      </div>
+      <div>
+        <div class="console">Dose-response meta-analysis (incidence rate ratio)
+Pooling: two-stage random effects, reml.
+
+Per 1 g/day increase:  IRR 1.006  (95% CI 1.004 to 1.009)
+Reference dose: 0 g/day
+<span class="hl">Curve shape: positive association</span>
+
+Heterogeneity: Q = 4.78 (df = 7), p = 0.687; I-squared = 0%
+<span class="dim">...</span>
+8 studies, 48 dose categories, dose range 0 to 60.6 g/day
+<span class="hl">Viability: 8 of 8 studies carry 3 or more dose levels.</span>
+Defaults applied:
+  - intake: reported effect with limits, counts used
+    for the covariance</div>
+      </div>
+    </div>
+
+    <figure class="plotcard" style="margin-top:20px">
+      <img src="../man/figures/fig-shapes.png" alt="Five panels, one per curve shape label">
+      <figcaption>The five names a curve can be given. The label describes how
+      the effect changes from one dose to the next, so it is the same on the
+      log scale and on the ratio scale.</figcaption>
+    </figure>
+  </section>
+
+  <footer>
+    Estimation is delegated to dosresmeta. easyDR prepares the data, calls it
+    once, and reports the answer in the words a systematic reviewer uses.
+  </footer>
 
 </div>
 </body>

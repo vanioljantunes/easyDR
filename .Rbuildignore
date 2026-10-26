@@ -12,3 +12,4 @@
 ^LICENSE\.md$
 ^LICENSE$
 ^\.tmp$
+^Rplots\.pdf$

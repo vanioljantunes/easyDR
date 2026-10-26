@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>easyDR plots</title>
+<link rel="stylesheet" href="sheet.css">
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <h1>What to do with the fit</h1>
+    <p>Five functions, all taking the object <span style="font-family:Consolas,monospace">easydr()</span> returned</p>
+  </header>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="num">1</div>
+      <h2><span class="mono">easydr_forest()</span></h2>
+    </div>
+
+    <div class="g2 wide">
+      <figure class="plotcard">
+        <img src="../man/figures/fig-forest.png" alt="Forest plot of the eight study trends with the pooled diamond">
+        <figcaption>One row per cohort, the square sized by its weight, the
+        pooled trend as a diamond.</figcaption>
+      </figure>
+      <div>
+<pre class="code"><span class="f">easydr_forest</span>(fit)
+
+<span class="c"># and for a curve, where no single trend exists,</span>
+<span class="c"># the rows become one dose</span>
+<span class="f">easydr_forest</span>(rcs, <span class="a">at</span> = 25)</pre>
+        <p class="note" style="margin-top:12px">
+          A dose-response study contributes a <b>trend</b>, not an effect, so
+          that is what a row shows: the study's own slope from the two-stage
+          first stage. These are the engine's own estimates, not something
+          recomputed for the picture.
+        </p>
+        <div class="warn">
+          <b>A one-stage fit has no rows.</b><br><br>
+          It estimates every study inside a single model and never produces a
+          per-study coefficient. Rather than draw the pooled line eight times,
+          this refuses and says to refit with <code>proc = "2stage"</code>.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="num">2</div>
+      <h2><span class="mono">easydr_loo()</span> and <span class="mono">easydr_metareg()</span></h2>
+    </div>
+
+    <div class="g2">
+      <div>
+        <h3>Is one study carrying this?</h3>
+<pre class="code"><span class="f">easydr_loo</span>(cvd, <span class="a">quiet</span> = <span class="s">TRUE</span>)</pre>
+        <div class="console" style="margin-top:10px">Leave-one-out sensitivity (risk ratio)
+6 refits, 6 fitted, 0 failed, 0.4 seconds
+Inherited: linear in dose; two-stage reml;
+  reference 0 g/day
+Ordered by the absolute shift in the slope, RR per
+1 g/day. Full fit: 0.9956
+
+ omitted           RR     shift   I-squared
+ <span class="hl">Bianchi           0.9883 -0.0074  0.0%</span>
+ Bobak             0.9992 +0.0035 41.7%
+ Vliegenthart-wine 0.9974 +0.0017 70.2%
+ Vliegenthart-beer 0.9968 +0.0011 71.1%
+ Malarcher-beer    0.9949 -0.0007 71.0%
+ Malarcher-wine    0.9957 +0.0001 71.7%</div>
+        <p class="note" style="margin-top:10px">
+          Dropping Bianchi moves the slope furthest and takes I-squared from
+          71% to nothing: that one cohort is most of the heterogeneity. The
+          rows carry no p value, because the refits share almost all their
+          data and are not independent.
+        </p>
+      </div>
+      <div>
+        <h3>Does a study characteristic explain it?</h3>
+<pre class="code"><span class="f">easydr_metareg</span>(cvd, ~ design)</pre>
+        <div class="console" style="margin-top:10px">Moderator analysis (risk ratio)
+Moderator: design (categorical,
+  reference level case-control)
+Inherited: linear in dose; two-stage reml
+
+A moderator coefficient is an effect on the
+dose-response, not on the outcome.
+
+ term                        estimate  95% CI
+ slope at design =           -0.000684 -0.016088
+   case-control                         to 0.014720
+ change in slope,            -0.009907 -0.035154
+   cumulative incidence                 to 0.015339
+
+<span class="hl">Moderator test: X2 = 0.59 (df = 1), p = 0.442</span>
+  Wald test on the 1 moderator column
+
+Heterogeneity: Q = 13.02 (df = 4), p = 0.0112
+  without the moderator: Q = 14.15 (df = 5),
+  p = 0.0147
+
+This is an observational association across studies,
+not a randomised comparison. A moderator that
+explains heterogeneity has not been shown to
+cause it.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="num">3</div>
+      <h2><span class="mono">easydr_bubble()</span> and <span class="mono">easydr_funnel()</span></h2>
+    </div>
+
+    <div class="g2">
+      <figure class="plotcard">
+        <img src="../man/figures/fig-bubble.png" alt="Bubble plot of study trends against study design">
+        <figcaption>The regression above, drawn. Bubble area is the weight;
+        the red lines are the fitted level means.</figcaption>
+      </figure>
+      <figure class="plotcard">
+        <img src="../man/figures/fig-funnel.png" alt="Funnel plot of the study trends with Egger's test underneath">
+        <figcaption>The trends against their standard errors, with the pseudo
+        confidence contours and Egger's test.</figcaption>
+      </figure>
+    </div>
+
+    <div class="g2" style="margin-top:18px">
+      <div class="good">
+        <b>The bubble line is the regression's own.</b><br><br>
+        The bubbles are the unadjusted study trends and the line comes from
+        <code>easydr_metareg()</code>, not from a fresh regression through the
+        points. That is why a study can sit off the line: the distance is the
+        residual heterogeneity the printed output quantifies.
+      </div>
+      <div class="warn">
+        <b>Egger, not Deeks.</b><br><br>
+        Deeks' funnel asymmetry test is for diagnostic test accuracy, where the
+        effective sample size is the sensible axis, and it does not apply here.
+        A dose-response review has one trend per study with a standard error,
+        which is the setting Egger's regression was written for.<br><br>
+        With eight studies the test has little power, so the plot says so in
+        red rather than leaving it to be remembered. Asymmetry has several
+        causes and publication bias is only one.
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Every one of these returns the table it drew, so the numbers behind a
+    picture can be checked against the fit they came from.
+  </footer>
+
+</div>
+</body>
+</html>

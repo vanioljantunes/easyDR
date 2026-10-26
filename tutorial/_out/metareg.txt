@@ -1,0 +1,20 @@
+Moderator analysis (risk ratio)
+Moderator: design (categorical, reference level case-control)
+Inherited: linear in dose; two-stage reml; reference 0 g/day
+
+A moderator coefficient is an effect on the dose-response, not on the
+outcome.
+
+ term                                  estimate  95% CI               
+ slope at design = case-control        -0.000684 -0.016088 to 0.014720
+ change in slope, cumulative incidence -0.009907 -0.035154 to 0.015339
+
+Moderator test: X2 = 0.59 (df = 1), p = 0.442
+  Wald test on the 1 moderator column
+
+Heterogeneity: Q = 13.02 (df = 4), p = 0.0112
+  without the moderator: Q = 14.15 (df = 5), p = 0.0147
+
+This is an observational association across studies, not a randomised
+comparison. A moderator that explains heterogeneity has not been shown to
+cause it.

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>easyDR data</title>
+<link rel="stylesheet" href="sheet.css">
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <h1>Install it, then lay the table out</h1>
+    <p>One row per exposure category per study, and nothing reshaped</p>
+  </header>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="num">1</div>
+      <h2>Install</h2>
+    </div>
+
+    <div class="g2">
+      <div>
+<pre class="code"><span class="c"># install.packages("remotes")</span>
+remotes::<span class="f">install_github</span>(<span class="s">"vanioljantunes/easyDR"</span>)
+
+<span class="f">library</span>(easyDR)</pre>
+      </div>
+      <div>
+        <p class="note">
+          <code>dosresmeta</code> comes with it: it is an import, not a
+          suggestion, because every estimate in the package comes from there.
+          That is also why easyDR is GPL-2.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="num">2</div>
+      <h2>The table</h2>
+    </div>
+
+    <p class="note">
+      Long form, one row per exposure category per study. Nothing has to be
+      reshaped, sorted or aggregated, and the column names are guessed when you
+      leave them out. Two bundled tables show the shape to copy.
+    </p>
+
+    <h3 style="margin-top:14px">A binary outcome: <span style="font-family:Consolas,monospace">alcohol_cancer</span></h3>
+    <div class="console">  studlab    dose     TE  lower  upper event.e       n.e         design   ref
+1     atm  0.0000 1.0000     NA     NA      28  22185.73 incidence rate  TRUE
+2     atm  1.8286 0.6592 0.4030 1.0783      38  43030.54 incidence rate FALSE
+3     atm  9.1992 0.6733 0.4161 1.0896      43  53088.96 incidence rate FALSE
+4     atm 22.8571 0.6136 0.3662 1.0282      32  45348.09 incidence rate FALSE
+5     atm 35.6667 0.7565 0.4034 1.4187      16  19790.79 incidence rate FALSE
+6     atm 58.4257 1.2242 0.6987 2.1451      27  19919.85 incidence rate FALSE
+7     hpm  0.0000 1.0000     NA     NA     100 103002.30 incidence rate  TRUE</div>
+
+    <h3 style="margin-top:18px">A continuous outcome: <span style="font-family:Consolas,monospace">aripiprazole</span></h3>
+    <div class="console">  studlab dose mean.e  sd.e n.e   ref
+1       1    0   5.30 18.31  85  TRUE
+2       1    2   8.23 18.32  92 FALSE
+3       1    5  10.60 18.31  89 FALSE
+4       1   10  11.30 18.32  94 FALSE
+5       2    0   2.33 26.10 107  TRUE</div>
+
+    <div class="g2 wide" style="margin-top:20px">
+      <div>
+        <table class="lab">
+          <tr><th style="width:26%">Column</th><th>What it holds</th></tr>
+          <tr><td class="m">studlab</td><td>The study label. Rows sharing one are one study.</td></tr>
+          <tr><td class="m">dose</td><td>The numeric dose <b>you</b> assigned to that category. Never inferred from a category range.</td></tr>
+          <tr><td class="m">ref</td><td>Optional. Marks each study's reference category. When absent one is inferred and the guesses are printed.</td></tr>
+          <tr><td class="m">design</td><td>Optional. Case-control, incidence rate, or cumulative incidence. Each study keeps its own.</td></tr>
+        </table>
+      </div>
+      <div class="warn">
+        <b>The dose is the one judgement nobody can make for you.</b><br><br>
+        A published table reports a category, say 10 to 20 g/day, not a number.
+        Turning that into a dose is a decision about the midpoint, the median
+        intake, or whatever the authors reported, and it changes the slope.
+        easyDR will not guess it, and the book's extraction chapter is mostly
+        about making that decision defensibly.
+      </div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="num">3</div>
+      <h2><span class="mono">sm</span> decides which columns are read</h2>
+    </div>
+
+    <table class="lab">
+      <tr><th style="width:12%">sm</th><th style="width:30%">Outcome</th><th>Columns read</th></tr>
+      <tr><td class="l">"RR"</td><td>risk ratio</td><td class="m">event.e, n.e &nbsp;&nbsp;or&nbsp;&nbsp; TE, lower, upper</td></tr>
+      <tr><td class="l">"OR"</td><td>odds ratio, from a case-control design</td><td class="m">event.e, n.e &nbsp;&nbsp;or&nbsp;&nbsp; TE, lower, upper</td></tr>
+      <tr><td class="l">"IRR"</td><td>incidence rate ratio</td><td class="m">event.e, with person-time in n.e</td></tr>
+      <tr><td class="l">"MD"</td><td>mean difference</td><td class="m">mean.e, sd.e, n.e</td></tr>
+      <tr><td class="l">"SMD"</td><td>standardised mean difference</td><td class="m">mean.e, sd.e, n.e</td></tr>
+    </table>
+
+    <div class="g2 wide" style="margin-top:20px">
+      <div>
+        <p class="note">
+          Passing a column that belongs to the other kind of outcome is an
+          error rather than a name quietly ignored, because a fit that looks
+          like it used your standard deviations and did not is the worst of
+          both.
+        </p>
+<pre class="code"><span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"IRR"</span>, <span class="a">shape</span> = <span class="s">"linear"</span>,
+       <span class="a">sd.e</span> = <span class="s">"sd"</span>)
+<span class="c">#&gt; Error: easydr: sm = "IRR" is a binary outcome,</span>
+<span class="c">#&gt;   so sd.e is not read. Drop it or change sm.</span></pre>
+      </div>
+      <div>
+        <h3>When the table has no counts</h3>
+        <p class="note">
+          Both covariance reconstructions, Greenland-Longnecker and Hamling,
+          need denominators. A table carrying only an effect with its limits
+          supports neither, so the contrasts are treated as independent and the
+          printed output says so. That understates the correlation, so supply
+          the counts whenever the paper gives them.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    The extraction sheet that produces a table in this shape is chapter 2 of
+    the book.
+  </footer>
+
+</div>
+</body>
+</html>
