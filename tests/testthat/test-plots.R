@@ -365,3 +365,50 @@ test_that("the meta-regression and the bubble are off the public surface", {
   expect_s3_class(mr, "easydr_moderator")
   expect_type(easyDR:::easydr_bubble(mr)$test, "list")
 })
+
+test_that("what the plots return prints itself, so nothing needs rounding by hand", {
+  local_null_device()
+  fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                dose.unit = "g/day", at = c(10, 25, 50))
+
+  tab <- easydr_forest(fit)$table
+  expect_s3_class(tab, "easydr_contributions")
+  # The class is for printing only: every column and value survives it.
+  expect_true(all(c("study", "est", "se", "weight") %in% names(tab)))
+  expect_equal(sum(tab$weight), 100, tolerance = 1e-8)
+  out <- capture.output(print(tab))
+  expect_true(any(grepl("weight %", out, fixed = TRUE)))
+  expect_true(any(grepl("dose range", out, fixed = TRUE)))
+
+  eg <- easydr_funnel(fit)$egger
+  expect_s3_class(eg, "easydr_egger")
+  expect_true(is.numeric(eg$intercept))
+  out <- capture.output(print(eg))
+  expect_true(any(grepl("Egger's test", out, fixed = TRUE)))
+  expect_true(any(grepl("intercept -1.0879 (SE 1.2204)", out, fixed = TRUE)))
+  expect_true(any(grepl("little power", out, fixed = TRUE)))
+})
+
+test_that("summary reports the coefficient, so fit$slope need not be reached into", {
+  fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                dose.unit = "g/day", at = c(10, 25, 50))
+  out <- capture.output(print(summary(fit)))
+  expect_true(any(grepl("Pooled trend on the log scale, per 1 g/day", out,
+                        fixed = TRUE)))
+  expect_true(any(grepl("b = 0.0064373,  SE = 0.0013521", out, fixed = TRUE)))
+
+  # A curve has no single slope, so it reports none rather than a made-up one.
+  rcs <- easydr(alcohol_cancer, sm = "RR", shape = "rcs", dose.unit = "g/day")
+  expect_false(any(grepl("Pooled trend on the",
+                         capture.output(print(summary(rcs))), fixed = TRUE)))
+})
+
+test_that("the rug marks reported doses, thinned so it reads as data", {
+  local_null_device()
+  fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                dose.unit = "g/day", at = c(10, 25, 50))
+  # 38 distinct doses across eight cohorts is a solid black band, not a rug.
+  expect_gt(length(unique(fit$frame$dose)), 12L)
+  expect_silent(easydr_curve(fit))
+  expect_silent(easydr_curve(fit, rug = FALSE))
+})

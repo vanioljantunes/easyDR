@@ -48,21 +48,30 @@ it locally, after `R CMD INSTALL .` so the chunks can call the package.
 
 ![One call and four things to do with it: easyDR has no formula argument, and folds the viability check and the curve label into the fit](man/figures/overview.png)
 
+<details open>
+<summary><code>{r the-one-call}</code> &mdash; the fit, the check that preceded it, the name of the curve</summary>
+
 ```r
 library(easyDR)
 
-fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
               dose.unit = "g/day", at = c(10, 25, 50))
 fit                 # the whole answer, printed at once
+summary(fit)        # the same, plus the coefficient and the per-study rows
 fit$viability       # the check that runs before the model
 fit$curve_label     # the name the curve earned: "monotonic increasing"
 ```
+
+</details>
 
 ---
 
 ## 3. Install, data, and what `sm` decides
 
 ![Install easyDR, lay the data out one row per exposure level per study, and let sm choose which columns are read](man/figures/data.png)
+
+<details open>
+<summary><code>{r install-and-look}</code> &mdash; install it, then look at the two bundled tables</summary>
 
 ```r
 # install.packages("remotes")
@@ -73,29 +82,36 @@ head(alcohol_cancer)   # a binary outcome, one row per intake category
 head(aripiprazole)     # a continuous one: mean.e, sd.e, n.e
 ```
 
+</details>
+
 ---
 
 ## 4. Fit it
 
 ![easydr() in one call, the five shapes you can name, and easydr_curve() with its arguments](man/figures/api.png)
 
+<details open>
+<summary><code>{r fit-and-draw}</code> &mdash; the call, the refusal when <code>shape</code> is missing, and the curve</summary>
+
 ```r
-fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
               dose.unit = "g/day", at = c(10, 25, 50))
 
 # shape has no default. Leave it out and the error lists what you may write:
 # "linear", "log", "quadratic", "rcs", "fp".
-easydr(alcohol_cancer, sm = "IRR")
+easydr(alcohol_cancer, sm = "RR")
 
 # the curve, with every argument the picture used
 easydr_curve(fit,
              main  = "Alcohol and colorectal cancer",
              xlab  = "Alcohol intake (g/day)",
-             ylab  = "Rate ratio",
+             ylab  = "Risk ratio",
              ylim  = c(0.9, 1.8),
              round = 2,
              prediction = TRUE)
 ```
+
+</details>
 
 ---
 
@@ -103,11 +119,14 @@ easydr_curve(fit,
 
 ![easydr_forest, easydr_loo and easydr_funnel, all taking the object easydr returned](man/figures/plots.png)
 
+<details open>
+<summary><code>{r three-questions}</code> &mdash; what each study gave, whether one is carrying it, whether the small ones differ</summary>
+
 ```r
 cvd <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
 
 # what each study contributed
-easydr_forest(fit)
+easydr_forest(fit)$table                 # draws it, and the table prints itself
 easydr_forest(rcs, at = 25)              # a curve has no single trend
 
 # is one study carrying it
@@ -115,9 +134,10 @@ easydr_loo(cvd, quiet = TRUE)            # draws the curves and the table
 easydr_loo(cvd, quiet = TRUE, plot = FALSE)$table   # the table alone
 
 # are the small studies different
-f <- easydr_funnel(fit, labels = TRUE)
-f$egger
+easydr_funnel(fit, labels = TRUE)$egger  # Egger's test, printed as a test
 ```
+
+</details>
 
 ---
 
@@ -132,25 +152,31 @@ intake and colorectal cancer, analysed in Orsini et al. (2012) and bundled as
 
 ### Run it
 
+<details open>
+<summary><code>{r setup}</code> &mdash; install and attach</summary>
+
 ```r
 # install.packages("remotes")
 remotes::install_github("vanioljantunes/easyDR")
 library(easyDR)
 ```
 
-**Step 1. Fit it. One call, and the whole answer prints.**
+</details>
+
+<details open>
+<summary><code>{r step-1-fit}</code> &mdash; one call, and the whole answer prints</summary>
 
 ```r
-fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
               dose.unit = "g/day", at = c(10, 25, 50))
 fit
 ```
 
 ```text
-Dose-response meta-analysis (incidence rate ratio)
+Dose-response meta-analysis (risk ratio)
 Pooling: two-stage random effects, reml. Covariance: Greenland and Longnecker.
 
-Per 1 g/day increase:  IRR 1.006  (95% CI 1.004 to 1.009)
+Per 1 g/day increase:  RR 1.006  (95% CI 1.004 to 1.009)
 Reference dose: 0 g/day
 Curve shape: monotonic increasing
 
@@ -160,8 +186,8 @@ Departure from linearity: not estimable
 
 Heterogeneity: Q = 4.78 (df = 7), p = 0.687; I-squared = 0%
 
-Predicted IRR
- dose (g/day) IRR       95% CI         95% PI
+Predicted RR
+ dose (g/day) RR        95% CI         95% PI
   0           reference reference      reference
  10           1.066     1.039 to 1.095 1.033 to 1.101
  25           1.175     1.099 to 1.255 1.084 to 1.272
@@ -173,81 +199,96 @@ Defaults applied:
   - intake: reported effect with limits, counts used for the covariance
 ```
 
-No `formula` argument, and no `logrr` column. `sm = "IRR"` tells easyDR to
-read the counts and the reported rate ratios, then derive the contrasts and
-reconstruct the within-study covariances.
+</details>
 
-**Step 2. The pooled trend, to more digits.**
+No `formula` argument, and no `logrr` column. `sm = "RR"` tells easyDR to read
+the counts and the reported risk ratios, then derive the contrasts and
+reconstruct the within-study covariances. The risk ratios at 10, 25 and 50
+g/day are in that same print, each one measured against the reference dose,
+which is why the reference row stays in the table.
+
+<details open>
+<summary><code>{r step-2-summary}</code> &mdash; the coefficient, the fit, and what each cohort gave</summary>
 
 ```r
-round(c(slope = fit$slope$estimate, se = fit$slope$se), 7)
+summary(fit)
 ```
 
 ```text
-    slope        se
-0.0064373 0.0013521
+[everything the fit printed above, then:]
+
+Goodness of fit: deviance D = 48.21 (df = 39), p = 0.148
+  R-squared 0.32, adjusted 0.302
+  deviance of the fitted model against a saturated fit
+
+Pooled trend on the log scale, per 1 g/day
+  b = 0.0064373,  SE = 0.0013521,  p < 0.001
+  no intercept: every contrast runs against the study's own reference category
+
+Per-study contribution
+ study levels dose range design slope (log scale) SE
+ atm   6      0 to 58.43 ir      0.007141         0.003912
+ hpm   6      0 to 59.4  ir      0.009169         0.003044
+ io    6      0 to 60.6  ir      0.002359         0.004106
+ n1    6      0 to 58.4  ir     -0.002127         0.006536
+ n2    6      0 to 57.6  ir      0.004905         0.004073
+ nt    6      0 to 50.33 ir      0.012630         0.005995
+ ntm   6      0 to 56.23 ir      0.006131         0.003314
+ nym   6      0 to 57    ir      0.006880         0.002990
 ```
 
-That is the dose slope on the log scale, per gram per day. The model has no
-intercept, because every contrast runs against the study's own reference
-category.
+</details>
 
-**Step 3. Read it as rate ratios at intakes people recognise.**
+The coefficient on the log scale is the number to quote in a methods section,
+and the one to check an install against. `summary()` reports it, so nothing has
+to be pulled out of the fitted object and rounded by hand.
+
+<details open>
+<summary><code>{r step-3-forest}</code> &mdash; the rows behind the forest plot, with weights</summary>
 
 ```r
-round(fit$predicted[, c("dose", "est", "ci.lb", "ci.ub")], 4)
+easydr_forest(fit)$table     # draws the forest, and the table prints itself
 ```
 
 ```text
-  dose    est  ci.lb  ci.ub
-1    0 1.0000 1.0000 1.0000
-2   10 1.0665 1.0386 1.0951
-3   25 1.1746 1.0993 1.2551
-4   50 1.3797 1.2085 1.5752
+ study levels dose range trend      SE        weight %
+ atm   6      0 to 58.4   0.0071406 0.0039123 11.94
+ hpm   6      0 to 59.4   0.0091691 0.0030437 19.73
+ io    6      0 to 60.6   0.0023590 0.0041061 10.84
+ n1    6      0 to 58.4  -0.0021265 0.0065361  4.28
+ n2    6      0 to 57.6   0.0049053 0.0040725 11.02
+ nt    6      0 to 50.3   0.0126300 0.0059954  5.09
+ ntm   6      0 to 56.2   0.0061313 0.0033139 16.65
+ nym   6      0 to 57     0.0068797 0.0029901 20.45
 ```
 
-The reference dose stays in the table, because every one of those ratios is
-measured against it.
-
-**Step 4. What each cohort contributed.**
-
-```r
-f <- easydr_forest(fit)      # draws the forest, and returns its table
-data.frame(study = f$table$study, round(f$table[, c("est", "se", "weight")], 5))
-```
-
-```text
-  study      est      se   weight
-1   atm  0.00714 0.00391 11.94346
-2   hpm  0.00917 0.00304 19.73289
-3    io  0.00236 0.00411 10.84301
-4    n1 -0.00213 0.00654  4.27926
-5    n2  0.00491 0.00407 11.02227
-6    nt  0.01263 0.00600  5.08595
-7   ntm  0.00613 0.00331 16.64675
-8   nym  0.00688 0.00299 20.44642
-```
+</details>
 
 Each plot returns the table it drew. These rows are the engine's own
-first-stage estimates, so you can check them against the fit.
+first-stage estimates. The printing rounds, the stored values do not, so
+`as.data.frame()` gives them back untouched.
 
-**Step 5. Small-study effects.**
+<details open>
+<summary><code>{r step-4-funnel}</code> &mdash; small-study effects</summary>
 
 ```r
-fn <- easydr_funnel(fit)
-round(unlist(fn$egger[c("intercept", "se", "t", "p")]), 4)
+easydr_funnel(fit)$egger
 ```
 
 ```text
-intercept        se         t         p
-  -1.0879    1.2204   -0.8914    0.4070
+Egger's test for small-study effects
+  intercept -1.0879 (SE 1.2204)
+  t = -0.89 on 6 df, p = 0.407
+  8 studies: fewer than 10, so the test has little power and a null result means very little
 ```
 
-Egger's regression. Deeks' test belongs to diagnostic test accuracy, so it
-does not apply here. With eight studies Egger has little power, and the figure
-prints that warning above the panel.
+</details>
 
-**Step 6. The two checks easyDR ran for you.**
+Egger's regression. Deeks' test belongs to diagnostic test accuracy, so it does
+not apply here. The figure prints the same power warning above its panel.
+
+<details open>
+<summary><code>{r step-5-checks}</code> &mdash; the two checks easyDR ran for you</summary>
 
 ```r
 fit$curve_label
@@ -271,6 +312,9 @@ Dose-response viability
 No blocking problems found.
 ```
 
+</details>
+
+
 ### What you should see
 
 | Quantity | Value |
@@ -278,9 +322,9 @@ No blocking problems found.
 | Studies, exposure levels each | 8, 6 |
 | Dose slope, log scale, per g/day | 0.0064373 |
 | Standard error | 0.0013521 |
-| Rate ratio at 10 g/day | 1.0665 (1.0386 to 1.0951) |
-| Rate ratio at 25 g/day | 1.1746 (1.0993 to 1.2551) |
-| Rate ratio at 50 g/day | 1.3797 (1.2085 to 1.5752) |
+| Risk ratio at 10 g/day | 1.0665 (1.0386 to 1.0951) |
+| Risk ratio at 25 g/day | 1.1746 (1.0993 to 1.2551) |
+| Risk ratio at 50 g/day | 1.3797 (1.2085 to 1.5752) |
 | Cochran Q | 4.78 on 7 df, p = 0.687 |
 | I-squared | 0% |
 | Largest contribution | nym, 20.4% |

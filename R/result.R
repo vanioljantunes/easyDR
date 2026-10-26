@@ -195,7 +195,7 @@ dr_predicted <- function(fit, doses, xref, level, sm, single_study,
 #' @return `x`, invisibly. Called for the printed output.
 #'
 #' @examples
-#' fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear", dose.unit = "g/day",
+#' fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear", dose.unit = "g/day",
 #'                  at = c(10, 25, 50))
 #' print(fit)
 #'
@@ -386,7 +386,7 @@ dr_mixed_designs_note <- function(p) {
 #' @examples
 #' # The per-study table shows how many dose levels each study brought and what
 #' # slope it contributed, which is what a sensitivity discussion needs.
-#' summary(easydr(alcohol_cancer, sm = "IRR", shape = "linear", dose.unit = "g/day"))
+#' summary(easydr(alcohol_cancer, sm = "RR", shape = "linear", dose.unit = "g/day"))
 #'
 #' @export
 summary.easydr_result <- function(object, ...) {
@@ -457,6 +457,22 @@ Goodness of fit: not available (", x$result$gof$reason, ")
 ",
         sep = "")
   }
+  # The coefficient as the engine holds it. print.easydr_result() reports the
+  # trend back-transformed and rounded for reading, which is the right default
+  # and the wrong thing to quote in a methods section or check an install
+  # against. Reaching into fit$slope for it was the alternative.
+  if (!is.null(x$result$slope)) {
+    s    <- x$result$slope
+    unit <- if (is.null(x$result$dose_unit)) "unit of dose" else
+      x$result$dose_unit
+    cat("\nPooled trend on the ", s$scale, " scale, per 1 ", unit, "\n",
+        sep = "")
+    cat("  b = ", signif(s$estimate, digits + 2), ",  SE = ",
+        signif(s$se, digits + 2), ",  ", dr_p_lab(s$p), "\n", sep = "")
+    cat("  no intercept: every contrast runs against the study's own ",
+        "reference category\n", sep = "")
+  }
+
   cat("\nPer-study contribution\n")
   tab <- x$per_study
   tab$slope <- signif(tab$slope, digits + 1)

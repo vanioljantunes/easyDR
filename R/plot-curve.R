@@ -38,8 +38,8 @@
 #'   are the ones named in `at`.
 #' @param reference `TRUE`, the default, draws the null line and marks the
 #'   reference dose.
-#' @param rug `TRUE`, the default, ticks the observed dose categories along the
-#'   bottom, so a gap in the data is visible under the curve drawn through it.
+#' @param rug `TRUE`, the default, ticks the doses the fit reports along the
+#'   bottom, so the axis carries them as well as the curve.
 #' @param result `TRUE`, the default, prints the pooled result in the top left
 #'   of the panel: the effect with its confidence interval, its p value, and
 #'   the heterogeneity. The figure then carries its own numbers.
@@ -58,7 +58,7 @@
 #' @seealso [easydr_forest()] for what each study contributed.
 #'
 #' @examples
-#' fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+#' fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
 #'               dose.unit = "g/day", at = c(10, 25, 50))
 #'
 #' # The defaults: confidence band, reported doses marked, null line, and a
@@ -146,15 +146,26 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
       "label", x = -Inf, y = Inf, hjust = -0.04, vjust = 1.12,
       label = paste(lines, collapse = "
 "), size = 2.9, lineheight = 1.25,
-      colour = "grey15", fill = "white", alpha = 0.85,
+      colour = "grey15", fill = "white", alpha = 0.9,
+      label.padding = grid::unit(0.5, "lines"),
       label.r = grid::unit(2, "pt"))
   }
 
   if (isTRUE(rug)) {
-    obs <- data.frame(dose = sort(unique(x$frame$dose)))
+    # Where the data is, thinned. A tick per exposure category put forty-eight
+    # of them under an eight-study figure and they read as noise, so a table
+    # with more than a dozen distinct doses is sampled down to eleven. The
+    # ticks are still doses some study reported, never interpolated ones.
+    u <- sort(unique(x$frame$dose))
+    if (length(u) > 12L) {
+      u <- unique(stats::quantile(u, probs = seq(0, 1, length.out = 11L),
+                                  type = 1L, names = FALSE))
+    }
+    obs <- data.frame(dose = u)
     p <- p + ggplot2::geom_rug(data = obs, inherit.aes = FALSE,
                                ggplot2::aes(x = .data$dose), sides = "b",
-                               colour = "grey35")
+                               colour = "grey25", linewidth = 0.5,
+                               length = grid::unit(0.035, "npc"))
   }
   if (any(tab$extrapolated)) {
     ex <- tab[tab$extrapolated, , drop = FALSE]
@@ -196,10 +207,11 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   }
   foot <- c(paste0("Reference ", x$reference$curve, " ", unit,
                    ".  Band: ", bands,
+                   ".  Shape = ", x$shape$label,
                    if (any(tab$extrapolated))
                      ".  Crosses mark doses beyond the observed range."),
             legend)
 
-  dr_draw_stack(p, NULL, title = main, footer = foot)
+  dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5)
   invisible(tab)
 }

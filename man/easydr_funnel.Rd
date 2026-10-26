@@ -68,7 +68,7 @@ comparison is the predicted effect at one dose, named on the axis.
 }
 
 \examples{
-fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
               dose.unit = "g/day")
 f <- easydr_funnel(fit, labels = TRUE)
 f$egger

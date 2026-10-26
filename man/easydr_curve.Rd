@@ -49,8 +49,8 @@ are the ones named in \code{at}.}
 \item{reference}{\code{TRUE}, the default, draws the null line and marks the
 reference dose.}
 
-\item{rug}{\code{TRUE}, the default, ticks the observed dose categories along the
-bottom, so a gap in the data is visible under the curve drawn through it.}
+\item{rug}{\code{TRUE}, the default, ticks the doses the fit reports along the
+bottom, so the axis carries them as well as the curve.}
 
 \item{result}{\code{TRUE}, the default, prints the pooled result in the top left
 of the panel: the effect with its confidence interval, its p value, and
@@ -100,7 +100,7 @@ dose every effect is measured against.
 }
 
 \examples{
-fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
               dose.unit = "g/day", at = c(10, 25, 50))
 
 # The defaults: confidence band, reported doses marked, null line, and a

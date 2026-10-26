@@ -52,12 +52,12 @@
 #'   [easydr_loo()] for what happens when a row is removed.
 #'
 #' @examples
-#' fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+#' fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
 #'               dose.unit = "g/day")
 #' easydr_forest(fit)
 #'
 #' # A curve has no single trend, so the rows become one dose.
-#' rcs <- easydr(alcohol_cancer, sm = "IRR", shape = "rcs",
+#' rcs <- easydr(alcohol_cancer, sm = "RR", shape = "rcs",
 #'               dose.unit = "g/day")
 #' easydr_forest(rcs, at = 25)
 #'
@@ -203,6 +203,8 @@ easydr_forest <- function(x, at = NULL, main = NULL, xlab = NULL, xlim = NULL,
 
   # The composite has a fixed width, so the caller is told what it is: a
   # device narrower than this clips the first and last columns.
+  # Classed so printing it reads like the figure, with the values untouched.
+  class(tab) <- c("easydr_contributions", "data.frame")
   invisible(list(table = tab, pooled = e$pooled, label = e$label, at = e$at,
                  heterogeneity = het, grob = g,
                  width = lab_w + effect.width + val_w,

@@ -39,7 +39,7 @@ fit &lt;- <span class="f">dosresmeta</span>(<span class="a">formula</span> = log
         <h3>What easyDR asks</h3>
 <pre class="code"><span class="c"># name the measure the studies report, and</span>
 <span class="c"># the shape you decided on</span>
-fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"IRR"</span>,
+fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"RR"</span>,
                <span class="a">shape</span> = <span class="s">"linear"</span>,
                <span class="a">dose.unit</span> = <span class="s">"g/day"</span>,
                <span class="a">at</span> = <span class="f">c</span>(10, 25, 50))</pre>
@@ -122,17 +122,17 @@ fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span
           reference category the fit used. It does not guess that a zero dose
           is one.
         </p>
-<pre class="code">fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"IRR"</span>,
+<pre class="code">fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"RR"</span>,
                <span class="a">shape</span> = <span class="s">"linear"</span>)
 
 fit$viability   <span class="c"># the per-study table</span>
 fit$curve_label <span class="c"># "monotonic increasing"</span></pre>
       </div>
       <div>
-        <div class="console">Dose-response meta-analysis (incidence rate ratio)
+        <div class="console">Dose-response meta-analysis (risk ratio)
 Pooling: two-stage random effects, reml.
 
-Per 1 g/day increase:  IRR 1.006  (95% CI 1.004 to 1.009)
+Per 1 g/day increase:  RR 1.006  (95% CI 1.004 to 1.009)
 Reference dose: 0 g/day
 <span class="hl">Curve shape: monotonic increasing</span>
 

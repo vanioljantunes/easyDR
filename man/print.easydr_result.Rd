@@ -23,7 +23,7 @@ status, the engine's heterogeneity test, the prediction interval, the
 predicted effects, and every default easydr applied on the reviewer's behalf.
 }
 \examples{
-fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear", dose.unit = "g/day",
+fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear", dose.unit = "g/day",
                  at = c(10, 25, 50))
 print(fit)
 
