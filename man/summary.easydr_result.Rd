@@ -29,6 +29,6 @@ and its own slope with a standard error.
 \examples{
 # The per-study table shows how many dose levels each study brought and what
 # slope it contributed, which is what a sensitivity discussion needs.
-summary(easydr(alcohol_cancer, sm = "IRR", shape = "linear", dose.unit = "g/day"))
+summary(easydr(alcohol_cancer, sm = "RR", shape = "linear", dose.unit = "g/day"))
 
 }

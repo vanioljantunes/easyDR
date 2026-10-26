@@ -41,6 +41,6 @@ call \code{\link[=easydr]{easydr()}}.
 }
 \examples{
 head(alcohol_cancer)
-easydr(alcohol_cancer, sm = "IRR", shape = "linear", dose.unit = "g/day", at = c(10, 25, 50))
+easydr(alcohol_cancer, sm = "RR", shape = "linear", dose.unit = "g/day", at = c(10, 25, 50))
 }
 \keyword{datasets}

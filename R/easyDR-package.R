@@ -40,7 +40,7 @@
 #' one. Both are real published reviews, and both run in one call:
 #'
 #' \preformatted{
-#' easydr(alcohol_cancer, sm = "IRR", shape = "linear", dose.unit = "g/day")
+#' easydr(alcohol_cancer, sm = "RR", shape = "linear", dose.unit = "g/day")
 #' easydr(aripiprazole, sm = "SMD", shape = "linear", dose.unit = "mg/day")
 #' }
 #'

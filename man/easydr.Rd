@@ -207,12 +207,12 @@ interpretation.
 # the person-years.
 head(alcohol_cancer)
 
-fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
               dose.unit = "g/day", at = c(10, 25, 50))
 fit
 
 # A spline on the same table. The shape is named, never chosen for you.
-easydr(alcohol_cancer, sm = "IRR", shape = "rcs", dose.unit = "g/day")
+easydr(alcohol_cancer, sm = "RR", shape = "rcs", dose.unit = "g/day")
 
 # Continuous outcomes: means with standard deviations.
 easydr(aripiprazole, sm = "SMD", shape = "linear", dose.unit = "mg/day")

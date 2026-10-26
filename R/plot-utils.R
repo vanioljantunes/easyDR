@@ -406,13 +406,15 @@ dr_grob_height <- function(g, pad = 10) {
 #' @noRd
 dr_draw_stack <- function(body, body_h = NULL, title = NULL, footer = NULL,
                           footer_h = NULL, title_size = 12, footer_size = 9,
-                          body_w = NULL) {
+                          body_w = NULL, title_hjust = 0) {
   fill    <- is.null(body_h)
   grobs   <- list(body)
   heights <- list(if (fill) grid::unit(1, "null") else body_h)
   if (!is.null(title)) {
+    tx <- if (title_hjust == 0) grid::unit(4, "pt") else
+      grid::unit(title_hjust, "npc")
     grobs   <- c(list(grid::textGrob(
-      title, x = grid::unit(4, "pt"), hjust = 0,
+      title, x = tx, hjust = title_hjust,
       gp = grid::gpar(fontface = "bold", fontsize = title_size))), grobs)
     heights <- c(list(grid::unit(1.9 * title_size, "points")), heights)
   }

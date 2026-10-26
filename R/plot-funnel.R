@@ -50,7 +50,7 @@
 #' package. Journal of Statistical Software 36(3), 1-48.
 #'
 #' @examples
-#' fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+#' fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
 #'               dose.unit = "g/day")
 #' f <- easydr_funnel(fit, labels = TRUE)
 #' f$egger
@@ -72,6 +72,9 @@ easydr_funnel <- function(x, at = NULL, main = NULL, xlab = NULL, ylab = NULL,
          length(levels), " and ", length(shade), ".", call. = FALSE)
   }
   eg <- dr_egger(tab$est, tab$se)
+  # Classed so it prints as a test result. Unlisting and rounding it by hand
+  # was the only way to read it before.
+  class(eg) <- "easydr_egger"
 
   pts    <- tab[ok, , drop = FALSE]
   se_max <- max(pts$se) * 1.12

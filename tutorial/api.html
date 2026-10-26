@@ -24,7 +24,7 @@
 <pre class="code"><span class="f">library</span>(easyDR)
 
 fit &lt;- <span class="f">easydr</span>(alcohol_cancer,
-               <span class="a">sm</span>        = <span class="s">"IRR"</span>,
+               <span class="a">sm</span>        = <span class="s">"RR"</span>,
                <span class="a">shape</span>     = <span class="s">"linear"</span>,
                <span class="a">dose.unit</span> = <span class="s">"g/day"</span>,
                <span class="a">at</span>        = <span class="f">c</span>(10, 25, 50))
@@ -46,11 +46,11 @@ fit</pre>
         </table>
       </div>
       <div>
-        <div class="console">Dose-response meta-analysis (incidence rate ratio)
+        <div class="console">Dose-response meta-analysis (risk ratio)
 Pooling: two-stage random effects, reml.
 Covariance: Greenland and Longnecker.
 
-<span class="hl">Per 1 g/day increase:  IRR 1.006  (95% CI 1.004 to 1.009)</span>
+<span class="hl">Per 1 g/day increase:  RR 1.006  (95% CI 1.004 to 1.009)</span>
 Reference dose: 0 g/day
 Curve shape: monotonic increasing
 
@@ -62,8 +62,8 @@ Departure from linearity: not estimable
 Heterogeneity: Q = 4.78 (df = 7), p = 0.687;
   I-squared = 0%
 
-Predicted IRR
- dose (g/day) IRR       95% CI         95% PI
+Predicted RR
+ dose (g/day) RR        95% CI         95% PI
   0           reference reference      reference
  10           1.066     1.039 to 1.095 1.033 to 1.101
  25           1.175     1.099 to 1.255 1.084 to 1.272
@@ -78,8 +78,8 @@ Defaults applied:
     used for the covariance</div>
         <div class="warn" style="margin-top:14px">
           <b>Read the slope as a step, not a group.</b><br><br>
-          An <code>IRR</code> of 1.006 per 1 g/day does not mean drinkers run
-          1.006 times the rate. Each gram per day multiplies the rate by about
+          An <code>RR</code> of 1.006 per 1 g/day does not mean drinkers run
+          1.006 times the risk. Each gram per day multiplies the risk by about
           1.006, measured against the reference dose. easyDR prints that
           reference every time, because moving it moves every predicted
           effect.
@@ -113,7 +113,7 @@ Defaults applied:
         </p>
       </div>
       <div>
-<pre class="code"><span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"IRR"</span>)</pre>
+<pre class="code"><span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"RR"</span>)</pre>
         <div class="console" style="margin-top:10px">Error: easydr: name the `shape` you want fitted.
 There is no default, because the shape is a claim
 about the biology and belongs in your protocol with
@@ -159,7 +159,7 @@ a reason beside it. Name one of:
 <span class="f">easydr_curve</span>(fit,
              <span class="a">main</span>  = <span class="s">"Alcohol and colorectal cancer"</span>,
              <span class="a">xlab</span>  = <span class="s">"Alcohol intake (g/day)"</span>,
-             <span class="a">ylab</span>  = <span class="s">"Rate ratio"</span>,
+             <span class="a">ylab</span>  = <span class="s">"Risk ratio"</span>,
              <span class="a">ylim</span>  = <span class="f">c</span>(0.9, 1.8),
              <span class="a">round</span> = 2,
              <span class="a">prediction</span> = <span class="s">TRUE</span>)
@@ -177,7 +177,7 @@ a reason beside it. Name one of:
           <tr><td class="m">prediction</td><td><code>TRUE</code> adds the prediction band, when the fit has one.</td></tr>
           <tr><td class="m">points</td><td>Marks the doses named in <code>at</code>.</td></tr>
           <tr><td class="m">reference</td><td>Null line, and the reference dose.</td></tr>
-          <tr><td class="m">rug</td><td>Ticks the exposure categories the studies reported.</td></tr>
+          <tr><td class="m">rug</td><td>Ticks the doses the fit reports along the bottom.</td></tr>
           <tr><td class="m">result</td><td>The box in the corner: the effect, its interval, its p value and I2.</td></tr>
         </table>
       </div>
@@ -186,13 +186,9 @@ a reason beside it. Name one of:
     <div class="g2" style="margin-top:18px">
       <figure class="plotcard">
         <img src="../man/figures/fig-curve.png" alt="Fitted linear dose-response with its confidence band">
-        <figcaption><code>shape = "linear"</code>: one slope, read at 10, 25
-        and 50 g/day. The rug shows where the data actually is.</figcaption>
       </figure>
       <figure class="plotcard">
         <img src="../man/figures/fig-curve-rcs.png" alt="The same studies fitted as a restricted cubic spline">
-        <figcaption><code>shape = "rcs"</code>, with the prediction band shown.
-        Wider, because it describes where a new study would fall.</figcaption>
       </figure>
     </div>
   </section>

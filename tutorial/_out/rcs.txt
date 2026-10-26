@@ -1,4 +1,4 @@
-Dose-response meta-analysis (incidence rate ratio)
+Dose-response meta-analysis (risk ratio)
 Pooling: two-stage random effects, reml. Covariance: Greenland and Longnecker.
 
 Shape: restricted cubic spline, knots at 1.8, 20.27, 57.68
@@ -12,8 +12,8 @@ Departure from linearity: X2 = 3.92 (df = 1), p = 0.0477
 
 Heterogeneity: Q = 14.43 (df = 14), p = 0.418; I-squared = 3%
 
-Predicted IRR
- dose (g/day) IRR       95% CI         95% PI        
+Predicted RR
+ dose (g/day) RR        95% CI         95% PI        
   0           reference reference      reference     
  10           1.002     0.936 to 1.074 0.864 to 1.163
  25           1.059     0.934 to 1.202 0.811 to 1.384

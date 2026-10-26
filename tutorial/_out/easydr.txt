@@ -1,7 +1,7 @@
-Dose-response meta-analysis (incidence rate ratio)
+Dose-response meta-analysis (risk ratio)
 Pooling: two-stage random effects, reml. Covariance: Greenland and Longnecker.
 
-Per 1 g/day increase:  IRR 1.006  (95% CI 1.004 to 1.009)
+Per 1 g/day increase:  RR 1.006  (95% CI 1.004 to 1.009)
 Reference dose: 0 g/day
 Curve shape: monotonic increasing
 
@@ -11,8 +11,8 @@ Departure from linearity: not estimable
 
 Heterogeneity: Q = 4.78 (df = 7), p = 0.687; I-squared = 0%
 
-Predicted IRR
- dose (g/day) IRR       95% CI         95% PI        
+Predicted RR
+ dose (g/day) RR        95% CI         95% PI        
   0           reference reference      reference     
  10           1.066     1.039 to 1.095 1.033 to 1.101
  25           1.175     1.099 to 1.255 1.084 to 1.272

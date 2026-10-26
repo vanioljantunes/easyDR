@@ -29,9 +29,9 @@ capture_to <- function(name, expr) {
 }
 
 # ---------------------------------------------------------------- the fits --
-fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
               dose.unit = "g/day", at = c(10, 25, 50))
-rcs <- easydr(alcohol_cancer, sm = "IRR", shape = "rcs",
+rcs <- easydr(alcohol_cancer, sm = "RR", shape = "rcs",
               dose.unit = "g/day", at = c(10, 25, 50))
 cvd <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
 
@@ -40,12 +40,12 @@ capture_to("summary", print(summary(fit)))
 capture_to("rcs", print(rcs))
 capture_to("loo", print(easydr_loo(cvd, quiet = TRUE, plot = FALSE)))
 capture_to("shape-error",
-           print(try(easydr(alcohol_cancer, sm = "IRR"), silent = TRUE)))
+           print(try(easydr(alcohol_cancer, sm = "RR"), silent = TRUE)))
 
 # ------------------------------------------------------------- the figures --
 px("fig-curve.png", 6.6, 4.4)
 easydr_curve(fit, main = "Alcohol and colorectal cancer",
-             xlab = "Alcohol intake (g/day)", ylab = "Rate ratio",
+             xlab = "Alcohol intake (g/day)", ylab = "Risk ratio",
              round = 2)
 grDevices::dev.off()
 
@@ -86,9 +86,12 @@ op <- par(mfrow = c(1, 6), mar = c(4.2, 2.4, 3.2, 0.8), cex = 0.9,
           mgp = c(2.5, 0.8, 0))
 d <- seq(0, 60, length.out = 200)
 for (nm in names(shapes)) {
+  # The longest label is wider than one of six panels, so the title is set
+  # below full size rather than clipped at both ends.
   plot(d, shapes[[nm]](d), type = "l", lwd = 2.6, col = "#1F2A44",
-       xlab = "dose", ylab = "", main = nm, ylim = c(-1.15, 1.15),
+       xlab = "dose", ylab = "", main = "", ylim = c(-1.15, 1.15),
        las = 1, yaxt = "n")
+  title(main = nm, cex.main = 0.82)
   abline(h = 0, lty = 2, col = "#8A939B")
 }
 par(op)
