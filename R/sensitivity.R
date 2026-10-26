@@ -180,6 +180,12 @@ dr_sens_row <- function(label, studies, got, base, reason) {
 #'   first dose the fit already reports. Ignored for a one-term shape, which
 #'   compares slopes.
 #' @param quiet `FALSE`, the default, prints one line per refit.
+#' @param plot `TRUE`, the default, draws the dose-response once per omitted
+#'   study over the pooled one, letters each curve, and puts the table
+#'   underneath. It then returns the result invisibly, so `print()` still gives
+#'   the table when it is asked for. `FALSE` draws nothing.
+#' @param main,xlab,ylab,ylim passed to that plot. `main = FALSE` drops the
+#'   title; the rest default to the fit's own labels.
 #'
 #' @return An object of class `easydr_sensitivity`: the ordered table in
 #'   `$table`, the refits themselves in `$refits` so any row can be inspected
@@ -192,11 +198,17 @@ dr_sens_row <- function(label, studies, got, base, reason) {
 #' @examples
 #' fit <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
 #'
-#' # One cohort is carrying this result, and it is the first row.
+#' # One cohort is carrying this result, and it is the first row. The curve
+#' # lettered A is the fit without it.
 #' easydr_loo(fit, quiet = TRUE)
 #'
+#' # The table on its own, with nothing drawn.
+#' loo <- easydr_loo(fit, quiet = TRUE, plot = FALSE)
+#' loo$table[, c("label", "estimate", "shift", "i2")]
+#'
 #' @export
-easydr_loo <- function(object, at = NULL, quiet = FALSE) {
+easydr_loo <- function(object, at = NULL, quiet = FALSE, plot = TRUE,
+                       main = NULL, xlab = NULL, ylab = NULL, ylim = NULL) {
   inh <- dr_inherited(object)
   if (length(inh$studies) < 2L) {
     stop("easydr: leave-one-out needs at least two studies; this fit has ",
@@ -210,6 +222,20 @@ easydr_loo <- function(object, at = NULL, quiet = FALSE) {
   out$refits <- out$refits[ord]
   rownames(out$table) <- NULL
   out$call <- match.call()
+  # The picture is the point of a leave-one-out: a table of six near-identical
+  # numbers hides the one curve that moved. Drawing it returns invisibly, so
+  # `print()` still gives the table when it is asked for.
+  if (isTRUE(plot)) {
+    # A figure that cannot be drawn must not cost the caller the analysis:
+    # when every refit failed the table is the whole answer, and it says why.
+    if (any(out$table$status == "fitted")) {
+      out$plot <- dr_loo_plot(out, object, main = main, xlab = xlab,
+                              ylab = ylab, ylim = ylim)
+      return(invisible(out))
+    }
+    warning("easydr: no refit succeeded, so nothing was drawn. The table ",
+            "gives the reason against each row.", call. = FALSE)
+  }
   out
 }
 

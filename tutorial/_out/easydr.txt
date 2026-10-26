@@ -3,7 +3,7 @@ Pooling: two-stage random effects, reml. Covariance: Greenland and Longnecker.
 
 Per 1 g/day increase:  IRR 1.006  (95% CI 1.004 to 1.009)
 Reference dose: 0 g/day
-Curve shape: positive association
+Curve shape: monotonic increasing
 
 Departure from linearity: not estimable
   a linear fit has one term, so there is nothing to test it against

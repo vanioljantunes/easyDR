@@ -45,14 +45,24 @@
 #' output says so.
 #'
 #' @section Why you must name the shape:
-#' `shape` has no default and `easydr()` will not choose one. Ranking shapes by
-#' an information criterion is only defensible for a one-stage fit by maximum
-#' likelihood, and a two-stage criterion moves with the scale of the dose
-#' terms: on the alcohol data, multiplying dose by 1000 moves it by over 100
-#' points while the model stays identical. A silent winner would therefore be a
-#' number nobody could defend in a methods section. If you want the comparison,
-#' call [easydr_select()], which runs it under conditions where it means
-#' something and prints what it assumed.
+#' `shape` has no default and `easydr()` will not choose one. The shape is a
+#' claim about the biology, and it belongs in your protocol with a reason
+#' beside it: what the dose range is, what comparable reviews fitted, whether a
+#' threshold or a flattening is plausible for this exposure. Letting software
+#' pick it turns a reviewable decision into an invisible one.
+#'
+#' The five you can name:
+#'
+#' | `shape` | Fits | Terms |
+#' |:---|:---|:---|
+#' | `"linear"` | a straight line through the dose | 1 |
+#' | `"log"` | a straight line through log dose | 1 |
+#' | `"quadratic"` | dose and dose squared | 2 |
+#' | `"rcs"` | a restricted cubic spline, `knots` to place them | 2 or more |
+#' | `"fp"` | a fractional polynomial, `powers` to choose the pair | 2 |
+#'
+#' A shape with more than one term prints a departure-from-linearity test and
+#' no single slope, because no single number describes a curve.
 #'
 #' @section Reading the slope and its reference dose:
 #' A linear fit reports one slope per unit of dose, measured against a
@@ -188,12 +198,20 @@ easydr <- function(data,
 
   # No default, and no guess. See the "Why you must name the shape" section.
   if (missing(shape)) {
-    stop("easydr: name the `shape` you want fitted, one of \"linear\", ",
-         "\"rcs\", \"fp\", \"quadratic\", \"log\". There is no default: ",
-         "ranking shapes by an information criterion only means something ",
-         "for a one-stage maximum-likelihood fit, so easydr() will not pick ",
-         "one for you. Use easydr_select() if you want that comparison run ",
-         "under conditions where it holds.", call. = FALSE)
+    stop("easydr: name the `shape` you want fitted. There is no default, ",
+         "because the shape is a claim about the biology and belongs in your ",
+         "protocol with a reason beside it. Name one of:
+",
+         "  shape = \"linear\"      a straight line through the dose
+",
+         "  shape = \"log\"         a straight line through log dose
+",
+         "  shape = \"quadratic\"   dose and dose squared
+",
+         "  shape = \"rcs\"         a restricted cubic spline, see `knots`
+",
+         "  shape = \"fp\"          a fractional polynomial, see `powers`",
+         call. = FALSE)
   }
 
   # An argument that belongs to the other kind of outcome is an error, not a

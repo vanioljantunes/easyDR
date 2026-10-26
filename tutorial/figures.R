@@ -5,6 +5,10 @@
 # Figures go to man/figures/, which the README and the HTML pages both read.
 # Console output goes to tutorial/_out/, so the text inside the HTML pages is
 # copied from a real run rather than typed from memory.
+#
+# Each figure is given the size its own layout needs, in inches. A forest has a
+# fixed height per row and a fixed width per column, so a device that does not
+# match it leaves a band of white round the figure.
 
 suppressMessages(devtools::load_all("."))
 
@@ -13,8 +17,9 @@ outs <- file.path("tutorial", "_out")
 dir.create(figs, showWarnings = FALSE, recursive = TRUE)
 dir.create(outs, showWarnings = FALSE, recursive = TRUE)
 
-px <- function(name, w = 1100, h = 760) {
-  grDevices::png(file.path(figs, name), width = w, height = h, res = 130)
+px <- function(name, w, h, res = 150) {
+  grDevices::png(file.path(figs, name), width = w * res, height = h * res,
+                 res = res)
 }
 
 capture_to <- function(name, expr) {
@@ -33,55 +38,66 @@ cvd <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
 capture_to("easydr", print(fit))
 capture_to("summary", print(summary(fit)))
 capture_to("rcs", print(rcs))
-capture_to("loo", print(easydr_loo(cvd, quiet = TRUE)))
+capture_to("loo", print(easydr_loo(cvd, quiet = TRUE, plot = FALSE)))
 capture_to("metareg", print(easydr_metareg(cvd, ~ design)))
-capture_to("select", print(easydr_select(alcohol_cancer, sm = "IRR",
-                                         dose.unit = "g/day", quiet = TRUE)))
+capture_to("shape-error",
+           print(try(easydr(alcohol_cancer, sm = "IRR"), silent = TRUE)))
 
 # ------------------------------------------------------------- the figures --
-px("fig-curve.png", 1100, 780)
-easydr_curve(fit, main = "Alcohol and colorectal cancer", round = 2)
+px("fig-curve.png", 6.6, 4.4)
+easydr_curve(fit, main = "Alcohol and colorectal cancer",
+             xlab = "Alcohol intake (g/day)", ylab = "Rate ratio",
+             round = 2)
 grDevices::dev.off()
 
-px("fig-curve-rcs.png", 1100, 780)
+px("fig-curve-rcs.png", 6.6, 4.4)
 easydr_curve(rcs, main = "The same studies, fitted as a spline",
              prediction = TRUE, round = 2)
 grDevices::dev.off()
 
-px("fig-forest.png", 1180, 800)
+# The forest knows how wide it is, so it is measured once on a null device
+# and the real one is opened at that size. Guessing clips a column.
+grDevices::pdf(NULL)
+fdim <- easydr_forest(fit)
+grDevices::dev.off()
+px("fig-forest.png", fdim$width + 0.2, fdim$height + 0.45)
 easydr_forest(fit)
 grDevices::dev.off()
 
-px("fig-funnel.png", 1100, 860)
+px("fig-loo.png", 6.8, 6.2)
+easydr_loo(cvd, quiet = TRUE)
+grDevices::dev.off()
+
+px("fig-funnel.png", 5.6, 6.0)
 easydr_funnel(fit, labels = TRUE)
 grDevices::dev.off()
 
-px("fig-bubble.png", 1100, 780)
+px("fig-bubble.png", 6.6, 4.6)
 easydr_bubble(easydr_metareg(cvd, ~ design), labels = TRUE)
 grDevices::dev.off()
 
-# The five labels easydr() uses to name a curve. Drawn by hand because the
+# The six labels easydr() uses to name a curve. Drawn by hand because the
 # point is the vocabulary, not any one fit.
 shapes <- list(
-  "positive association" = function(d) 0.02 * d,
-  "Emax"                 = function(d) 0.9 * d / (12 + d),
-  "non-monotonic"        = function(d) 0.055 * d - 0.0011 * d^2,
-  "inverse association"  = function(d) -0.018 * d,
-  "no association"       = function(d) rep(0, length(d))
+  "monotonic increasing" = function(d) 0.02 * d,
+  "monotonic decreasing" = function(d) -0.018 * d,
+  "plateau"              = function(d) 0.9 * d / (12 + d),
+  "bell-shaped"          = function(d) 0.055 * d - 0.0011 * d^2,
+  "U-shaped"             = function(d) -0.055 * d + 0.0011 * d^2,
+  "flat"                 = function(d) rep(0, length(d))
 )
-px("fig-shapes.png", 1500, 430)
-op <- par(mfrow = c(1, 5), mar = c(4.4, 2.6, 3.4, 0.8), cex = 0.85,
-          mgp = c(2.6, 0.8, 0))
+px("fig-shapes.png", 12, 2.5)
+op <- par(mfrow = c(1, 6), mar = c(4.2, 2.4, 3.2, 0.8), cex = 0.9,
+          mgp = c(2.5, 0.8, 0))
 d <- seq(0, 60, length.out = 200)
 for (nm in names(shapes)) {
-  y <- shapes[[nm]](d)
-  plot(d, y, type = "l", lwd = 2.4, col = "#1F2A44", xlab = "dose",
-       ylab = "", main = nm, ylim = c(-1.15, 1.15), las = 1, yaxt = "n")
+  plot(d, shapes[[nm]](d), type = "l", lwd = 2.6, col = "#1F2A44",
+       xlab = "dose", ylab = "", main = nm, ylim = c(-1.15, 1.15),
+       las = 1, yaxt = "n")
   abline(h = 0, lty = 2, col = "#8A939B")
 }
 par(op)
 grDevices::dev.off()
 
 cat("figures written to", figs, "\n")
-cat("console blocks written to", outs, "\n")
 print(list.files(figs, pattern = "^fig-"))

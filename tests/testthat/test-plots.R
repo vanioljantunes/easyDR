@@ -206,3 +206,78 @@ test_that("every plot works for a continuous outcome too", {
   fn <- easydr_funnel(fit)
   expect_true(is.list(fn$egger))
 })
+
+# ---------------------------------------------------------------------------
+# The easyDTA-style layout: what the figures hand back, and what they refuse.
+
+test_that("the forest returns the grob it drew, with the heterogeneity on it", {
+  local_null_device()
+  f <- easydr_forest(bin_fit())
+  expect_s3_class(f$grob, "gtable")
+  expect_equal(f$heterogeneity$df, 7L)
+  # The label columns come from the same per-study table the rows do.
+  expect_true(all(c("levels", "dose_min", "dose_max") %in% names(f$table)))
+  expect_true(all(f$table$levels == 6L))
+})
+
+test_that("the forest can drop its extra columns without changing the numbers", {
+  local_null_device()
+  a <- easydr_forest(bin_fit(), columns = TRUE)
+  b <- easydr_forest(bin_fit(), columns = FALSE)
+  expect_equal(a$table$est, b$table$est)
+  expect_equal(a$pooled, b$pooled)
+})
+
+test_that("leave-one-out draws one curve per refit that fitted", {
+  local_null_device()
+  cvd <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
+  l <- easydr_loo(cvd, quiet = TRUE)
+  expect_s3_class(l, "easydr_sensitivity")
+  expect_false(is.null(l$plot))
+  expect_equal(length(unique(l$plot$curves$key)), sum(l$table$status == "fitted"))
+  # Every curve is lettered, in the order the table is already sorted by.
+  expect_equal(sort(unique(l$plot$curves$key)), LETTERS[seq_len(nrow(l$table))])
+})
+
+test_that("plot = FALSE gives the table back and draws nothing", {
+  cvd <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
+  l <- easydr_loo(cvd, quiet = TRUE, plot = FALSE)
+  expect_null(l$plot)
+  expect_equal(nrow(l$table), 6L)
+  # The numbers must not depend on whether a picture was asked for.
+  local_null_device()
+  withplot <- easydr_loo(cvd, quiet = TRUE)
+  expect_equal(withplot$table$estimate, l$table$estimate)
+})
+
+test_that("the funnel refuses a shade list that does not match its levels", {
+  local_null_device()
+  expect_error(easydr_funnel(bin_fit(), levels = c(95, 99),
+                             shade = "grey80"),
+               "must have the same length")
+})
+
+test_that("the funnel's shaded regions are the pseudo confidence wedges", {
+  local_null_device()
+  f <- easydr_funnel(bin_fit(), levels = c(95), shade = "grey80")
+  expect_true(f$egger$estimable)
+  # Changing which regions are shaded cannot change the test.
+  g <- easydr_funnel(bin_fit())
+  expect_equal(f$egger$intercept, g$egger$intercept)
+  expect_equal(f$egger$p, g$egger$p)
+})
+
+test_that("the bubble's fitted band comes from the regression's own vcov", {
+  local_null_device()
+  fit <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
+  mr  <- easydr_metareg(fit, ~ design)
+  b   <- easydr_bubble(mr)
+  expect_true(all(c("trend", "lb", "ub") %in% names(b$fitted)))
+  expect_true(all(b$fitted$lb < b$fitted$trend))
+  expect_true(all(b$fitted$ub > b$fitted$trend))
+  # The interval on the reference level is the first coefficient's own.
+  cf <- coef(mr$fit); V <- as.matrix(vcov(mr$fit))
+  z  <- stats::qnorm(0.975)
+  i  <- which(b$fitted$mod == "case-control")
+  expect_equal(b$fitted$lb[i], unname(cf[1] - z * sqrt(V[1, 1])))
+})

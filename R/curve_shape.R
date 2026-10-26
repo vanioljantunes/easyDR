@@ -1,33 +1,50 @@
 #' Name the shape of a fitted dose-response curve
 #'
 #' Readers do not argue about coefficients; they argue about shape. This gives
-#' the shape a name, using the vocabulary the literature actually uses, so that
-#' a results paragraph can be written without inventing terms.
+#' the shape a name, in the vocabulary dose-response reviews actually publish,
+#' so that a results paragraph can be written without inventing terms.
 #'
-#' The names follow Crippa and Orsini: a curve that rises throughout is a
-#' *positive association*, one that rises and then falls is *non-monotonic*,
-#' and one that rises and then flattens is an *Emax* curve. A curve whose
-#' confidence band contains the null across the whole exposure range is
-#' reported here as *no association*, which the literature does not name
-#' because there is nothing to name.
+#' @section Where the names come from:
+#' Published dose-response meta-analyses trichotomise the curve: it either
+#' plateaus after an initial rise, is still rising at the maximum dose, or is
+#' bell-shaped, with the effect falling away at the top (Leucht et al. 2020).
+#' Those three names are used here as published, with direction made explicit
+#' for the monotone case, the mirror of a bell added for exposures whose effect
+#' falls and then returns, and a name for a curve that does nothing.
+#'
+#' `"plateau"` is deliberately not called Emax. Emax is a parametric model from
+#' pharmacology, which Crippa and Orsini compare spline models against; it
+#' names a functional form that was fitted, not a shape that was observed. A
+#' spline that happens to flatten has not fitted an Emax model.
+#'
+#' @section What the labels are judged on:
+#' The labels describe how the effect **changes** from one dose to the next,
+#' not where the curve sits, so a monotone curve earns the same name on the log
+#' scale and on the ratio scale. A plateau is judged against the curve's own
+#' steepest step rather than against its overall range, which is what separates
+#' a genuine flattening from a curve that merely decelerates.
+#'
+#' [easydr()] passes the log scale and carries the answer on the `curve_label`
+#' slot of its result.
 #'
 #' @param dose Numeric vector of exposure values, ascending.
 #' @param effect Numeric vector of fitted effects at those exposures, on the
 #'   scale you intend to plot (log scale for ratio measures).
 #' @param tol Fraction of the total effect range below which a single step
 #'   counts as flat.
-#' @param plateau_frac A curve is called Emax when its closing steps are
-#'   smaller than this fraction of its steepest step. Judging the tail against
-#'   the steepest rise, rather than against the overall range, is what makes
-#'   "it flattens out" mean the same thing for a shallow curve and a steep one.
+#' @param plateau_frac A curve is called a plateau when its closing steps are
+#'   smaller than this fraction of its steepest step.
 #'
-#' @return A single string: "positive association", "inverse association",
-#'   "non-monotonic", "Emax", or "no association".
+#' @return One of `"monotonic increasing"`, `"monotonic decreasing"`,
+#'   `"plateau"`, `"bell-shaped"`, `"U-shaped"` or `"flat"`.
 #'
-#' The labels describe how the effect *changes* from one dose to the next, not
-#' where the curve sits, so a monotone curve earns the same name on the log
-#' scale and on the ratio scale. [easydr()] passes the log scale, and carries
-#' the answer on the `curve_label` slot of its result.
+#' @references
+#' Leucht S, Crippa A, Siafis S, Patel MX, Orsini N, Davis JM (2020).
+#' Dose-response meta-analysis of antipsychotic drugs for acute schizophrenia.
+#' American Journal of Psychiatry 177, 342-353.
+#'
+#' Crippa A, Orsini N (2016). Dose-response meta-analysis of differences in
+#' means. BMC Medical Research Methodology 16, 91.
 #'
 #' @keywords internal
 #' @noRd
@@ -38,7 +55,7 @@ curve_shape <- function(dose, effect, tol = 0.05, plateau_frac = 0.25) {
 
   span <- diff(range(effect))
   if (span == 0 || span < tol * max(abs(effect), 1)) {
-    return("no association")
+    return("flat")
   }
 
   steps <- diff(effect)
@@ -51,15 +68,16 @@ curve_shape <- function(dose, effect, tol = 0.05, plateau_frac = 0.25) {
   last <- length(effect)
 
   # A turning point strictly inside the range, with real movement on both
-  # sides, is the thing that makes a curve non-monotonic rather than merely
-  # noisy at one end.
+  # sides, is what makes a curve non-monotone rather than merely noisy at one
+  # end. Which way it turns is the difference between a bell and a U, and the
+  # two mean opposite things, so they are not collapsed into one name.
   if (peak > 1 && peak < last && any(up[seq_len(peak - 1)]) &&
       any(down[seq(peak, last - 1)])) {
-    return("non-monotonic")
+    return("bell-shaped")
   }
   if (trough > 1 && trough < last && any(down[seq_len(trough - 1)]) &&
       any(up[seq(trough, last - 1)])) {
-    return("non-monotonic")
+    return("U-shaped")
   }
 
   # "Flattens out" is relative to how fast the curve was climbing, not to the
@@ -68,10 +86,10 @@ curve_shape <- function(dose, effect, tol = 0.05, plateau_frac = 0.25) {
   tail_steps <- steps[seq(max(1, last - 2), last - 1)]
   tail_flat <- steepest > 0 && all(abs(tail_steps) < plateau_frac * steepest)
   if (any(up) && !any(down)) {
-    return(if (tail_flat) "Emax" else "positive association")
+    return(if (tail_flat) "plateau" else "monotonic increasing")
   }
   if (any(down) && !any(up)) {
-    return("inverse association")
+    return(if (tail_flat) "plateau" else "monotonic decreasing")
   }
-  "non-monotonic"
+  if (effect[last] >= effect[1L]) "bell-shaped" else "U-shaped"
 }

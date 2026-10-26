@@ -4,7 +4,7 @@ Pooling: two-stage random effects, reml. Covariance: Greenland and Longnecker.
 Shape: restricted cubic spline, knots at 1.8, 20.27, 57.68
 No single slope describes this shape. Read the predicted effects below.
 Reference dose: 0 g/day
-Curve shape: positive association
+Curve shape: monotonic increasing
 
 Departure from linearity: X2 = 3.92 (df = 1), p = 0.0477
   Wald test on the 1 nonlinear term against the linear fit

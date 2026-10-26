@@ -90,12 +90,6 @@ dr_validation_cases <- function() {
                                            at = c(5, 10, 20))),
     list(label = "cont rcs",
          f = function() easyDR:::easydrcont(ari, sm = "SMD", shape = "rcs")),
-    list(label = "select over three candidates",
-         f = function() easyDR:::easydr_select(
-           crc, sm = "IRR", dose.unit = "g/day", quiet = TRUE,
-           candidates = list(list(shape = "linear"),
-                             list(shape = "quadratic"),
-                             list(shape = "log")))),
     list(label = "loo on a line",
          f = function() easyDR:::easydr_loo(
            easyDR:::easydrbin(cvd, sm = "RR", dose.unit = "g/day"),
@@ -311,9 +305,6 @@ dr_validation_numbers <- function(x) {
                   x$heterogeneity_before[c("Q", "df", "p", "i2")])),
                 centres = unlist(x$centres),
                 coef = stats::coef(x$fit)))
-  }
-  if (inherits(x, "easydr_selection")) {
-    return(list(ranked = num(x$ranked), ties = num(x$ties)))
   }
   if (inherits(x, "summary.easydr_result")) {
     return(list(per_study = num(x$per_study)))

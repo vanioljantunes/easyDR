@@ -19,8 +19,6 @@ The arguments are the ones a \code{meta} user already knows. There is no
 \describe{
 \item{\code{\link[=easydr]{easydr()}}}{fit it. One entry point for every outcome; \code{sm} decides
 which columns are read.}
-\item{\code{\link[=easydr_select]{easydr_select()}}}{compare candidate shapes, when you want the
-comparison and are willing to read what it assumes.}
 \item{\code{\link[=easydr_forest]{easydr_forest()}}}{the study trends and the pooled one, laid out as
 a forest plot.}
 \item{\code{\link[=easydr_curve]{easydr_curve()}}}{the fitted dose-response with its band.}

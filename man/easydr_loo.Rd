@@ -4,7 +4,16 @@
 \alias{easydr_loo}
 \title{Leave one study out at a time}
 \usage{
-easydr_loo(object, at = NULL, quiet = FALSE)
+easydr_loo(
+  object,
+  at = NULL,
+  quiet = FALSE,
+  plot = TRUE,
+  main = NULL,
+  xlab = NULL,
+  ylab = NULL,
+  ylim = NULL
+)
 }
 \arguments{
 \item{object}{a fitted result from \code{\link[=easydr]{easydr()}}.}
@@ -15,6 +24,14 @@ first dose the fit already reports. Ignored for a one-term shape, which
 compares slopes.}
 
 \item{quiet}{\code{FALSE}, the default, prints one line per refit.}
+
+\item{plot}{\code{TRUE}, the default, draws the dose-response once per omitted
+study over the pooled one, letters each curve, and puts the table
+underneath. It then returns the result invisibly, so \code{print()} still gives
+the table when it is asked for. \code{FALSE} draws nothing.}
+
+\item{main, xlab, ylab, ylim}{passed to that plot. \code{main = FALSE} drops the
+title; the rest default to the fit's own labels.}
 }
 \value{
 An object of class \code{easydr_sensitivity}: the ordered table in
@@ -58,8 +75,13 @@ reason, never quietly fitted with a simpler shape.
 \examples{
 fit <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
 
-# One cohort is carrying this result, and it is the first row.
+# One cohort is carrying this result, and it is the first row. The curve
+# lettered A is the fit without it.
 easydr_loo(fit, quiet = TRUE)
+
+# The table on its own, with nothing drawn.
+loo <- easydr_loo(fit, quiet = TRUE, plot = FALSE)
+loo$table[, c("label", "estimate", "shift", "i2")]
 
 }
 \seealso{
