@@ -171,14 +171,24 @@ output says so.
 
 \section{Why you must name the shape}{
 
-\code{shape} has no default and \code{easydr()} will not choose one. Ranking shapes by
-an information criterion is only defensible for a one-stage fit by maximum
-likelihood, and a two-stage criterion moves with the scale of the dose
-terms: on the alcohol data, multiplying dose by 1000 moves it by over 100
-points while the model stays identical. A silent winner would therefore be a
-number nobody could defend in a methods section. If you want the comparison,
-call \code{\link[=easydr_select]{easydr_select()}}, which runs it under conditions where it means
-something and prints what it assumed.
+\code{shape} has no default and \code{easydr()} will not choose one. The shape is a
+claim about the biology, and it belongs in your protocol with a reason
+beside it: what the dose range is, what comparable reviews fitted, whether a
+threshold or a flattening is plausible for this exposure. Letting software
+pick it turns a reviewable decision into an invisible one.
+
+The five you can name:\tabular{lll}{
+   \code{shape} \tab Fits \tab Terms \cr
+   \code{"linear"} \tab a straight line through the dose \tab 1 \cr
+   \code{"log"} \tab a straight line through log dose \tab 1 \cr
+   \code{"quadratic"} \tab dose and dose squared \tab 2 \cr
+   \code{"rcs"} \tab a restricted cubic spline, \code{knots} to place them \tab 2 or more \cr
+   \code{"fp"} \tab a fractional polynomial, \code{powers} to choose the pair \tab 2 \cr
+}
+
+
+A shape with more than one term prints a departure-from-linearity test and
+no single slope, because no single number describes a curve.
 }
 
 \section{Reading the slope and its reference dose}{

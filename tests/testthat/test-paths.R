@@ -116,12 +116,12 @@ test_that("the exported surface is exactly what the constitution allows", {
                                   "aripiprazole")]
   plain <- funs[!startsWith(funs, "print.") & !startsWith(funs, "summary.")]
 
-  expect_setequal(plain, c("easydr", "easydr_select", "easydr_forest",
-                           "easydr_curve", "easydr_loo", "easydr_metareg",
-                           "easydr_bubble", "easydr_funnel"))
+  expect_setequal(plain, c("easydr", "easydr_forest", "easydr_curve",
+                           "easydr_loo", "easydr_metareg", "easydr_bubble",
+                           "easydr_funnel"))
   # One entry point and seven things to do with its result. The workers behind
   # it, and the cumulative analysis, stay internal.
   expect_false(any(c("easydrbin", "easydrcont", "dr_cumul", "dr_viability",
-                     "curve_shape") %in% plain))
+                     "curve_shape", "easydr_select") %in% plain))
   expect_lte(length(plain), 12L)
 })

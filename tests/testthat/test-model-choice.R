@@ -1,7 +1,9 @@
 # Which model gets fitted, and whether the output says so truthfully.
 #
-# Four things were wrong here before 2026-10-25, and all four were the same
-# kind of wrong: the code stated something that was not true.
+# Three things were wrong here before 2026-10-25, and all three were the same
+# kind of wrong: the code stated something that was not true. A fourth, about
+# the shape-selection loop claiming maximum likelihood it had not used, went
+# with that loop when it was deleted.
 #
 #   1. `random` was accepted, documented as affecting the output, stored for
 #      refits, and never read. `random = FALSE` returned a bit-identical
@@ -11,8 +13,6 @@
 #   3. The prediction interval reported that it needed more studies than
 #      coefficients, on a fit with six studies and one coefficient. The real
 #      reason was that a common-effect fit has no between-study variance.
-#   4. easydr_select printed "Refitted one-stage by maximum likelihood" even when
-#      a common-effect request had overridden that estimator.
 #
 # None of them had a test, which is why all of them shipped. These are
 # those tests.
@@ -118,32 +118,3 @@ test_that("a sensitivity analysis inherits the common-effect choice", {
   }
 })
 
-test_that("easydr_select does not claim maximum likelihood when a common effect was asked for", {
-  # easydr_select forces ML so information criteria are comparable across
-  # candidates. A common-effect request beats that, so claiming ML afterwards
-  # would describe a fit that was not made.
-  cands <- list(list(shape = "linear"), list(shape = "quadratic"))
-
-  expect_warning(
-    sel <- easydr_select(alcohol_cvd, sm = "RR", quiet = TRUE,
-                     candidates = cands, common = TRUE),
-    "not refitted by maximum likelihood")
-  expect_false(sel$forced_ml)
-  out <- paste(capture.output(print(sel)), collapse = "\n")
-  expect_false(grepl("Refitted one-stage by maximum likelihood", out,
-                     fixed = TRUE))
-  expect_identical(sel$best$provenance$method, "fixed")
-
-  # random = FALSE is the other route to the same model, so it warns too.
-  expect_warning(
-    easydr_select(alcohol_cvd, sm = "RR", quiet = TRUE, candidates = cands,
-              random = FALSE),
-    "not refitted by maximum likelihood")
-
-  # The default path still forces ML and still says so.
-  quiet_sel <- easydr_select(alcohol_cvd, sm = "RR", quiet = TRUE,
-                         candidates = cands)
-  expect_true(quiet_sel$forced_ml)
-  expect_match(paste(capture.output(print(quiet_sel)), collapse = "\n"),
-               "Refitted one-stage by maximum likelihood")
-})

@@ -13,8 +13,6 @@
 #' \describe{
 #'   \item{[easydr()]}{fit it. One entry point for every outcome; `sm` decides
 #'     which columns are read.}
-#'   \item{[easydr_select()]}{compare candidate shapes, when you want the
-#'     comparison and are willing to read what it assumes.}
 #'   \item{[easydr_forest()]}{the study trends and the pooled one, laid out as
 #'     a forest plot.}
 #'   \item{[easydr_curve()]}{the fitted dose-response with its band.}
@@ -80,7 +78,5 @@
 #' @importFrom Hmisc rcspline.eval
 #' @importFrom utils head flush.console
 #' @importFrom mixmeta qtest
-#' @importFrom graphics abline arrows axis box lines mtext par points polygon
-#' @importFrom graphics segments strwidth symbols text title
-#' @importFrom grDevices adjustcolor
+#' @importFrom rlang .data
 NULL

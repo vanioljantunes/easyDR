@@ -41,8 +41,10 @@ test_that("the shape is never chosen for the caller", {
   expect_error(easydr(alcohol_cancer, sm = "IRR"),
                "name the `shape` you want fitted")
   expect_error(easydr(alcohol_cancer, sm = "IRR"), "There is no default")
-  # And the error points at the one function that does run the comparison.
-  expect_error(easydr(alcohol_cancer, sm = "IRR"), "easydr_select")
+  # The error lists what you may name, so the fix is in the message.
+  for (shape in c("linear", "rcs", "fp", "quadratic", "log")) {
+    expect_error(easydr(alcohol_cancer, sm = "IRR"), shape)
+  }
 })
 
 test_that("sm selects the outcome kind, and the wrong columns are refused", {
@@ -99,9 +101,9 @@ test_that("min.levels moves the floor the check applies and the line reports it"
 test_that("the curve is named, and named on the model scale", {
   fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
                 dose.unit = "g/day")
-  expect_equal(fit$curve_label, "positive association")
+  expect_equal(fit$curve_label, "monotonic increasing")
   expect_match(paste(capture.output(print(fit)), collapse = " "),
-               "Curve shape: positive association")
+               "Curve shape: monotonic increasing")
 
   # The label describes how the effect changes, so taking the log of a
   # monotone curve cannot change it.

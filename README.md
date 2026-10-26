@@ -10,7 +10,7 @@ Sponsored by [Meta-Analysis Academy](https://metaanalysisacademy.com).
 | Section | Jump to |
 |:---|:---|
 | **[1 · The book](#1-the-book)**<br><sub>Free, six chapters, the whole method in the order of the work</sub> | [Read it](https://vanioljantunes.github.io/easyDR/) · [Chapters](#what-is-in-it) |
-| **[2 · What this package is](#2-what-this-package-is)**<br><sub>One entry point, seven things to do with what it returns</sub> | |
+| **[2 · What this package is](#2-what-this-package-is)**<br><sub>One entry point, six things to do with what it returns</sub> | |
 | **[3 · Install, data, and what <code>sm</code> decides](#3-install-data-and-what-sm-decides)**<br><sub>From a spreadsheet to a table easyDR reads</sub> | |
 | **[4 · Fit it](#4-fit-it)**<br><sub><code>easydr()</code>, and why <code>shape</code> has no default</sub> | |
 | **[5 · What to do with the fit](#5-what-to-do-with-the-fit)**<br><sub>Forest, leave-one-out, meta-regression, bubble, funnel</sub> | |
@@ -46,7 +46,17 @@ it locally, after `R CMD INSTALL .` so the chunks can call the package.
 
 ## 2. What this package is
 
-![One call and seven things to do with it: easyDR has no formula argument, and folds the viability check and the curve label into the fit](man/figures/overview.png)
+![One call and six things to do with it: easyDR has no formula argument, and folds the viability check and the curve label into the fit](man/figures/overview.png)
+
+```r
+library(easyDR)
+
+fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+              dose.unit = "g/day", at = c(10, 25, 50))
+fit                 # the whole answer, printed at once
+fit$viability       # the check that runs before the model
+fit$curve_label     # the name the curve earned: "monotonic increasing"
+```
 
 ---
 
@@ -54,17 +64,65 @@ it locally, after `R CMD INSTALL .` so the chunks can call the package.
 
 ![Install easyDR, lay the data out one row per exposure level per study, and let sm choose which columns are read](man/figures/data.png)
 
+```r
+# install.packages("remotes")
+remotes::install_github("vanioljantunes/easyDR")
+library(easyDR)
+
+head(alcohol_cancer)   # a binary outcome, one row per intake category
+head(aripiprazole)     # a continuous one: mean.e, sd.e, n.e
+```
+
 ---
 
 ## 4. Fit it
 
-![easydr() in one call, why shape has no default, and the same studies fitted as a line and as a spline](man/figures/api.png)
+![easydr() in one call, the five shapes you can name, and easydr_curve() with its arguments](man/figures/api.png)
+
+```r
+fit <- easydr(alcohol_cancer, sm = "IRR", shape = "linear",
+              dose.unit = "g/day", at = c(10, 25, 50))
+
+# shape has no default. Leave it out and the error lists what you may write:
+# "linear", "log", "quadratic", "rcs", "fp".
+easydr(alcohol_cancer, sm = "IRR")
+
+# the curve, with every argument the picture used
+easydr_curve(fit,
+             main  = "Alcohol and colorectal cancer",
+             xlab  = "Alcohol intake (g/day)",
+             ylab  = "Rate ratio",
+             ylim  = c(0.9, 1.8),
+             round = 2,
+             prediction = TRUE)
+```
 
 ---
 
 ## 5. What to do with the fit
 
 ![easydr_forest, easydr_loo, easydr_metareg, easydr_bubble and easydr_funnel, all taking the object easydr returned](man/figures/plots.png)
+
+```r
+cvd <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
+
+# what each study contributed
+easydr_forest(fit)
+easydr_forest(rcs, at = 25)              # a curve has no single trend
+
+# is one study carrying it
+easydr_loo(cvd, quiet = TRUE)            # draws the curves and the table
+easydr_loo(cvd, quiet = TRUE, plot = FALSE)$table   # the table alone
+
+# does a study characteristic explain it
+mr <- easydr_metareg(cvd, ~ design)
+mr
+easydr_bubble(mr, labels = TRUE)
+
+# are the small studies different
+f <- easydr_funnel(fit, labels = TRUE)
+f$egger
+```
 
 ---
 
@@ -99,7 +157,7 @@ Pooling: two-stage random effects, reml. Covariance: Greenland and Longnecker.
 
 Per 1 g/day increase:  IRR 1.006  (95% CI 1.004 to 1.009)
 Reference dose: 0 g/day
-Curve shape: positive association
+Curve shape: monotonic increasing
 
 Departure from linearity: not estimable
   a linear fit has one term, so there is nothing to test it against
@@ -159,7 +217,7 @@ is measured against it.
 **Step 4. What each cohort contributed.**
 
 ```r
-f <- easydr_forest(fit)
+f <- easydr_forest(fit)      # draws the forest, and returns its table
 data.frame(study = f$table$study, round(f$table[, c("est", "se", "weight")], 5))
 ```
 
@@ -191,8 +249,8 @@ intercept        se         t         p
 ```
 
 Egger's regression, not Deeks': Deeks' test is for diagnostic test accuracy
-and does not apply here. With eight studies it has little power, and the plot
-says so.
+and does not apply here. With eight studies it has little power, and the figure
+says so above the panel.
 
 **Step 6. The two checks easyDR ran for you.**
 
@@ -202,7 +260,7 @@ fit$viability
 ```
 
 ```text
-[1] "positive association"
+[1] "monotonic increasing"
 Dose-response viability
 
  study levels has_reference two_stage_ok
@@ -232,7 +290,7 @@ No blocking problems found.
 | I-squared | 0% |
 | Largest contribution | nym, 20.4% |
 | Egger intercept | -1.0879 (SE 1.2204), p = 0.407 |
-| Curve shape | positive association |
+| Curve shape | monotonic increasing |
 
 Captured on R 4.6.0 with `dosresmeta` 2.2.0. The last digit or two can move
 with a different BLAS or engine version; the rate ratios should agree to three
@@ -287,7 +345,8 @@ half.
 The four pictures above are built from [`tutorial/`](tutorial): `Rscript
 tutorial/figures.R` draws the figures and captures the console blocks, then
 `node tutorial/render.mjs <page>` for each of `overview`, `data`, `api` and
-`plots`.
+`plots`. The plots are laid out to the easyDTA standard, with `metafor` as the
+reference for the funnel and the bubble.
 
 Questions and corrections:
 [issues](https://github.com/vanioljantunes/easyDR/issues).

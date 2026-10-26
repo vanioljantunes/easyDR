@@ -9,8 +9,8 @@
 <div class="sheet">
 
   <header>
-    <h1>Fit it</h1>
-    <p>One call, the whole answer, and a shape you had to name</p>
+    <h1>Fit it, then draw it</h1>
+    <p>One call for the model, one for the picture, and a shape you had to name</p>
   </header>
 
   <section class="step">
@@ -52,7 +52,7 @@ Covariance: Greenland and Longnecker.
 
 <span class="hl">Per 1 g/day increase:  IRR 1.006  (95% CI 1.004 to 1.009)</span>
 Reference dose: 0 g/day
-Curve shape: positive association
+Curve shape: monotonic increasing
 
 Departure from linearity: not estimable
   a linear fit has one term, so there is nothing
@@ -91,85 +91,100 @@ Defaults applied:
   <section class="step">
     <div class="step-head">
       <div class="num">2</div>
-      <h2>Why <span class="mono">shape</span> has no default</h2>
+      <h2>The five shapes you can name</h2>
     </div>
 
     <div class="g2 narrow">
       <div>
-        <p class="note">
-          It would be easy to rank the candidate shapes and fit the winner.
-          easyDR does not, because the ranking is only defensible under
-          conditions the default call does not meet.
+        <table class="lab">
+          <tr><th style="width:36%">shape</th><th>Fits</th><th style="width:14%">Terms</th></tr>
+          <tr><td class="l">"linear"</td><td>a straight line through the dose</td><td>1</td></tr>
+          <tr><td class="l">"log"</td><td>a straight line through log dose</td><td>1</td></tr>
+          <tr><td class="l">"quadratic"</td><td>dose and dose squared</td><td>2</td></tr>
+          <tr><td class="l">"rcs"</td><td>a restricted cubic spline; <code>knots</code> places them</td><td>2+</td></tr>
+          <tr><td class="l">"fp"</td><td>a fractional polynomial; <code>powers</code> chooses the pair</td><td>2</td></tr>
+        </table>
+        <p class="note" style="margin-top:14px">
+          There is no default and nothing is ranked for you. The shape is a
+          claim about the biology, and it belongs in your protocol with a
+          reason beside it: the dose range your readers care about, whether a
+          threshold or a flattening is plausible for this exposure, what
+          comparable reviews fitted. Leave it out and the error tells you what
+          you may write.
         </p>
-        <ul class="plain">
-          <li><b>REML cannot compare them.</b> It conditions on the fixed
-              effects, so a line and a curve are scored on different
-              likelihoods.</li>
-          <li><b>A two-stage criterion moves with the units.</b> Multiplying
-              the dose by 1000 changes no model at all and moves the two-stage
-              AIC on this data by over a hundred points.</li>
-          <li><b>The top of the table is usually a tie.</b> On these eight
-              cohorts, fourteen of the forty-two candidates sit within 2 AIC
-              of the best.</li>
-        </ul>
-        <p class="note">
-          So the shape is yours, chosen for reasons you can write down: the
-          biology, the dose range your readers care about, what comparable
-          reviews did. <code>easydr_select()</code> runs the comparison
-          properly when you want it, refitting one-stage by maximum likelihood
-          and saying so.
-        </p>
-<pre class="code">sel &lt;- <span class="f">easydr_select</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"IRR"</span>,
-                     <span class="a">dose.unit</span> = <span class="s">"g/day"</span>)</pre>
       </div>
       <div>
-        <div class="console">Shape selection for a dose-response meta-analysis
-42 candidates tried, 42 fitted, 0 failed, 3.3 seconds
-Ranked on AIC. Lower is better.
-Refitted one-stage by maximum likelihood. Restricted
-  maximum likelihood cannot compare models with
-  different dose terms, and a two-stage criterion
-  moves with the scale of those terms.
-
- rank shape              terms AIC  BIC  deviance p
-  1   fp powers 0.5, 0.5 2     -7.3  1.2 0.337
-  2   fp powers -0.5, 1  2     -7.3  1.2 0.337
-  3   fp powers 0, 1     2     -7.3  1.2 0.337
-  4   fp powers -1, 1    2     -6.9  1.5 0.324
-  5   fp powers 0, 0.5   2     -6.9  1.5 0.323
-  6   fp powers 0.5, 1   2     -6.8  1.7 0.318
-  7   fp powers -2, 2    2     -6.7  1.8 0.313
-  8   fp powers -1, 2    2     -6.3  2.2 0.298
-  9   fp powers -2, 1    2     -6.2  2.2 0.298
- 10   linear             1     -6.1 -2.8 0.148
-<span class="dim">... 10 of 42 fitted candidates shown</span>
-
-<span class="hl">Within 2 AIC of the best: fp powers 0.5, 0.5; fp
-powers -0.5, 1; fp powers 0, 1; ... and 11 more</span>
-This ranking is a proposal, not a decision. To adopt
-the best-ranked shape, state it yourself:
-  easydr(data, ..., shape = "fp", powers = c(0.5, 0.5))</div>
+<pre class="code"><span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span> = <span class="s">"IRR"</span>)</pre>
+        <div class="console" style="margin-top:10px">Error: easydr: name the `shape` you want fitted.
+There is no default, because the shape is a claim
+about the biology and belongs in your protocol with
+a reason beside it. Name one of:
+<span class="hl">  shape = "linear"      a straight line through the dose</span>
+<span class="hl">  shape = "log"         a straight line through log dose</span>
+<span class="hl">  shape = "quadratic"   dose and dose squared</span>
+<span class="hl">  shape = "rcs"         a restricted cubic spline, see `knots`</span>
+<span class="hl">  shape = "fp"          a fractional polynomial, see `powers`</span></div>
+        <p class="note" style="margin-top:12px">
+          A shape with more than one term prints a departure-from-linearity
+          test, which a straight line cannot, and prints no single slope,
+          because no single number describes a curve.
+        </p>
       </div>
     </div>
+
+    <figure class="plotcard" style="margin-top:20px">
+      <img src="../man/figures/fig-shapes.png" alt="Six panels, one per curve shape label">
+      <figcaption>The six names a fitted curve can be given, from the
+      vocabulary dose-response reviews publish. <code>easydr()</code> applies
+      one and prints it as <code>Curve shape:</code>.</figcaption>
+    </figure>
   </section>
 
   <section class="step">
     <div class="step-head">
       <div class="num">3</div>
-      <h2>A line, and the same studies as a curve</h2>
+      <h2>Draw it: <span class="mono">easydr_curve()</span></h2>
     </div>
 
-    <p class="note">
-      Changing one argument changes the model and nothing else. A curve prints
-      a departure-from-linearity test, which a straight line cannot, and prints
-      no single slope, because no single number describes it.
-    </p>
+    <div class="g2 wide">
+      <div>
+        <p class="note">
+          It takes the object <code>easydr()</code> returned and nothing else:
+          every number on the picture was computed by the fit. These arguments
+          choose what appears and how.
+        </p>
+<pre class="code"><span class="c"># the defaults</span>
+<span class="f">easydr_curve</span>(fit)
 
-    <div class="g2" style="margin-top:4px">
+<span class="c"># titled, labelled, pinned, with the prediction band</span>
+<span class="f">easydr_curve</span>(fit,
+             <span class="a">main</span>  = <span class="s">"Alcohol and colorectal cancer"</span>,
+             <span class="a">xlab</span>  = <span class="s">"Alcohol intake (g/day)"</span>,
+             <span class="a">ylab</span>  = <span class="s">"Rate ratio"</span>,
+             <span class="a">ylim</span>  = <span class="f">c</span>(0.9, 1.8),
+             <span class="a">round</span> = 2,
+             <span class="a">prediction</span> = <span class="s">TRUE</span>)</pre>
+      </div>
+      <div>
+        <table class="lab">
+          <tr><th style="width:30%">Argument</th><th>Does what</th></tr>
+          <tr><td class="m">main</td><td>Title. <code>FALSE</code> draws none.</td></tr>
+          <tr><td class="m">xlab, ylab</td><td>Axis labels; written from the fit if left out.</td></tr>
+          <tr><td class="m">xlim, ylim</td><td>Limits on the reported scale, so <code>c(0.9, 1.8)</code> for a ratio.</td></tr>
+          <tr><td class="m">round</td><td>Digits beside each marked dose. <code>NULL</code> marks without labelling.</td></tr>
+          <tr><td class="m">prediction</td><td><code>TRUE</code> adds the prediction band, when the fit has one.</td></tr>
+          <tr><td class="m">points</td><td>Marks the doses named in <code>at</code>.</td></tr>
+          <tr><td class="m">reference</td><td>Null line, and the reference dose.</td></tr>
+          <tr><td class="m">rug</td><td>Ticks the exposure categories the studies reported.</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="g2" style="margin-top:18px">
       <figure class="plotcard">
         <img src="../man/figures/fig-curve.png" alt="Fitted linear dose-response with its confidence band">
         <figcaption><code>shape = "linear"</code>: one slope, read at 10, 25
-        and 50 g/day.</figcaption>
+        and 50 g/day. The rug shows where the data actually is.</figcaption>
       </figure>
       <figure class="plotcard">
         <img src="../man/figures/fig-curve-rcs.png" alt="The same studies fitted as a restricted cubic spline">

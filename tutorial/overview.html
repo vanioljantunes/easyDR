@@ -9,7 +9,7 @@
 <div class="sheet">
 
   <header>
-    <h1>One call, and seven things to do with it</h1>
+    <h1>One call, and six things to do with it</h1>
     <p>Dose-response meta-analysis argued the way the <span style="font-family:Consolas,monospace">meta</span> package argues</p>
   </header>
 
@@ -61,7 +61,7 @@ fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span
     </div>
 
     <p class="note">
-      One function fits. The other seven take what it returned. Nothing else is
+      One function fits. The other six take what it returned. Nothing else is
       exported, and nothing in the package asks you to call a second thing to
       get the first answer.
     </p>
@@ -73,14 +73,8 @@ fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span
         <td>The pooled dose-response, its heterogeneity, the prediction
             interval, the predicted effects, the viability check and a name for
             the curve.</td>
-        <td>Choose the shape. <code>shape</code> has no default.</td>
-      </tr>
-      <tr>
-        <td class="l">easydr_select()</td>
-        <td>Around forty candidate shapes, ranked, with the ties shown and the
-            straight line among them.</td>
-        <td>Adopt the winner. It calls the result a proposal and leaves the
-            decision with you.</td>
+        <td>Choose the shape. <code>shape</code> has no default, and nothing
+            ranks the candidates for you.</td>
       </tr>
       <tr>
         <td class="l">easydr_forest()</td>
@@ -97,8 +91,8 @@ fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span
       </tr>
       <tr>
         <td class="l">easydr_loo()</td>
-        <td>The fit with each study left out in turn, ranked by how far the
-            result moved.</td>
+        <td>The curve refitted with each study left out in turn, drawn over
+            the pooled one, ranked by how far the result moved.</td>
         <td>Attach a p value. The refits are not independent.</td>
       </tr>
       <tr>
@@ -146,7 +140,7 @@ fit &lt;- <span class="f">easydr</span>(alcohol_cancer, <span class="a">sm</span
                <span class="a">shape</span> = <span class="s">"linear"</span>)
 
 fit$viability   <span class="c"># the per-study table</span>
-fit$curve_label <span class="c"># "positive association"</span></pre>
+fit$curve_label <span class="c"># "monotonic increasing"</span></pre>
       </div>
       <div>
         <div class="console">Dose-response meta-analysis (incidence rate ratio)
@@ -154,7 +148,7 @@ Pooling: two-stage random effects, reml.
 
 Per 1 g/day increase:  IRR 1.006  (95% CI 1.004 to 1.009)
 Reference dose: 0 g/day
-<span class="hl">Curve shape: positive association</span>
+<span class="hl">Curve shape: monotonic increasing</span>
 
 Heterogeneity: Q = 4.78 (df = 7), p = 0.687; I-squared = 0%
 <span class="dim">...</span>
@@ -167,10 +161,12 @@ Defaults applied:
     </div>
 
     <figure class="plotcard" style="margin-top:20px">
-      <img src="../man/figures/fig-shapes.png" alt="Five panels, one per curve shape label">
-      <figcaption>The five names a curve can be given. The label describes how
-      the effect changes from one dose to the next, so it is the same on the
-      log scale and on the ratio scale.</figcaption>
+      <img src="../man/figures/fig-shapes.png" alt="Six panels, one per curve shape label">
+      <figcaption>The six names a curve can be given, in the words
+      dose-response reviews publish: a curve that plateaus, one still moving at
+      the top dose, or a bell. The label describes how the effect changes from
+      one dose to the next, so it is the same on the log scale and on the ratio
+      scale.</figcaption>
     </figure>
   </section>
 

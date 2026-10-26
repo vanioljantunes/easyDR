@@ -57,21 +57,18 @@ test_that("a refit resolves the same columns, not whatever the subset suggests",
   expect_identical(r$args$TE, full$args$TE)
 })
 
-test_that("a result from the selection loop repeats its shape and does not re-select", {
-  # The shape of a selected fit was proposed, not stated. A sensitivity
-  # analysis still inherits it as a fact: re-running the loop on each subset
-  # would answer a different question on every row, which is the one thing
-  # Phase 0 added to the spec (research, what this feature must not do).
-  sel  <- easydr_select(alcohol_cvd, sm = "RR", dose.unit = "g/day", quiet = TRUE,
-                    candidates = list(list(shape = "linear"),
-                                      list(shape = "quadratic")))
-  best <- sel$best
-  inh  <- dr_inherited(best)
-  r    <- dr_refit(inh, inh$studies[-1])
+test_that("a refit repeats the fitted shape and never re-derives it", {
+  # A curve's knots were placed on the full set of doses. Re-deriving them on
+  # a subset would answer a different question on every row, so the shape
+  # travels as an object and the refit uses the fitted basis.
+  fit <- easydr(alcohol_cvd, sm = "RR", shape = "quadratic",
+                dose.unit = "g/day")
+  inh <- dr_inherited(fit)
+  r   <- dr_refit(inh, inh$studies[-1])
 
-  expect_identical(r$shape$name, best$shape$name)
-  expect_identical(r$shape$terms, best$shape$terms)
-  expect_identical(r$shape$label, best$shape$label)
+  expect_identical(r$shape$name, fit$shape$name)
+  expect_identical(r$shape$terms, fit$shape$terms)
+  expect_identical(r$shape$label, fit$shape$label)
 })
 
 test_that("the subset is the only thing that changes", {

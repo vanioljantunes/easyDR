@@ -11,8 +11,9 @@ Description: A front end for dose-response meta-analysis, argued like the
     dose-response with its heterogeneity, prediction interval and predicted
     effects. Companion plots cover the curve, a forest of study trends,
     leave-one-out, meta-regression with bubble plots, and a funnel with
-    Egger's test. Estimation is delegated to 'dosresmeta'. Built alongside
-    the free book at <https://vanioljantunes.github.io/easyDR/>.
+    Egger's test, laid out the way a published review lays them out.
+    Estimation is delegated to 'dosresmeta'. Built alongside the free book
+    at <https://vanioljantunes.github.io/easyDR/>.
 License: GPL-2
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -23,8 +24,11 @@ Imports:
     metafor,
     mixmeta,
     Hmisc,
-    graphics,
-    grDevices,
+    ggplot2,
+    gridExtra,
+    scales,
+    grid,
+    rlang,
     stats,
     utils
 Suggests: 
