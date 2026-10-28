@@ -75,7 +75,7 @@ observed exposure range marked.
 
 ## Naming the shape
 
-Using `curve_shape()` so the results paragraph and the figure agree.
+Using the fit's own `curve_label` so the results paragraph and the figure agree.
 
 ## Sensitivity analyses in code
 

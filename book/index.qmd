@@ -41,7 +41,7 @@ Runnable code appears in blocks you can copy:
 ```{r}
 #| eval: false
 library(easyDR)
-dr_viability(my_data)
+easydr(my_data, sm = "RR", shape = "linear")
 ```
 
 Terms are defined where they first matter rather than in a glossary, because a

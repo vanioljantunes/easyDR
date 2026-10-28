@@ -215,7 +215,7 @@ never going to show one.
 ```{r}
 #| label: fig-curve-shapes
 #| echo: false
-#| fig-cap: "The five shapes, one panel each. The dashed line is the null. The names follow the literature: a curve that rises throughout is a positive association, one that rises and then flattens is an Emax curve, and one that turns is non-monotonic. These are exactly the labels `curve_shape()` returns. Schematic."
+#| fig-cap: "The five shapes, one panel each. The dashed line is the null. The names follow the literature: a curve that rises throughout is a positive association, one that rises and then flattens is an Emax curve, and one that turns is non-monotonic. These are exactly the labels a fit reports in `curve_label`. Schematic."
 #| fig-width: 10
 #| fig-height: 2.6
 
@@ -233,9 +233,8 @@ can use the same vocabulary as the literature:
 ```{r}
 library(easyDR)
 
-curve_shape(dose = 0:4, effect = c(0, 0.20, 0.40, 0.60, 0.80))
-curve_shape(dose = 0:4, effect = c(0, 0.50, 0.80, 0.85, 0.86))
-curve_shape(dose = 0:4, effect = c(0, 0.50, 0.90, 0.40, -0.10))
+fit <- easydr(alcohol_cvd, sm = "OR", shape = "linear")
+fit$curve_label
 ```
 
 ## Why it is not a network meta-analysis
@@ -482,7 +481,7 @@ box(col = frame)
 ```
 
 Chapter 2 turns this list into a check you can run against a real extraction
-sheet, and `easyDR::dr_viability()` performs it:
+sheet. The heart of it is one line:
 
 ```{r}
 d <- data.frame(
@@ -492,7 +491,7 @@ d <- data.frame(
   n     = c(100, 100, 100, 50, 50)
 )
 
-dr_viability(d)
+table(d$study)
 ```
 
 Study B has two levels, so a two-stage fit would silently drop it. Knowing that
