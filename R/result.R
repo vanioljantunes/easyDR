@@ -35,7 +35,15 @@ dr_result <- function(fit, prep, sm, dose_unit, at, level, proc, method, call,
     b     <- as.numeric(coef(fit))[1]
     se    <- sqrt(as.numeric(vcov(fit))[1])
     zcrit <- stats::qnorm(1 - (1 - level) / 2)
-    list(label = dr_label(sm, dose_unit), estimate = b, se = se,
+    # A one-term shape still has a single coefficient, but it is per unit of
+    # that term, which is the dose itself only for a straight line. A log fit
+    # reported "per 1 g/day" was describing a step in log dose.
+    lab <- if (!is.null(shape$slope_label)) {
+      shape$slope_label
+    } else {
+      dr_label(sm, dose_unit)
+    }
+    list(label = lab, estimate = b, se = se,
          lb = b - zcrit * se, ub = b + zcrit * se,
          p = 2 * stats::pnorm(-abs(b / se)),
          scale = if (ratio) "log" else "raw")

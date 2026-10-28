@@ -44,10 +44,12 @@ One of \code{"RR"}, \code{"OR"}, \code{"IRR"}, \code{"MD"}, \code{"SMD"}. It mus
 an odds ratio belongs to a case-control study, a rate ratio needs a
 person-time denominator.}
 
-\item{shape}{The dose-response form, required: \code{"linear"}, \code{"rcs"} for a
-restricted cubic spline, \code{"fp"} for a fractional polynomial,
-\code{"quadratic"}, or \code{"log"}. There is no default. A shape the data cannot
-support stops the fit rather than falling back to a simpler one.}
+\item{shape}{The dose-response form, required: \code{"linear"}, \code{"log"},
+\code{"quadratic"}, \code{"cubic"}, \code{"rcs"} for a restricted cubic spline, or
+\code{"fp"} for a fractional polynomial. There is no default. A shape the data
+cannot support stops the fit rather than falling back to a simpler one.
+Note that \code{"cubic"} is the third-degree polynomial in dose, which is a
+different model from the restricted cubic spline under \code{"rcs"}.}
 
 \item{dose}{Name of the column holding the numeric dose you assigned to each
 category. Defaults to the column named \code{dose}. A dose is never inferred
@@ -93,7 +95,10 @@ or \code{"indep"}. \code{NULL}, the default, chooses from what the table supplie
 how many to place. The default is 3 knots at the 10th, 50th and 90th
 percentiles of the non-zero doses, and whatever is used is printed.}
 
-\item{powers}{For \code{shape = "fp"}: the pair of powers, \code{c(-1, 0)} by default.}
+\item{powers}{For \code{shape = "fp"}: one power for a first-order fractional
+polynomial, such as \code{powers = -0.5}, or a pair for a second-order one.
+The default is the pair \code{c(-1, 0)}. A power of 0 is read as the logarithm,
+following Royston and Altman.}
 
 \item{at}{Doses to report predicted effects at. \code{NULL} uses a five-point
 grid across the observed dose range.}
@@ -187,18 +192,22 @@ beside it: what the dose range is, what comparable reviews fitted, whether a
 threshold or a flattening is plausible for this exposure. Letting software
 pick it turns a reviewable decision into an invisible one.
 
-The five you can name:\tabular{lll}{
+The six you can name:\tabular{lll}{
    \code{shape} \tab Fits \tab Terms \cr
    \code{"linear"} \tab a straight line through the dose \tab 1 \cr
    \code{"log"} \tab a straight line through log dose \tab 1 \cr
    \code{"quadratic"} \tab dose and dose squared \tab 2 \cr
+   \code{"cubic"} \tab dose, dose squared and dose cubed \tab 3 \cr
    \code{"rcs"} \tab a restricted cubic spline, \code{knots} to place them \tab 2 or more \cr
-   \code{"fp"} \tab a fractional polynomial, \code{powers} to choose the pair \tab 2 \cr
+   \code{"fp"} \tab a fractional polynomial, \code{powers} to choose them \tab 1 or 2 \cr
 }
 
 
 A shape with more than one term prints a departure-from-linearity test and
-no single slope, because no single number describes a curve.
+no single slope, because no single number describes a curve. A one-term
+shape that is not the straight line, \code{"log"} or a one-power \code{"fp"}, reports
+its coefficient per unit of its own term rather than per unit of dose, and
+says which.
 }
 
 \section{Reading the slope and its reference dose}{

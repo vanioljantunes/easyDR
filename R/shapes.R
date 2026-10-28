@@ -22,10 +22,12 @@ dr_shape <- function(shape, dose, knots = NULL, powers = NULL, studies = NULL) {
     dr_check_shape(shape, dose, studies)
     return(shape)
   }
-  shape <- match.arg(shape, c("linear", "rcs", "fp", "quadratic", "log"))
+  shape <- match.arg(shape, c("linear", "rcs", "fp", "quadratic", "cubic",
+                              "log"))
   out <- switch(shape,
                 linear    = dr_shape_linear(),
                 quadratic = dr_shape_quadratic(),
+                cubic     = dr_shape_cubic(dose),
                 log       = dr_shape_log(dose),
                 rcs       = dr_shape_rcs(dose, knots),
                 fp        = dr_shape_fp(dose, powers))
@@ -67,9 +69,40 @@ dr_shape_quadratic <- function() {
 
 #' @keywords internal
 #' @noRd
+dr_shape_cubic <- function(dose) {
+  # A dose reaching 60 gives a cubed design value near 2e5. That ill-conditions
+  # the likelihood, which is the problem Royston and Altman scale a fractional
+  # polynomial for, so the cubic is scaled the same way and by the same rule.
+  # The scale is fixed from the fitting doses and stored, so the basis stays a
+  # function of the fitted shape rather than of whatever grid it is handed.
+  scale <- 10^round(log10(max(abs(dose), na.rm = TRUE)))
+  if (!is.finite(scale) || scale <= 0) scale <- 1
+
+  list(name = "cubic", terms = 3L, min_levels = 4L, knots = NULL,
+       powers = NULL, scaling = list(shift = 0, scale = scale),
+       label = paste0("cubic in dose",
+                      if (scale != 1) {
+                        paste0(", dose divided by ",
+                               format(scale, scientific = FALSE),
+                               " to keep the design well conditioned")
+                      } else ""),
+       basis = function(d) {
+         # The dose comes first so a Wald test on the remaining terms is a test
+         # of departure from linearity (research decision D1).
+         z <- d / scale
+         cbind(dose = z, dose_sq = z^2, dose_cu = z^3)
+       })
+}
+
+#' @keywords internal
+#' @noRd
 dr_shape_log <- function(dose) {
   shift <- if (any(dose <= 0)) 1 else 0
   list(name = "log", terms = 1L, min_levels = 2L, knots = NULL, powers = NULL,
+       # The coefficient of a one-term shape is per unit of whatever that term
+       # is. Only the straight line has a term that is the dose itself, so only
+       # it may be reported per unit of dose.
+       slope_label = "Per 1 unit increase in log dose",
        scaling = if (shift > 0) list(shift = shift) else NULL,
        label = if (shift > 0) {
          paste0("logarithmic in dose, shifted by ", shift,
@@ -162,10 +195,15 @@ dr_shape_rcs <- function(dose, knots) {
 #' @noRd
 dr_shape_fp <- function(dose, powers) {
   p <- if (is.null(powers)) c(-1, 0) else as.numeric(powers)
-  if (length(p) != 2L) {
-    stop("easydr: `powers` must be a pair, for example c(-1, 0). ",
-         length(p), " value", if (length(p) == 1L) " was" else "s were",
-         " given.", call. = FALSE)
+  # One power is a first-order fractional polynomial, which Royston and Altman
+  # treat as the first candidate, and two is a second-order one. Three or more
+  # is a model this package does not fit, and a silent truncation to the first
+  # two would answer a different question.
+  if (!length(p) %in% c(1L, 2L)) {
+    stop("easydr: `powers` takes one value for a first-order fractional ",
+         "polynomial, for example powers = -0.5, or a pair for a ",
+         "second-order one, for example c(-1, 0). ", length(p),
+         " values were given.", call. = FALSE)
   }
   shift <- if (any(dose <= 0)) 1 - min(dose) else 0
 
@@ -178,9 +216,15 @@ dr_shape_fp <- function(dose, powers) {
   scale <- 10^round(log10(max(dose + shift, na.rm = TRUE)))
   if (!is.finite(scale) || scale <= 0) scale <- 1
 
-  list(name = "fp", terms = 2L, min_levels = 3L, knots = NULL, powers = p,
+  list(name = "fp", terms = length(p), min_levels = length(p) + 1L,
+       knots = NULL, powers = p,
+       slope_label = if (length(p) == 1L) {
+         paste0("Per 1 unit increase in ",
+                if (p[1L] == 0) "log(dose)" else paste0("dose^", p[1L]))
+       } else NULL,
        scaling = list(shift = shift, scale = scale),
-       label = paste0("fractional polynomial, powers ",
+       label = paste0("fractional polynomial, ",
+                      if (length(p) == 1L) "power " else "powers ",
                       paste(p, collapse = ", "),
                       if (shift > 0) {
                         paste0(", dose shifted by ", signif(shift, 4),
@@ -191,12 +235,21 @@ dr_shape_fp <- function(dose, powers) {
                                " to keep the design well conditioned")
                       } else ""),
        basis = function(d) {
+         z <- (d + shift) / scale
+         # dosresmeta::fracpol() computes second-order fractional polynomials
+         # only, and says so, so a first-order one is built here from the
+         # Royston and Altman definition: a single term z^p, with p = 0 read
+         # as log(z).
+         if (length(p) == 1L) {
+           m <- matrix(if (p[1L] == 0) log(z) else z^p[1L], ncol = 1L)
+           colnames(m) <- "fp1"
+           return(m)
+         }
          # fracpol needs at least two values to name its columns, so a single
          # dose is duplicated and the extra row dropped.
-         one <- length(d) == 1L
-         x   <- if (one) rep(d, 2L) else d
-         m   <- as.matrix(dosresmeta::fracpol((x + shift) / scale, p = p,
-                                              scaling = FALSE))
+         one <- length(z) == 1L
+         x   <- if (one) rep(z, 2L) else z
+         m   <- as.matrix(dosresmeta::fracpol(x, p = p, scaling = FALSE))
          if (one) m <- m[1L, , drop = FALSE]
          colnames(m) <- paste0("fp", seq_len(ncol(m)))
          m

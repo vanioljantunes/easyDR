@@ -72,9 +72,11 @@ spelling out.
   are read, how the within-study covariance is reconstructed, and whether the
   effect is drawn on a log axis.
 * **`shape`**. The curve being fitted: `"linear"`, `"log"`, `"quadratic"`,
-  `"rcs"` or `"fp"`. There is no default, and easyDR will not guess. The shape
-  is a claim about the biology, and it belongs in your protocol with a reason
-  beside it.
+  `"cubic"`, `"rcs"` or `"fp"`. There is no default, and easyDR will not
+  guess. The shape is a claim about the biology, and it belongs in your
+  protocol with a reason beside it. Note that `"cubic"` is the third-degree
+  polynomial in dose, and `"rcs"` is the restricted cubic spline: they share a
+  word and are different models.
 * **`at`**. The doses at which effects are reported. The curve marks them and
   ticks them on the axis. If you say nothing, five doses across the observed
   range are used.
@@ -204,12 +206,21 @@ a row shows: the study's own slope per unit of dose, taken from the two-stage
 first stage. A shape with more than one term has no single slope, so the rows
 become the predicted effect at one dose, and `at` chooses which.
 
-### The five shapes, fitted
+### The six shapes, fitted
 
 The `shape` argument is the one decision easyDR refuses to make for you. Here
-are all five, fitted to the same eight cohorts, on the same axes.
+are all six, fitted to the same eight cohorts, on the same axes.
 
-![The five shapes fitted to the same studies: linear, log, quadratic, restricted cubic spline and fractional polynomial](man/figures/fig-shapes-fitted.png)
+| `shape` | Fits | Terms |
+|:---|:---|:---|
+| `"linear"` | a straight line through the dose | 1 |
+| `"log"` | a straight line through log dose | 1 |
+| `"quadratic"` | dose and dose squared | 2 |
+| `"cubic"` | dose, dose squared and dose cubed | 3 |
+| `"rcs"` | a restricted cubic spline, `knots` places them | 2 or more |
+| `"fp"` | a fractional polynomial, `powers` chooses one or two | 1 or 2 |
+
+![The six shapes fitted to the same studies: linear, log, quadratic, cubic, restricted cubic spline and fractional polynomial](man/figures/fig-shapes-fitted.png)
 
 <details>
 <summary><b>Every shape on the same data</b>: <code>{r the-five-shapes}</code></summary>
@@ -218,26 +229,36 @@ are all five, fitted to the same eight cohorts, on the same axes.
 # Paste the whole block into R.
 library(easyDR)
 
-for (s in c("linear", "log", "quadratic", "rcs", "fp")) {
+for (s in c("linear", "log", "quadratic", "cubic", "rcs", "fp")) {
   f <- easydr(alcohol_cancer, sm = "RR", shape = s, dose.unit = "g/day")
   print(f)
   easydr_curve(f, main = paste0("shape = ", s), result = FALSE)
 }
+
+# A fractional polynomial takes one power as well as a pair.
+easydr(alcohol_cancer, sm = "RR", shape = "fp", powers = -0.5,
+       dose.unit = "g/day")
 ```
 
 </details>
 
 We see that the straight line and the spline tell a similar story here, that
 the log curve rises steeply and then flattens, and that `"log"` and `"fp"`
-start away from zero, because the logarithm of a zero dose is undefined. A
-shape with more than one term also prints a departure-from-linearity test,
+start away from zero, because the logarithm of a zero dose is undefined. The
+cubic dips below the null at low intakes before it rises, which no other
+panel does, and easyDR labels it U-shaped.
+
+A shape with more than one term also prints a departure-from-linearity test,
 which a straight line cannot, and prints no single slope, because no single
-number describes a curve.
+number describes a curve. A one-term shape that is not the straight line,
+meaning `"log"` or a one-power `"fp"`, does report a single coefficient, but
+per unit of its own term: easyDR writes `Per 1 unit increase in log dose`
+rather than per gram per day.
 
 Which one should you fit? Fit the one your protocol names, for the reason your
 protocol gives: the dose range your readers care about, whether a threshold or
 a flattening is plausible for this exposure, and what comparable reviews
-fitted. Choosing the shape after seeing five fits is a "researcher degree of
+fitted. Choosing the shape after seeing six fits is a "researcher degree of
 freedom", and it is the reason easyDR has no default and ranks nothing.
 
 ---
