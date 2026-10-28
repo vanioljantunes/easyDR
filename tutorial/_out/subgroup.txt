@@ -1,0 +1,27 @@
+Dose-response meta-analysis (risk ratio)
+Pooling: two-stage random effects, reml. Covariance: Greenland and Longnecker.
+
+Per 1 g/day increase:  RR 0.996  (95% CI 0.984 to 1.007)
+Reference dose: 0 g/day
+Curve shape: monotonic decreasing
+Subgroup: design, 2 levels (case-control 4, cumulative incidence 2)
+  the effects above are the overall fit
+
+Departure from linearity: not estimable
+  a linear fit has one term, so there is nothing to test it against
+  6 of 6 studies have three or more dose levels
+
+Heterogeneity: Q = 14.15 (df = 5), p = 0.0147; I-squared = 64.7%
+
+Predicted RR
+ dose (g/day) RR        95% CI         95% PI        
+  0           reference reference      reference     
+ 10           0.957     0.853 to 1.074 0.710 to 1.291
+ 20           0.916     0.727 to 1.154 0.504 to 1.666
+ 30           0.877     0.620 to 1.240 0.358 to 2.151
+
+6 studies, 25 dose categories, dose range 0 to 77.16 g/day
+Viability: 6 of 6 studies carry 3 or more dose levels.
+Defaults applied:
+  - intake: reported effect with limits, counts used for the covariance
+  - designs differ across studies (4 case-control, 2 cumulative incidence); each study keeps its own covariance approximation and the pooled ratio is the mixture of the measures reported

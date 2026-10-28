@@ -11,6 +11,7 @@ easydr_forest(
   xlab = NULL,
   xlim = NULL,
   order = c("data", "effect", "weight", "study"),
+  subgroup = NULL,
   digits = 3,
   legend = NULL,
   columns = TRUE,
@@ -35,6 +36,14 @@ one from the fit; \code{FALSE} draws none.}
 
 \item{order}{\code{"data"} keeps the order of the table, \code{"effect"} sorts by the
 estimate, \code{"weight"} sorts by weight, \code{"study"} sorts by label.}
+
+\item{subgroup}{\code{TRUE} groups the rows by the subgroup the fit carries,
+\code{FALSE} lists every study in one block. The default, \code{NULL}, groups them
+when the fit carries a subgroup. A block is headed by the level on its own
+and closed by a subtotal: the model refitted within that level, drawn as a
+grey diamond, with its own heterogeneity beneath. The squares and the
+weights stay each study's share of the overall fit. See the \code{subgroup}
+argument of \code{\link[=easydr]{easydr()}}.}
 
 \item{digits}{digits for the value column.}
 

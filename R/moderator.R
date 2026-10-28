@@ -14,10 +14,10 @@
 #'
 #' @keywords internal
 #' @noRd
-dr_mod_study_table <- function(data, studlab, vars) {
+dr_mod_study_table <- function(data, studlab, vars, what = "moderator") {
   missing <- setdiff(vars, names(data))
   if (length(missing) > 0L) {
-    stop("easydr: the moderator ",
+    stop("easydr: the ", what, " ",
          if (length(missing) > 1L) "columns " else "column ",
          paste(dQuote(missing), collapse = ", "), " ",
          if (length(missing) > 1L) "are" else "is",
@@ -32,10 +32,10 @@ dr_mod_study_table <- function(data, studlab, vars) {
       # V19: a study-level covariate cannot vary inside a study. If it does, it
       # is a category-level covariate and this is a different analysis.
       if (length(vals) > 1L) {
-        stop("easydr: the moderator ", dQuote(v), " takes ", length(vals),
+        stop("easydr: the ", what, " ", dQuote(v), " takes ", length(vals),
              " different values inside study ", s, " (",
              paste(utils::head(as.character(vals), 4), collapse = ", "),
-             "). A moderator is a characteristic of a study, so it must take ",
+             "). A ", what, " is a characteristic of a study, so it must take ",
              "one value per study. A covariate that varies by dose category ",
              "is a different analysis and easydr does not fit it.",
              call. = FALSE)
@@ -51,7 +51,7 @@ dr_mod_study_table <- function(data, studlab, vars) {
     # V20: a covariate with one value across every study explains nothing and
     # is not estimable. Reporting a coefficient of zero would be worse.
     if (length(unique(out[[v]])) < 2L) {
-      stop("easydr: the moderator ", dQuote(v), " takes the same value (",
+      stop("easydr: the ", what, " ", dQuote(v), " takes the same value (",
            as.character(out[[v]][1]), ") in all ", nrow(out),
            " studies, so it cannot explain any difference between them and ",
            "is not estimable.", call. = FALSE)

@@ -97,5 +97,63 @@ for (nm in names(shapes)) {
 par(op)
 grDevices::dev.off()
 
+# ------------------------------------------------------- subgroup figures --
+# alcohol_cvd carries `design`: four case-control cohorts and two cumulative
+# incidence ones. Both levels fit on their own, which is what makes it the
+# example rather than alcohol_cancer, where every study shares one design.
+sub <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day",
+              at = c(10, 20, 30), subgroup = "design")
+
+capture_to("subgroup", print(sub))
+
+grDevices::pdf(NULL)
+sdim <- easydr_forest(sub)
+grDevices::dev.off()
+px("fig-subgroup-forest.png", sdim$width, sdim$height)
+easydr_forest(sub, main = "Alcohol and cardiovascular disease, by design")
+grDevices::dev.off()
+
+px("fig-subgroup-curve.png", 6.8, 5.6)
+easydr_curve(sub, main = "Alcohol and cardiovascular disease, by design",
+             xlab = "Alcohol intake (g/day)", ylab = "Risk ratio", round = 2)
+grDevices::dev.off()
+
+# ------------------------------------------------- the five shapes, fitted --
+# One panel per shape on the same studies and the same axes, so the shapes can
+# be compared rather than admired one at a time. result = FALSE drops the
+# summary table: at panel size it would be unreadable.
+shape_fits <- list(
+  linear    = easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                     dose.unit = "g/day"),
+  log       = easydr(alcohol_cancer, sm = "RR", shape = "log",
+                     dose.unit = "g/day"),
+  quadratic = easydr(alcohol_cancer, sm = "RR", shape = "quadratic",
+                     dose.unit = "g/day"),
+  rcs       = easydr(alcohol_cancer, sm = "RR", shape = "rcs",
+                     dose.unit = "g/day"),
+  fp        = easydr(alcohol_cancer, sm = "RR", shape = "fp",
+                     dose.unit = "g/day"))
+
+panels <- lapply(names(shape_fits), function(nm) {
+  tabf <- shape_fits[[nm]]$curve
+  ggplot2::ggplot(tabf, ggplot2::aes(x = .data$dose)) +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$ci.lb, ymax = .data$ci.ub),
+                         fill = "grey80") +
+    ggplot2::geom_hline(yintercept = 1, linetype = "dashed",
+                        colour = "grey35", linewidth = 0.4) +
+    ggplot2::geom_line(ggplot2::aes(y = .data$est), colour = "#1F2A44",
+                       linewidth = 0.9) +
+    ggplot2::scale_y_log10(limits = c(0.9, 2.2)) +
+    ggplot2::labs(title = paste0("shape = \"", nm, "\""),
+                  x = "g/day", y = if (nm == "linear") "Risk ratio" else "") +
+    ggplot2::theme_bw(base_size = 9) +
+    ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                   plot.title = ggplot2::element_text(face = "bold",
+                                                      size = 9.5))
+})
+px("fig-shapes-fitted.png", 12, 2.6)
+gridExtra::grid.arrange(grobs = panels, nrow = 1)
+grDevices::dev.off()
+
 cat("figures written to", figs, "\n")
 print(list.files(figs, pattern = "^fig-"))

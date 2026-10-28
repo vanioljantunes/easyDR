@@ -128,6 +128,15 @@
 #'   two displayed, and the printed output names the one it fitted. A
 #'   common-effect fit reports no prediction interval, because it assumes there
 #'   is no between-study variation for one to describe.
+#' @param subgroup The name of one column holding the subgroup each study
+#'   belongs to, as a string, for example `subgroup = "design"`. The whole
+#'   model is then fitted again inside each level, inheriting the shape, the
+#'   pooling stage, the covariance approximation and the columns, so a level
+#'   differs from the overall fit only in which studies it contains. Each level
+#'   keeps its own between-study variance. A subgroup is a characteristic of a
+#'   study, so the column must take one value per study. Nothing is tested
+#'   between levels: [easydr_forest()] and [easydr_curve()] report them side by
+#'   side and leave the comparison to you.
 #' @param min.levels Exposure levels per study the viability check expects.
 #'   Three is the conventional floor for a two-stage fit and the default.
 #'
@@ -191,6 +200,7 @@ easydr <- function(data,
                    level = 0.95,
                    random = TRUE,
                    common = FALSE,
+                   subgroup = NULL,
                    min.levels = 3L) {
   call <- match.call()
   sm <- match.arg(sm, c("RR", "OR", "IRR", "MD", "SMD"))
@@ -265,6 +275,13 @@ easydr <- function(data,
     n = if (counts_used) "n" else NULL,
     min_levels = min.levels)
   out$curve_label <- dr_curve_label(out)
+
+  # The subgroup levels are fitted here rather than at drawing time, so the
+  # fit a reader prints and the fit a figure draws are the same objects. The
+  # refits inherit through dr_refit(), and they are not themselves given a
+  # subgroup, so this does not recurse.
+  if (!is.null(subgroup)) out$subgroup <- dr_subgroup_fits(out, subgroup)
+
   out$call <- call
   out
 }
