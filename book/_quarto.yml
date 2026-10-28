@@ -10,16 +10,12 @@ book:
   date-format: "MMMM YYYY"
   # Served from a project Pages subpath, never a domain root.
   site-url: https://vanioljantunes.github.io/easyDR/
-  repo-url: https://github.com/vanioljantunes/easyDR
-  repo-actions: [issue]
   search: true
-  reader-mode: true
   page-footer:
     left: "Dose-Response Meta-Analysis, by Vanio Antunes"
     right: "Built with Quarto"
   sidebar:
     style: docked
-    collapse-level: 1
   chapters:
     - index.qmd
     - 01-what-is-it.qmd

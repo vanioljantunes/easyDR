@@ -295,3 +295,40 @@ figcaption, .figure-caption {
   font-size: 15px;
   color: #5f6b72;
 }
+
+// ---- the panels do not fold ----------------------------------------------
+// Quarto puts a collapse toggle at the top of the contents sidebar and of the
+// on-this-page list, and remembers the folded state between pages. A reader
+// who folds one by accident loses the way around the book, so both toggles
+// are gone and both panels are always open.
+
+#quarto-sidebar-toggle,
+.sidebar-navigation .quarto-btn-toggle,
+#quarto-margin-sidebar .quarto-btn-toggle,
+.sidebar-header-item .quarto-btn-toggle,
+.quarto-sidebar-toggle-contents,
+#toc-collapse-toggle,
+.sidebar .collapse-toggle,
+.sidebar-title-container .quarto-btn-toggle {
+  display: none !important;
+}
+
+// Bootstrap's collapse leaves the panel at height 0 when it was folded before
+// the toggle was removed, so both are forced open.
+#quarto-sidebar.collapse,
+#TOC.collapse,
+#quarto-margin-sidebar .collapse {
+  display: block !important;
+  height: auto !important;
+  visibility: visible !important;
+}
+
+// The sidebar title is the book's name, not a navigation link, so it is not
+// painted in link blue.
+// Quarto sets this through an id selector, so the override needs one too.
+#quarto-sidebar .sidebar-title,
+#quarto-sidebar .sidebar-title a,
+#quarto-sidebar .sidebar-title a:hover {
+  color: $body-color;
+  text-decoration: none;
+}
