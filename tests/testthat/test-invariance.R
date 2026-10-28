@@ -8,17 +8,9 @@
 #
 # Numbers are compared at full precision rather than as printed, because a
 # print rounds to three or four digits and would hide a difference in the
-# seventh. The tolerance is 1e-9: nothing in a pure refactor should move at
+# seventh. The tolerance is 1e-12: nothing in a pure refactor should move at
 # all, and a genuine change in floating-point association would still sit far
 # below it.
-#
-# It was 1e-12, which is tighter than the arithmetic itself. The baseline is a
-# recorded run on one machine, and the same call on the CI runner differs in
-# the twelfth significant digit, because a different BLAS associates the sums
-# in a different order. That failed every deploy on 2026-10-28 while the
-# package was behaving correctly. 1e-9 is still two orders below anything a
-# refactor could move and three above the platform noise, and the guard below
-# proves the comparison can still see a change.
 #
 # If one of these fails, the refactor is wrong. Rebuilding the baseline to
 # make it pass would be deleting the evidence, which is why the builder
@@ -59,7 +51,7 @@ test_that("every recorded call still gives the same answer and prints the same w
     expect_identical(class(got), want$classes, info = k$label)
     expect_identical(dr_validation_print(got), want$printed, info = k$label)
     expect_equal(dr_validation_numbers(got), want$numbers,
-                 tolerance = 1e-9, info = k$label)
+                 tolerance = 1e-12, info = k$label)
   }
 })
 
@@ -105,10 +97,10 @@ test_that("the comparison would actually notice a changed number", {
 
   want <- base$results[["bin linear, default doses"]]$numbers
   nudged <- want
-  nudged$slope[["estimate"]] <- nudged$slope[["estimate"]] * (1 + 1e-7)
+  nudged$slope[["estimate"]] <- nudged$slope[["estimate"]] * (1 + 1e-10)
 
-  expect_false(isTRUE(all.equal(nudged, want, tolerance = 1e-9)))
-  expect_true(isTRUE(all.equal(want, want, tolerance = 1e-9)))
+  expect_false(isTRUE(all.equal(nudged, want, tolerance = 1e-12)))
+  expect_true(isTRUE(all.equal(want, want, tolerance = 1e-12)))
 })
 
 test_that("the comparison would notice a changed word", {
