@@ -4,9 +4,11 @@
 #| include: false
 library(easyDR)
 knitr::opts_chunk$set(collapse = FALSE, comment = "")
-# The content column is narrower than R's default 80 characters, so wide
-# output was being clipped at the edge rather than wrapped.
-options(width = 76)
+# Measured, not guessed: the output column fits 69 monospace characters at
+# this font size. R gets a little less than that so nothing reaches the edge,
+# and R wraps its own columns, which keeps them aligned. Never let CSS wrap
+# this text: alignment is the information.
+options(width = 66)
 ```
 
 By now we know what a dose-response meta-analysis answers and what shapes a
@@ -66,14 +68,14 @@ of drawing one study.
 Let us see what the two examples hold.
 
 ```{r}
-table(aripiprazole$studlab)
+unique(aripiprazole$studlab)
 ```
 
 Five trials. The labels are numbers here because the source data set identifies
 trials by index; in our own work we would use author and year.
 
 ```{r}
-table(alcohol_cvd$studlab)
+unique(alcohol_cvd$studlab)
 ```
 
 Six labels, and this is the first place where judgement is needed rather than
@@ -107,15 +109,28 @@ and leave nothing over to test it with.
 Three levels is the conventional floor for the two-stage approach we will meet
 in Chapter 4, and **{easyDR}** uses it as the default.
 
+Counting them is worth writing out rather than hiding in a function, because
+it is what we would check in a spreadsheet anyway. The same four lines answer
+Step 3 as well, so we write them once:
+
 ```{r}
-with(aripiprazole, table(studlab))
+viability <- function(data) {
+  s <- factor(data$studlab)
+  data.frame(
+    levels     = as.vector(table(s)),
+    references = as.vector(table(s, data$ref)[, "TRUE"]),
+    row.names  = levels(s)
+  )
+}
+
+viability(aripiprazole)
 ```
 
 Three of the trials report four dose arms and two report three, so every trial
 clears the floor. The same check on the binary example:
 
 ```{r}
-with(alcohol_cvd, table(studlab))
+viability(alcohol_cvd)
 ```
 
 Bianchi reports five categories and the rest report four. Both examples pass,
@@ -138,19 +153,10 @@ placebo or never-exposed, and it does not have to be. The lowest dose a study
 reports will serve, as long as we are consistent and say what we did.
 
 What matters is that the reference exists and that there is exactly one of it.
-In the packaged data this is the `ref` column.
+In the packaged data this is the `ref` column, and the `references` column of
+the frame we just built counts it: one apiece, in both examples.
 
-```{r}
-with(aripiprazole, table(studlab, ref))
-```
-
-One `TRUE` per trial, which is what we want. And for the binary example:
-
-```{r}
-with(alcohol_cvd, table(studlab, ref))
-```
-
-Again one reference per contrast. When studies disagree about what the reference
+When studies disagree about what the reference
 should be, and they usually do, the estimates have to be re-expressed against a
 common reference before pooling [@hamling2008]. That is a Chapter 4 problem; at
 this stage we only need to know that a reference exists.
@@ -210,33 +216,6 @@ may still fail when a model touches it, usually because of a dose that does not
 increase, a duplicated reference, or a level with an impossible standard
 deviation.
 
-Steps 2 and 3 are two lines of base _R_, and worth writing out rather than
-hiding in a function, because they are what we would check in a spreadsheet
-anyway:
-
-```{r}
-viability <- function(data) {
-  s <- factor(data$studlab)
-  data.frame(
-    levels     = as.vector(table(s)),
-    references = as.vector(table(s, data$ref)[, "TRUE"]),
-    row.names  = levels(s)
-  )
-}
-
-viability(aripiprazole)
-```
-
-We see that every trial carries three or more levels and exactly one
-reference. The same check on the binary side:
-
-```{r}
-viability(alcohol_cvd)
-```
-
-Bianchi's five categories and four apiece for the rest, one reference each.
-Both sheets are structurally sound.
-
 Now we fit. The point of fitting here is not to learn anything about alcohol or
 about aripiprazole. It is to confirm that the data can carry a model at all.
 
@@ -256,7 +235,7 @@ fit_b
 ```
 
 Again, **6 studies, 25 dose categories**, a finite estimate and a usable
-interval. We also see a note that the designs differ across the included
+interval. We see the same structure as before, on data of a different kind. We also see a note that the designs differ across the included
 studies, four case-control and two cumulative incidence, and that each study
 keeps its own covariance approximation. That is a limitation to carry forward,
 not a failure.
@@ -314,27 +293,56 @@ What they have in common is the only thing Step 1 to Step 5 care about: enough
 studies, enough levels, a reference each, and enough printed per level to
 reconstruct the covariance.
 
-```{r}
-#| label: fig-doses
-#| fig-cap: "Dose levels reported per study. The dashed line is the two-stage floor of three levels."
-#| fig-width: 8
-#| fig-height: 3.4
-op <- par(mfrow = c(1, 2), mar = c(6.5, 4, 3, 1), cex = 0.85)
+Two figures settle it, and they are the only two worth drawing at this stage:
+the forest plot of the levels, and the curve fitted through them. Both come
+from the fit we already have.
 
-for (d in list(list(x = aripiprazole, main = "aripiprazole (continuous)"),
-               list(x = alcohol_cvd,  main = "alcohol_cvd (binary)"))) {
-  counts <- table(d$x$studlab)
-  barplot(as.numeric(counts), names.arg = names(counts), las = 2,
-          ylim = c(0, 6), col = "#cfe3ef", border = "#277db0",
-          ylab = "dose levels", main = d$main)
-  abline(h = 3, lty = 2, col = "#b07d2b")
-}
-par(op)
+```{r}
+#| label: fig-forest-cont
+#| fig-cap: "Aripiprazole: every dose arm against its study's reference."
+#| fig-width: 8
+#| fig-height: 4.6
+easydr_forest(fit_c)
 ```
 
-We see that every bar clears the dashed line. A real search produces a figure
-where most of them do not, and that figure is the honest answer to the question
-of whether the review is worth starting.
+```{r}
+#| label: fig-curve-cont
+#| fig-cap: "Aripiprazole: the preliminary linear fit with its confidence band."
+#| fig-width: 7
+#| fig-height: 4.4
+easydr_curve(fit_c)
+```
+
+We see one row per study, and beside each one the two numbers Step 2 and Step
+3 asked for: how many dose levels it reported, and the range those levels
+span. Then a curve across the observed range with a band that stays finite.
+That is the whole viability question answered visually, the levels are there,
+they are spread across the dose range, and the model has something to fit.
+
+The same pair for the binary example:
+
+```{r}
+#| label: fig-forest-bin
+#| fig-cap: "Alcohol and cardiovascular disease: every category against its study's reference."
+#| fig-width: 8
+#| fig-height: 5
+easydr_forest(fit_b)
+```
+
+```{r}
+#| label: fig-curve-bin
+#| fig-cap: "Alcohol and cardiovascular disease: the preliminary linear fit with its confidence band."
+#| fig-width: 7
+#| fig-height: 4.4
+easydr_curve(fit_b)
+```
+
+Read these two figures together and nothing else is needed to judge viability.
+The forest gives the dose levels and the dose range for every study, and shows
+how precisely each trend was estimated. The curve shows whether those levels
+span enough of the range for a trend to mean anything. A forest with a study
+reporting two levels, or a curve whose band swallows the whole plot, is a
+review that should stop here rather than at the write-up.
 
 ## Search strategy
 
