@@ -31,8 +31,7 @@
 #' @return An object of class `dr_viability`: a list with `ok`, a per-study
 #'   `summary` data frame, and a character vector of `problems`.
 #'
-#' @keywords internal
-#' @noRd
+#' @export
 dr_viability <- function(data, study = "study", dose = "dose", ref = NULL,
                          cases = "cases", n = "n", min_levels = 3L) {
   stopifnot(is.data.frame(data))
