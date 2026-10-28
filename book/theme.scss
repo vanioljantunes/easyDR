@@ -351,13 +351,17 @@ figcaption, .figure-caption {
   text-decoration: none;
 }
 
-// ---- printed output wraps -------------------------------------------------
-// Some output lines are formatted by the package itself and ignore R's
-// `width` option, so they ran past the right edge of the content column and
-// were cut. Output wraps; source code keeps its own overflow setting.
+// ---- printed output scrolls, never wraps ---------------------------------
+// R console output is fixed-width text whose column alignment carries the
+// meaning. Wrapping it with `pre-wrap` reflows the columns into each other
+// and the table becomes unreadable, which is what an earlier version of this
+// rule did. A line too long for the column scrolls instead.
+//
+// The real remedy is upstream: keep `options(width)` inside the column, and
+// print a wide object as a table rather than as console text.
 
 .cell-output pre,
 .cell-output pre code {
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
+  overflow-x: auto;
 }
