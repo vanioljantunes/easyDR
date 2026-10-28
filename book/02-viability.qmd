@@ -210,21 +210,32 @@ may still fail when a model touches it, usually because of a dose that does not
 increase, a duplicated reference, or a level with an impossible standard
 deviation.
 
-`dr_viability()` runs the structural checks in one call.
+Steps 2 and 3 are two lines of base _R_, and worth writing out rather than
+hiding in a function, because they are what we would check in a spreadsheet
+anyway:
 
 ```{r}
-dr_viability(aripiprazole, study = "studlab", n = "n.e", cases = NULL)
+viability <- function(data) {
+  s <- factor(data$studlab)
+  data.frame(
+    levels     = as.vector(table(s)),
+    references = as.vector(table(s, data$ref)[, "TRUE"]),
+    row.names  = levels(s)
+  )
+}
+
+viability(aripiprazole)
 ```
 
-We see that every trial carries three or more levels, every trial has exactly
-one reference, and nothing is blocking. `cases = NULL` tells the function that
-this is continuous data and that there are no counts to complain about.
+We see that every trial carries three or more levels and exactly one
+reference. The same check on the binary side:
 
 ```{r}
-dr_viability(alcohol_cvd, study = "studlab", cases = "event.e", n = "n.e")
+viability(alcohol_cvd)
 ```
 
-The same verdict on the binary side, this time with the counts checked as well.
+Bianchi's five categories and four apiece for the rest, one reference each.
+Both sheets are structurally sound.
 
 Now we fit. The point of fitting here is not to learn anything about alcohol or
 about aripiprazole. It is to confirm that the data can carry a model at all.
