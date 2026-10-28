@@ -297,30 +297,48 @@ figcaption, .figure-caption {
 }
 
 // ---- the panels do not fold ----------------------------------------------
-// Quarto puts a collapse toggle at the top of the contents sidebar and of the
-// on-this-page list, and remembers the folded state between pages. A reader
-// who folds one by accident loses the way around the book, so both toggles
-// are gone and both panels are always open.
+// Quarto puts a collapse toggle on the contents sidebar and on the
+// on-this-page list, and Bootstrap remembers the folded state between pages.
+// A reader who folds one by accident loses the way around the book.
+//
+// The contents sidebar is a `collapse-horizontal`, so its folded state is
+// width zero, not display none. An earlier version of this rule forced
+// display, height and visibility and left the width alone, which rendered the
+// panel at zero width while the toggle that would reopen it was hidden. That
+// is worse than the toggle: it cannot be undone by the reader.
+//
+// So the width is forced first, and the toggles are only hidden on the widths
+// where the panels are docked. Below that, Quarto's narrow layout needs its
+// toggle and keeps it.
 
-#quarto-sidebar-toggle,
-.sidebar-navigation .quarto-btn-toggle,
-#quarto-margin-sidebar .quarto-btn-toggle,
-.sidebar-header-item .quarto-btn-toggle,
-.quarto-sidebar-toggle-contents,
-#toc-collapse-toggle,
-.sidebar .collapse-toggle,
-.sidebar-title-container .quarto-btn-toggle {
-  display: none !important;
+#quarto-sidebar.collapse,
+#quarto-sidebar.collapsing,
+#quarto-sidebar {
+  display: block !important;
+  visibility: visible !important;
 }
 
-// Bootstrap's collapse leaves the panel at height 0 when it was folded before
-// the toggle was removed, so both are forced open.
-#quarto-sidebar.collapse,
-#TOC.collapse,
-#quarto-margin-sidebar .collapse {
-  display: block !important;
-  height: auto !important;
-  visibility: visible !important;
+@include media-breakpoint-up(lg) {
+  #quarto-sidebar.collapse,
+  #quarto-sidebar.collapsing,
+  #quarto-sidebar {
+    width: auto !important;
+    height: auto !important;
+  }
+
+  #TOC.collapse,
+  #quarto-margin-sidebar .collapse {
+    display: block !important;
+    height: auto !important;
+    visibility: visible !important;
+  }
+
+  // Only where the panels are already open by layout.
+  .quarto-btn-toggle,
+  #quarto-sidebar-toggle,
+  .quarto-sidebar-toggle-contents {
+    display: none !important;
+  }
 }
 
 // The sidebar title is the book's name, not a navigation link, so it is not
