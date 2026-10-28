@@ -332,3 +332,14 @@ figcaption, .figure-caption {
   color: $body-color;
   text-decoration: none;
 }
+
+// ---- printed output wraps -------------------------------------------------
+// Some output lines are formatted by the package itself and ignore R's
+// `width` option, so they ran past the right edge of the content column and
+// were cut. Output wraps; source code keeps its own overflow setting.
+
+.cell-output pre,
+.cell-output pre code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
