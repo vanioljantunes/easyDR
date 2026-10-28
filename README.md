@@ -493,11 +493,11 @@ easydr_curve(fit,
 | Egger intercept | -1.0879 (SE 1.2204), p = 0.407 |
 | Curve shape | monotonic increasing |
 
-Captured on R 4.6.0 with `dosresmeta` 2.2.0. A different BLAS or engine
-version can move the last digit or two, but the rate ratios should agree to
+Captured on _R_ 4.6.0 with **{dosresmeta}** 2.2.0. A different BLAS or engine
+version can move the last digit or two, but the risk ratios should agree to
 three decimals. If they do not, something in your install differs, and the rest
-of the book will differ with it. Worth finding out before you trust a curve of
-your own.
+of the book will differ with it. That is worth finding out before you trust a
+curve of your own.
 
 ---
 
@@ -521,6 +521,16 @@ dosresmeta R package. *Journal of Statistical Software* 72(1), 1-15.
 Egger M, Davey Smith G, Schneider M, Minder C (1997). Bias in meta-analysis
 detected by a simple, graphical test. *BMJ* 315(7109), 629-634.
 
+Sterne JAC, Sutton AJ, Ioannidis JPA, et al. (2011). Recommendations for
+examining and interpreting funnel plot asymmetry in meta-analyses of
+randomised controlled trials. *BMJ* 343, d4002.
+
+Viechtbauer W (2010). Conducting meta-analyses in R with the metafor package.
+*Journal of Statistical Software* 36(3), 1-48.
+
+Balduzzi S, Rucker G, Schwarzer G (2019). How to perform a meta-analysis with
+R: a practical tutorial. *Evidence-Based Mental Health* 22(4), 153-160.
+
 The book's full bibliography is in [`book/references.bib`](book/references.bib).
 
 ---
@@ -542,10 +552,13 @@ Academy](https://metaanalysisacademy.com): one design, taught end to end, per
 repo. The book is free. The video course, templates and support are the paid
 half.
 
-The four pictures above are built from [`tutorial/`](tutorial): `Rscript
-tutorial/figures.R` draws the figures and captures the console blocks, then
-`node tutorial/render.mjs <page>` for each of `overview`, `data`, `api` and
-`plots`. The layout follows easyDTA, and the funnel follows `metafor`.
+The figures are built from [`tutorial/`](tutorial). `Rscript
+tutorial/figures.R` draws every plot and captures the console blocks, and
+`node tutorial/render.mjs <page>` renders the three infographic pages used
+above, `overview`, `data` and `api`. A fourth page, `plots`, is still in the
+folder but is no longer embedded here: what it covered now lives in Sections
+2, 4 and 5. The forest layout follows easyDTA, and the funnel follows
+**{metafor}**.
 
 Questions and corrections:
 [issues](https://github.com/vanioljantunes/easyDR/issues).
