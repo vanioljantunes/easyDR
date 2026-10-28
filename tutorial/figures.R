@@ -129,6 +129,8 @@ shape_fits <- list(
                      dose.unit = "g/day"),
   quadratic = easydr(alcohol_cancer, sm = "RR", shape = "quadratic",
                      dose.unit = "g/day"),
+  cubic     = easydr(alcohol_cancer, sm = "RR", shape = "cubic",
+                     dose.unit = "g/day"),
   rcs       = easydr(alcohol_cancer, sm = "RR", shape = "rcs",
                      dose.unit = "g/day"),
   fp        = easydr(alcohol_cancer, sm = "RR", shape = "fp",
@@ -151,7 +153,7 @@ panels <- lapply(names(shape_fits), function(nm) {
                    plot.title = ggplot2::element_text(face = "bold",
                                                       size = 9.5))
 })
-px("fig-shapes-fitted.png", 12, 2.6)
+px("fig-shapes-fitted.png", 14, 2.6)
 gridExtra::grid.arrange(grobs = panels, nrow = 1)
 grDevices::dev.off()
 

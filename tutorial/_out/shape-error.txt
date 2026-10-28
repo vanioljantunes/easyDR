@@ -1,4 +1,4 @@
-[1] "Error : easydr: name the `shape` you want fitted. There is no default, because the shape is a claim about the biology and belongs in your protocol with a reason beside it. Name one of:\n  shape = \"linear\"      a straight line through the dose\n  shape = \"log\"         a straight line through log dose\n  shape = \"quadratic\"   dose and dose squared\n  shape = \"rcs\"         a restricted cubic spline, see `knots`\n  shape = \"fp\"          a fractional polynomial, see `powers`\n"
+[1] "Error : easydr: name the `shape` you want fitted. There is no default, because the shape is a claim about the biology and belongs in your protocol with a reason beside it. Name one of:\n  shape = \"linear\"      a straight line through the dose\n  shape = \"log\"         a straight line through log dose\n  shape = \"quadratic\"   dose and dose squared\n  shape = \"cubic\"       dose, dose squared and dose cubed\n  shape = \"rcs\"         a restricted cubic spline, see `knots`\n  shape = \"fp\"          a fractional polynomial, see `powers`\n"
 attr(,"class")
 [1] "try-error"
 attr(,"condition")
@@ -6,5 +6,6 @@ attr(,"condition")
   shape = "linear"      a straight line through the dose
   shape = "log"         a straight line through log dose
   shape = "quadratic"   dose and dose squared
+  shape = "cubic"       dose, dose squared and dose cubed
   shape = "rcs"         a restricted cubic spline, see `knots`
   shape = "fp"          a fractional polynomial, see `powers`>

@@ -116,3 +116,78 @@ test_that("a curve differs from a line by one argument only", {
   expect_equal(line$shape$name, "linear")
   expect_equal(curve$shape$name, "rcs")
 })
+
+# ------------------------------------- the cubic and the one-power FP ------
+
+test_that("the cubic is a third-degree polynomial, not the spline", {
+  fit <- easydr(alcohol_cancer, sm = "RR", shape = "cubic",
+                dose.unit = "g/day")
+  expect_equal(fit$shape$name, "cubic")
+  expect_equal(fit$shape$terms, 3L)
+  expect_match(fit$shape$label, "^cubic in dose")
+
+  # A different model from the restricted cubic spline, which is the only
+  # thing the package called "cubic" before.
+  rcs <- easydr(alcohol_cancer, sm = "RR", shape = "rcs", dose.unit = "g/day")
+  expect_false(identical(coef(fit$fit), coef(rcs$fit)))
+  expect_equal(fit$shape$min_levels, 4L)
+
+  # The dose comes first, so the departure-from-linearity test is a Wald test
+  # on the two remaining terms.
+  expect_equal(colnames(fit$shape$basis(c(1, 2, 3))),
+               c("dose", "dose_sq", "dose_cu"))
+  expect_true(isTRUE(fit$nonlinearity$estimable))
+  expect_equal(fit$nonlinearity$df, 2L)
+
+  # A cubed dose of 60 is near 2e5, so the basis is scaled the way the
+  # fractional polynomial already is, and says so.
+  expect_equal(fit$shape$scaling$scale, 100)
+  expect_match(fit$shape$label, "well conditioned")
+  expect_true(all(is.finite(coef(fit$fit))))
+})
+
+test_that("a fractional polynomial takes one power or two", {
+  one <- easydr(alcohol_cancer, sm = "RR", shape = "fp", powers = -0.5,
+                dose.unit = "g/day")
+  expect_equal(one$shape$terms, 1L)
+  expect_equal(one$shape$powers, -0.5)
+  expect_match(one$shape$label, "power -0.5")
+
+  two <- easydr(alcohol_cancer, sm = "RR", shape = "fp", dose.unit = "g/day")
+  expect_equal(two$shape$terms, 2L)
+  expect_equal(two$shape$powers, c(-1, 0))
+  expect_match(two$shape$label, "powers -1, 0")
+
+  # Three is a model this package does not fit, and must not be truncated.
+  expect_error(
+    easydr(alcohol_cancer, sm = "RR", shape = "fp", powers = c(-1, 0, 1)),
+    "3 values were given")
+
+  # A power of zero is the logarithm, following Royston and Altman.
+  z <- easydr(alcohol_cancer, sm = "RR", shape = "fp", powers = 0,
+              dose.unit = "g/day")
+  expect_equal(z$shape$terms, 1L)
+  expect_match(z$shape$label, "power 0")
+})
+
+test_that("a one-term shape reports its coefficient per unit of its own term", {
+  # Only the straight line has a term that is the dose itself. A log fit
+  # reporting "Per 1 g/day increase" was describing a step in log dose.
+  lin <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                dose.unit = "g/day")
+  lg  <- easydr(alcohol_cancer, sm = "RR", shape = "log", dose.unit = "g/day")
+  fp1 <- easydr(alcohol_cancer, sm = "RR", shape = "fp", powers = -0.5,
+                dose.unit = "g/day")
+
+  expect_equal(lin$slope$label, "Per 1 g/day increase")
+  expect_equal(lg$slope$label, "Per 1 unit increase in log dose")
+  expect_equal(fp1$slope$label, "Per 1 unit increase in dose^-0.5")
+
+  # The estimate itself is untouched by the relabelling.
+  expect_true(is.finite(lg$slope$estimate))
+  expect_false(is.null(lg$slope$se))
+
+  # A shape with more than one term still reports no slope at all.
+  expect_null(easydr(alcohol_cancer, sm = "RR", shape = "cubic",
+                     dose.unit = "g/day")$slope)
+})

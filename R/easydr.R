@@ -50,18 +50,22 @@
 #' threshold or a flattening is plausible for this exposure. Letting software
 #' pick it turns a reviewable decision into an invisible one.
 #'
-#' The five you can name:
+#' The six you can name:
 #'
 #' | `shape` | Fits | Terms |
 #' |:---|:---|:---|
 #' | `"linear"` | a straight line through the dose | 1 |
 #' | `"log"` | a straight line through log dose | 1 |
 #' | `"quadratic"` | dose and dose squared | 2 |
+#' | `"cubic"` | dose, dose squared and dose cubed | 3 |
 #' | `"rcs"` | a restricted cubic spline, `knots` to place them | 2 or more |
-#' | `"fp"` | a fractional polynomial, `powers` to choose the pair | 2 |
+#' | `"fp"` | a fractional polynomial, `powers` to choose them | 1 or 2 |
 #'
 #' A shape with more than one term prints a departure-from-linearity test and
-#' no single slope, because no single number describes a curve.
+#' no single slope, because no single number describes a curve. A one-term
+#' shape that is not the straight line, `"log"` or a one-power `"fp"`, reports
+#' its coefficient per unit of its own term rather than per unit of dose, and
+#' says which.
 #'
 #' @section Reading the slope and its reference dose:
 #' A linear fit reports one slope per unit of dose, measured against a
@@ -78,10 +82,12 @@
 #'   One of `"RR"`, `"OR"`, `"IRR"`, `"MD"`, `"SMD"`. It must suit the design:
 #'   an odds ratio belongs to a case-control study, a rate ratio needs a
 #'   person-time denominator.
-#' @param shape The dose-response form, required: `"linear"`, `"rcs"` for a
-#'   restricted cubic spline, `"fp"` for a fractional polynomial,
-#'   `"quadratic"`, or `"log"`. There is no default. A shape the data cannot
-#'   support stops the fit rather than falling back to a simpler one.
+#' @param shape The dose-response form, required: `"linear"`, `"log"`,
+#'   `"quadratic"`, `"cubic"`, `"rcs"` for a restricted cubic spline, or
+#'   `"fp"` for a fractional polynomial. There is no default. A shape the data
+#'   cannot support stops the fit rather than falling back to a simpler one.
+#'   Note that `"cubic"` is the third-degree polynomial in dose, which is a
+#'   different model from the restricted cubic spline under `"rcs"`.
 #' @param dose Name of the column holding the numeric dose you assigned to each
 #'   category. Defaults to the column named `dose`. A dose is never inferred
 #'   from a category range: that judgement is yours.
@@ -114,7 +120,10 @@
 #' @param knots For `shape = "rcs"`: knot positions, or a single number giving
 #'   how many to place. The default is 3 knots at the 10th, 50th and 90th
 #'   percentiles of the non-zero doses, and whatever is used is printed.
-#' @param powers For `shape = "fp"`: the pair of powers, `c(-1, 0)` by default.
+#' @param powers For `shape = "fp"`: one power for a first-order fractional
+#'   polynomial, such as `powers = -0.5`, or a pair for a second-order one.
+#'   The default is the pair `c(-1, 0)`. A power of 0 is read as the logarithm,
+#'   following Royston and Altman.
 #' @param at Doses to report predicted effects at. `NULL` uses a five-point
 #'   grid across the observed dose range.
 #' @param grid Doses for the curve table on the result, which [easydr_curve()]
@@ -216,6 +225,8 @@ easydr <- function(data,
          "  shape = \"log\"         a straight line through log dose
 ",
          "  shape = \"quadratic\"   dose and dose squared
+",
+         "  shape = \"cubic\"       dose, dose squared and dose cubed
 ",
          "  shape = \"rcs\"         a restricted cubic spline, see `knots`
 ",

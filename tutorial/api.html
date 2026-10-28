@@ -91,7 +91,7 @@ Defaults applied:
   <section class="step">
     <div class="step-head">
       <div class="num">2</div>
-      <h2>The five shapes you can name</h2>
+      <h2>The six shapes you can name</h2>
     </div>
 
     <div class="g2 narrow">
@@ -101,8 +101,9 @@ Defaults applied:
           <tr><td class="l">"linear"</td><td>a straight line through the dose</td><td>1</td></tr>
           <tr><td class="l">"log"</td><td>a straight line through log dose</td><td>1</td></tr>
           <tr><td class="l">"quadratic"</td><td>dose and dose squared</td><td>2</td></tr>
+          <tr><td class="l">"cubic"</td><td>dose, dose squared and dose cubed</td><td>3</td></tr>
           <tr><td class="l">"rcs"</td><td>a restricted cubic spline; <code>knots</code> places them</td><td>2+</td></tr>
-          <tr><td class="l">"fp"</td><td>a fractional polynomial; <code>powers</code> chooses the pair</td><td>2</td></tr>
+          <tr><td class="l">"fp"</td><td>a fractional polynomial; <code>powers</code> chooses one or two</td><td>1-2</td></tr>
         </table>
         <p class="note" style="margin-top:14px">
           The shape is a claim about the biology, so it belongs in your
@@ -121,6 +122,7 @@ a reason beside it. Name one of:
 <span class="hl">  shape = "linear"      a straight line through the dose</span>
 <span class="hl">  shape = "log"         a straight line through log dose</span>
 <span class="hl">  shape = "quadratic"   dose and dose squared</span>
+<span class="hl">  shape = "cubic"       dose, dose squared and dose cubed</span>
 <span class="hl">  shape = "rcs"         a restricted cubic spline, see `knots`</span>
 <span class="hl">  shape = "fp"          a fractional polynomial, see `powers`</span></div>
         <p class="note" style="margin-top:12px">
