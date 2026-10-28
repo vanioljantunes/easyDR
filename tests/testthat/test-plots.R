@@ -412,3 +412,114 @@ test_that("the rug marks reported doses, thinned so it reads as data", {
   expect_silent(easydr_curve(fit))
   expect_silent(easydr_curve(fit, rug = FALSE))
 })
+
+# ---------------------------------------------------------------- subgroups --
+
+sub_fit <- function() {
+  easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day",
+         at = c(10, 20, 30), subgroup = "design")
+}
+
+test_that("a subgroup refits the same model inside each level", {
+  fit <- sub_fit()
+  sg  <- fit$subgroup
+  expect_equal(sg$var, "design")
+  expect_equal(sg$levels, c("case-control", "cumulative incidence"))
+  expect_true(all(sg$table$status == "fitted"))
+  expect_equal(sg$table$studies, c(4L, 2L))
+
+  # Inherited, not re-derived: a level differs from the overall fit only in
+  # which studies it holds.
+  for (lv in sg$levels) {
+    f <- sg$fits[[lv]]
+    expect_identical(f$shape, fit$shape)
+    expect_identical(f$sm, fit$sm)
+    expect_identical(f$provenance$proc, fit$provenance$proc)
+    expect_identical(f$provenance$covariance, fit$provenance$covariance)
+    expect_identical(f$reference$curve, fit$reference$curve)
+    # Every level reports the doses the overall fit reports, or the figure
+    # marks each curve somewhere else.
+    expect_equal(f$predicted$dose, fit$predicted$dose)
+  }
+  expect_equal(sum(sg$table$studies), fit$counts$studies)
+
+  # The overall fit is untouched by having been split.
+  plain <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                  dose.unit = "g/day", at = c(10, 20, 30))
+  expect_equal(fit$slope$estimate, plain$slope$estimate)
+  expect_equal(fit$slope$se, plain$slope$se)
+})
+
+test_that("a subgroup column has to be a study characteristic that varies", {
+  expect_error(
+    easydr(alcohol_cvd, sm = "RR", shape = "linear", subgroup = "dose"),
+    "takes 5 different values inside study")
+  expect_error(
+    easydr(alcohol_cancer, sm = "RR", shape = "linear", subgroup = "design"),
+    "takes the same value")
+  expect_error(
+    easydr(alcohol_cvd, sm = "RR", shape = "linear", subgroup = "nope"),
+    "is not in the data")
+  expect_error(
+    easydr(alcohol_cvd, sm = "RR", shape = "linear", subgroup = 1),
+    "name of one column")
+  # The refusals say subgroup, not moderator, whichever shares the check.
+  expect_error(
+    easydr(alcohol_cvd, sm = "RR", shape = "linear", subgroup = "dose"),
+    "subgroup")
+})
+
+test_that("the plots group when asked and refuse when there is nothing to group", {
+  local_null_device()
+  fit   <- sub_fit()
+  plain <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                  dose.unit = "g/day")
+
+  expect_silent(easydr_curve(fit))
+  expect_silent(easydr_curve(fit, subgroup = FALSE))
+  expect_silent(easydr_forest(fit))
+  expect_silent(easydr_forest(fit, subgroup = FALSE))
+
+  # TRUE with nothing to group by is a mistake, not a quiet overall figure.
+  expect_error(easydr_curve(plain, subgroup = TRUE), "carries no subgroup")
+  expect_error(easydr_forest(plain, subgroup = TRUE), "carries no subgroup")
+  expect_silent(easydr_curve(plain, subgroup = FALSE))
+
+  # Grouping adds rows to the forest and leaves the table of studies alone.
+  a <- easydr_forest(fit, subgroup = FALSE)
+  b <- easydr_forest(fit)
+  expect_equal(nrow(a$table), nrow(b$table))
+  expect_equal(a$pooled$est, b$pooled$est)
+  expect_gt(b$height, a$height)
+})
+
+test_that("the summary table carries one column per level and an overall", {
+  fit <- sub_fit()
+  tab <- dr_summary_table(fit, NULL, 3, use_sub = TRUE)
+  expect_equal(names(tab), c(" ", "case-control", "cumulative incidence",
+                             "Overall"))
+  expect_equal(nrow(tab), 6L)
+  expect_equal(tab[[" "]][6], "Studies")
+  expect_equal(tab[["case-control"]][6], "4")
+  expect_equal(tab[["cumulative incidence"]][6], "2")
+  expect_equal(tab[["Overall"]][6], "6")
+
+  # Each column is that fit's own numbers, not the overall repeated.
+  expect_false(tab[["case-control"]][1] == tab[["Overall"]][1])
+
+  # Without subgroups it is the quantity names and one column.
+  plain <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                  dose.unit = "g/day")
+  expect_equal(names(dr_summary_table(plain, NULL, 3, FALSE)),
+               c(" ", "Overall"))
+})
+
+test_that("each level is told apart by colour, line type and shape", {
+  sty <- easyDR:::dr_subgroup_style(c("a", "b", "c"))
+  expect_equal(length(unique(sty$colour)), 3L)
+  expect_equal(length(unique(sty$linetype)), 3L)
+  expect_equal(length(unique(sty$shape)), 3L)
+  # The overall fit marks its doses with circles, so no level may be a circle
+  # until every other shape is used.
+  expect_false(21L %in% sty$shape[1:3])
+})

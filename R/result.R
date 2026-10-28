@@ -241,6 +241,19 @@ print.easydr_result <- function(x, digits = 3, ...) {
   if (!is.null(x$curve_label) && !is.na(x$curve_label)) {
     cat("Curve shape: ", x$curve_label, "\n", sep = "")
   }
+  # Named here because the numbers above are the overall fit, and a reader who
+  # asked for subgroups should not have to infer that from their absence.
+  if (!is.null(x$subgroup)) {
+    sg <- x$subgroup$table
+    cat("Subgroup: ", x$subgroup$var, ", ", nrow(sg), " levels (",
+        paste0(sg$level, " ", sg$studies, collapse = ", "), ")\n", sep = "")
+    if (any(sg$status == "failed")) {
+      cat("  not fitted: ",
+          paste(sg$level[sg$status == "failed"], collapse = ", "),
+          "; see $subgroup$table for the reason\n", sep = "")
+    }
+    cat("  the effects above are the overall fit\n")
+  }
   cat("\n")
 
   if (isTRUE(x$nonlinearity$estimable)) {

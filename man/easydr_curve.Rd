@@ -18,6 +18,7 @@ easydr_curve(
   rug = TRUE,
   result = TRUE,
   result.at = NULL,
+  subgroup = NULL,
   digits = 3,
   col = "#1F2A44",
   fill.ci = "grey75",
@@ -53,15 +54,24 @@ reference dose.}
 bottom: the ones \code{at} named in \code{\link[=easydr]{easydr()}}, and the reference. It marks
 where the reported effects sit on the axis, not where the data is.}
 
-\item{result}{\code{TRUE}, the default, prints the pooled result in the top left
-of the panel: the effect with its confidence interval, its p value, and
-the heterogeneity. The figure then carries its own numbers.}
+\item{result}{\code{TRUE}, the default, puts a summary table under the figure:
+the effect with its confidence interval, its p value, the heterogeneity
+and the number of studies. The figure then carries its own numbers. With
+subgroups drawn, the table gains one column per level and ends with the
+overall fit.}
 
-\item{result.at}{the dose that box reports, for a shape with more than one
+\item{result.at}{the dose that table reports, for a shape with more than one
 term. \code{NULL} uses the first dose the fit reports. Ignored for a straight
 line, which has one slope.}
 
-\item{digits}{digits for the numbers in that box.}
+\item{subgroup}{\code{TRUE} draws one curve per subgroup level, \code{FALSE} draws the
+overall fit alone. The default, \code{NULL}, draws the levels when the fit
+carries them. Each level is told apart by colour and by line type, and its
+marked doses by shape. The band stays the overall one. \code{TRUE} on a fit
+with no subgroup is an error rather than a silent overall curve; see the
+\code{subgroup} argument of \code{\link[=easydr]{easydr()}}.}
+
+\item{digits}{digits for the numbers in that table.}
 
 \item{col, fill.ci, fill.pi}{colours for the curve, the confidence band and
 the prediction band.}

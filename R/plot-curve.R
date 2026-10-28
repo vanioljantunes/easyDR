@@ -41,13 +41,21 @@
 #' @param rug `TRUE`, the default, ticks the doses the fit reports along the
 #'   bottom: the ones `at` named in [easydr()], and the reference. It marks
 #'   where the reported effects sit on the axis, not where the data is.
-#' @param result `TRUE`, the default, prints the pooled result in the top left
-#'   of the panel: the effect with its confidence interval, its p value, and
-#'   the heterogeneity. The figure then carries its own numbers.
-#' @param result.at the dose that box reports, for a shape with more than one
+#' @param result `TRUE`, the default, puts a summary table under the figure:
+#'   the effect with its confidence interval, its p value, the heterogeneity
+#'   and the number of studies. The figure then carries its own numbers. With
+#'   subgroups drawn, the table gains one column per level and ends with the
+#'   overall fit.
+#' @param result.at the dose that table reports, for a shape with more than one
 #'   term. `NULL` uses the first dose the fit reports. Ignored for a straight
 #'   line, which has one slope.
-#' @param digits digits for the numbers in that box.
+#' @param subgroup `TRUE` draws one curve per subgroup level, `FALSE` draws the
+#'   overall fit alone. The default, `NULL`, draws the levels when the fit
+#'   carries them. Each level is told apart by colour and by line type, and its
+#'   marked doses by shape. The band stays the overall one. `TRUE` on a fit
+#'   with no subgroup is an error rather than a silent overall curve; see the
+#'   `subgroup` argument of [easydr()].
+#' @param digits digits for the numbers in that table.
 #' @param col,fill.ci,fill.pi colours for the curve, the confidence band and
 #'   the prediction band.
 #' @param legend optional free text drawn under the figure, one line per
@@ -80,12 +88,14 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          xlim = NULL, ylim = NULL, round = NULL,
                          prediction = FALSE, points = TRUE, reference = TRUE,
                          rug = TRUE, result = TRUE, result.at = NULL,
-                         digits = 3, col = "#1F2A44", fill.ci = "grey75",
-                         fill.pi = "grey90", legend = NULL) {
+                         subgroup = NULL, digits = 3, col = "#1F2A44",
+                         fill.ci = "grey75", fill.pi = "grey90",
+                         legend = NULL) {
   if (!inherits(x, "easydr_result")) {
     stop("easydr: easydr_curve() takes a fitted result from easydr().",
          call. = FALSE)
   }
+  use_sub <- dr_use_subgroups(x, subgroup, "easydr_curve()")
   tab  <- x$curve
   unit <- if (is.null(x$dose_unit)) "dose" else x$dose_unit
   show_pi <- isTRUE(prediction) && isTRUE(x$prediction$estimable) &&
@@ -126,30 +136,47 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   p <- p + ggplot2::geom_line(ggplot2::aes(y = .data$est), colour = col,
                               linewidth = 0.9)
 
-  # The result, in the corner, so the figure can be read without the printout
-  # beside it. Every number here comes from the fit.
-  if (isTRUE(result)) {
-    pooled <- dr_pooled_at(x, result.at)
-    back   <- if (x$ratio) exp else identity
-    fmt    <- function(v) format(round(back(v), digits), nsmall = digits)
-    lines  <- c(
-      paste0(pooled$label, ": ", fmt(pooled$est)),
-      paste0(format(100 * x$provenance$level), "% CI ", fmt(pooled$lb),
-             " to ", fmt(pooled$ub), ",  ", dr_p_lab(pooled$p)),
-      if (isTRUE(x$heterogeneity$estimable)) {
-        sprintf("I2 = %.1f%%, Q = %.2f (df %d), %s",
-                x$heterogeneity$i2, x$heterogeneity$Q, x$heterogeneity$df,
-                dr_p_lab(x$heterogeneity$p))
-      } else {
-        paste0("I2: not estimable (", x$heterogeneity$reason, ")")
-      })
-    p <- p + ggplot2::annotate(
-      "label", x = -Inf, y = Inf, hjust = -0.04, vjust = 1.12,
-      label = paste(lines, collapse = "
-"), size = 2.9, lineheight = 1.25,
-      colour = "grey15", fill = "white", alpha = 0.9,
-      label.padding = grid::unit(0.5, "lines"),
-      label.r = grid::unit(2, "pt"))
+  # One curve per subgroup level, over the overall band. Each level is told
+  # apart twice over, by colour and by line type, because colour alone is lost
+  # in print and to a colour-blind reader. The band stays the overall one: a
+  # ribbon per level turns the panel to mud at three levels and hides the
+  # curves it is meant to qualify.
+  if (use_sub) {
+    drawn <- x$subgroup$levels[
+      vapply(x$subgroup$fits, Negate(is.null), logical(1))]
+    sty <- dr_subgroup_style(drawn)
+    sub_curve <- do.call(rbind, lapply(drawn, function(lv) {
+      d <- x$subgroup$fits[[lv]]$curve
+      data.frame(dose = d$dose, est = d$est, level = lv,
+                 stringsAsFactors = FALSE)
+    }))
+    sub_marks <- do.call(rbind, lapply(drawn, function(lv) {
+      d <- x$subgroup$fits[[lv]]$predicted
+      d <- d[!d$is_ref, , drop = FALSE]
+      if (nrow(d) == 0L) return(NULL)
+      data.frame(dose = d$dose, est = d$est, level = lv,
+                 stringsAsFactors = FALSE)
+    }))
+    sub_curve$level <- factor(sub_curve$level, levels = drawn)
+    p <- p + ggplot2::geom_line(
+      data = sub_curve, inherit.aes = FALSE,
+      ggplot2::aes(x = .data$dose, y = .data$est, colour = .data$level,
+                   linetype = .data$level), linewidth = 0.75)
+    if (!is.null(sub_marks) && isTRUE(points)) {
+      sub_marks$level <- factor(sub_marks$level, levels = drawn)
+      p <- p + ggplot2::geom_point(
+        data = sub_marks, inherit.aes = FALSE,
+        ggplot2::aes(x = .data$dose, y = .data$est, colour = .data$level,
+                     shape = .data$level), fill = "white", size = 2.2,
+        stroke = 0.8)
+    }
+    p <- p +
+      ggplot2::scale_colour_manual(values = sty$colour, name = x$subgroup$var,
+                                   drop = FALSE) +
+      ggplot2::scale_linetype_manual(values = sty$linetype,
+                                     name = x$subgroup$var, drop = FALSE) +
+      ggplot2::scale_shape_manual(values = sty$shape, name = x$subgroup$var,
+                                  drop = FALSE)
   }
 
   if (isTRUE(rug)) {
@@ -175,7 +202,10 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                                  ggplot2::aes(x = .data$dose, y = .data$est),
                                  shape = 21L, fill = "white", colour = col,
                                  size = 2.2, stroke = 0.8)
-    if (!is.null(round)) {
+    # With levels drawn, a number beside the overall curve sits on top of a
+    # level's marker and reads as that level's value. The table under the
+    # figure carries every number anyway.
+    if (!is.null(round) && !use_sub) {
       marks$lab <- format(base::round(marks$est, round), nsmall = round)
       p <- p + ggplot2::geom_text(
         data = marks, inherit.aes = FALSE,
@@ -188,6 +218,14 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     ggplot2::labs(x = xlab, y = ylab) +
     ggplot2::theme_bw() +
     ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                   legend.position = if (use_sub) "top" else "none",
+                   legend.direction = "horizontal",
+                   legend.justification = "left",
+                   legend.margin = ggplot2::margin(0, 0, 2, 0),
+                   legend.key.width = grid::unit(22, "pt"),
+                   legend.key.height = grid::unit(10, "pt"),
+                   legend.text = ggplot2::element_text(size = 8),
+                   legend.title = ggplot2::element_text(size = 8),
                    plot.margin = ggplot2::margin(6, 10, 2, 6))
   p <- if (x$ratio) {
     p + ggplot2::scale_y_log10(limits = ylim)
@@ -203,10 +241,23 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   foot <- c(paste0("Reference ", x$reference$curve, " ", unit,
                    ".  Band: ", bands,
                    ".  Shape = ", x$shape$label,
+                   if (use_sub)
+                     ".  The dark line and the band are the overall fit.",
                    if (any(tab$extrapolated))
                      ".  Crosses mark doses beyond the observed range."),
             legend)
 
-  dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5)
+  # The summary sits under the figure, below the footer, the way the funnel
+  # puts Egger's numbers under its panel. Inside the panel it covered the
+  # curve on a fit that rises into its own corner, and it could hold only one
+  # column, which left nowhere for a subgroup to go.
+  if (isTRUE(result)) {
+    tg <- dr_stats_grob(dr_summary_table(x, result.at, digits, use_sub))
+    fs <- dr_footer_stack(foot, tg)
+    dr_draw_stack(p, NULL, title = main, footer = fs$grob,
+                  footer_h = fs$height, title_hjust = 0.5)
+  } else {
+    dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5)
+  }
   invisible(tab)
 }

@@ -465,3 +465,81 @@ dr_plot_ticks <- function(lo, hi, ratio) {
   v <- v[v > 0]
   list(at = log(v), labels = format(v))
 }
+
+#' One column of the summary table: what a single fit reports
+#'
+#' The same six quantities whichever fit they come from, so a subgroup level
+#' and the overall fit line up row for row in the table under a figure.
+#'
+#' @keywords internal
+#' @noRd
+dr_result_column <- function(x, at = NULL, digits = 3) {
+  pooled <- dr_pooled_at(x, at)
+  back   <- if (x$ratio) exp else identity
+  fmt    <- function(v) format(round(back(v), digits), nsmall = digits)
+  het    <- x$heterogeneity
+  c(fmt(pooled$est),
+    paste0(fmt(pooled$lb), " to ", fmt(pooled$ub)),
+    dr_p(pooled$p),
+    if (isTRUE(het$estimable)) sprintf("%.1f%%", het$i2) else "-",
+    if (isTRUE(het$estimable)) {
+      sprintf("%.2f (%d), %s", het$Q, het$df, dr_p(het$p))
+    } else {
+      "not estimable"
+    },
+    as.character(x$counts$studies))
+}
+
+#' The summary table that sits under a figure
+#'
+#' The first column names the quantity, one column follows per subgroup level,
+#' and the last column is the overall fit. Without subgroups it is two columns.
+#' A level that could not be fitted keeps its column and says so, rather than
+#' being dropped and leaving the reader to wonder where it went.
+#'
+#' @keywords internal
+#' @noRd
+dr_summary_table <- function(x, at = NULL, digits = 3, use_sub = FALSE) {
+  quant <- c(dr_pooled_at(x, at)$label,
+             paste0(format(100 * x$provenance$level), "% CI"),
+             "p value", "I2", "Q (df, p)", "Studies")
+  out <- data.frame(quant, check.names = FALSE, stringsAsFactors = FALSE)
+  names(out) <- " "
+  if (isTRUE(use_sub)) {
+    for (lv in x$subgroup$levels) {
+      f <- x$subgroup$fits[[lv]]
+      out[[lv]] <- if (is.null(f)) {
+        c("not fitted", "-", "-", "-", "-",
+          as.character(x$subgroup$table$studies[x$subgroup$table$level == lv]))
+      } else {
+        dr_result_column(f, at, digits)
+      }
+    }
+  }
+  out[["Overall"]] <- dr_result_column(x, at, digits)
+  out
+}
+
+#' Footer text with a table under it, as one grob
+#'
+#' dr_draw_stack() takes a single footer, and a figure that needs both a line
+#' of prose and a table needs them stacked before they get there. Two separate
+#' bands would each measure themselves and the shorter one would be drawn over.
+#'
+#' @keywords internal
+#' @noRd
+dr_footer_stack <- function(text, table_grob, footer_size = 9) {
+  th <- dr_grob_height(table_grob)
+  if (is.null(text)) {
+    return(list(grob = table_grob, height = th))
+  }
+  n  <- length(strsplit(paste(text, collapse = "\n"), "\n", fixed = TRUE)[[1]])
+  tx <- grid::textGrob(
+    paste(text, collapse = "\n"), x = grid::unit(4, "pt"),
+    y = grid::unit(1, "npc"), hjust = 0, vjust = 1,
+    gp = grid::gpar(fontsize = footer_size, lineheight = 1.25))
+  txh <- grid::unit(1.35 * footer_size * n + 8, "points")
+  list(grob = gridExtra::arrangeGrob(grobs = list(tx, table_grob), ncol = 1,
+                                     heights = grid::unit.c(txh, th)),
+       height = grid::unit.c(txh + th))
+}
