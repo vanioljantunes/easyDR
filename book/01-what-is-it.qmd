@@ -154,8 +154,9 @@ relationship running through them.
 #| fig-cap: "The same table read as a dose-response question. The line is the pooled trend, the band its 95% confidence interval, and the ticks along the axis the doses the studies actually reported."
 #| fig-width: 7
 #| fig-height: 4.4
-fit <- easydr(alcohol_cvd, sm = "OR", shape = "linear", dose.unit = "g/day")
-easydr_curve(fit)
+easydr.object <- easydr(alcohol_cvd, sm = "OR", shape = "linear",
+                        dose.unit = "g/day")
+easydr_curve(easydr.object)
 ```
 
 There is no row per category here and no diamond, because the answer is a
@@ -171,7 +172,7 @@ levels behind it and the range those levels span.
 #| fig-cap: "One row per study, each row a dose-response trend rather than a contrast. The dose levels and dose range columns are what tell us whether a study could carry a trend at all."
 #| fig-width: 10
 #| fig-height: 5
-easydr_forest(fit)
+easydr_forest(easydr.object)
 ```
 
 Study B might report risk at 0, 15 and 30 units while study A reports 0, 10 and
@@ -216,9 +217,9 @@ a shape in it.
 #| fig-cap: "The same evidence fitted with a restricted cubic spline. Where the band crosses the null is a threshold question, and where the curve turns is a ceiling question. Neither is visible in a pooled estimate."
 #| fig-width: 7
 #| fig-height: 4.4
-spline_fit <- easydr(alcohol_cvd, sm = "OR", shape = "rcs",
-                     dose.unit = "g/day")
-easydr_curve(spline_fit)
+easydr.object.rcs <- easydr(alcohol_cvd, sm = "OR", shape = "rcs",
+                            dose.unit = "g/day")
+easydr_curve(easydr.object.rcs)
 ```
 
 We see a shape the single estimate had no way of showing us. Whether we should
@@ -307,7 +308,7 @@ stops the tails flying off where the data is thinnest.
 #| fig-cap: "A restricted cubic spline. The subtitle names the knots, because the knots are a modelling choice and belong in the methods."
 #| fig-width: 7
 #| fig-height: 4.4
-easydr_curve(spline_fit)
+easydr_curve(easydr.object.rcs)
 ```
 
 The spline is the default in this literature for a reason: it can follow a
@@ -418,9 +419,9 @@ interpolate to an intake nobody reported, and it cannot describe a shape. Our
 dose-response model can do the first without being asked twice:
 
 ```{r}
-at_25 <- easydr(alcohol_cvd, sm = "OR", shape = "linear",
-                dose.unit = "g/day", at = c(10, 25, 50))
-at_25$predicted
+easydr.object.at25 <- easydr(alcohol_cvd, sm = "OR", shape = "linear",
+                             dose.unit = "g/day", at = c(10, 25, 50))
+easydr.object.at25$predicted
 ```
 
 An estimate at 25 grams per day, with an interval, for a dose no study reports.
@@ -485,7 +486,7 @@ null as evidence of no dose effect would be a mistake.
 Now the dose-response model on the identical rows:
 
 ```{r}
-c(slope = fit$slope$estimate, levels = nrow(alcohol_cvd))
+c(slope = easydr.object$slope$estimate, levels = nrow(alcohol_cvd))
 ```
 
 We see a slope of the opposite sign, from a model that used the within-study

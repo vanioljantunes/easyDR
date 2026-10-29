@@ -91,14 +91,15 @@ reason, never quietly fitted with a simpler shape.
 }
 
 \examples{
-fit <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
+easydr.object <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                        dose.unit = "g/day")
 
 # One cohort is carrying this result, and it is the first row. The curve
 # lettered A is the fit without it.
-easydr_loo(fit, quiet = TRUE)
+easydr_loo(easydr.object, quiet = TRUE)
 
 # The table on its own, with nothing drawn.
-loo <- easydr_loo(fit, quiet = TRUE, plot = FALSE)
+loo <- easydr_loo(easydr.object, quiet = TRUE, plot = FALSE)
 loo$table[, c("label", "estimate", "shift", "i2")]
 
 }

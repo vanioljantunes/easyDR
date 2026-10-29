@@ -19,9 +19,9 @@
 #' @return `x`, invisibly. Called for the printed output.
 #'
 #' @examples
-#' fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-#'               dose.unit = "g/day")
-#' f <- easydr_forest(fit)
+#' easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+#'                         dose.unit = "g/day")
+#' f <- easydr_forest(easydr.object)
 #' f$table
 #'
 #' @exportS3Method print easydr_contributions
@@ -51,9 +51,9 @@ print.easydr_contributions <- function(x, digits = 3, ...) {
 #' @return `x`, invisibly. Called for the printed output.
 #'
 #' @examples
-#' fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-#'               dose.unit = "g/day")
-#' easydr_funnel(fit)$egger
+#' easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+#'                         dose.unit = "g/day")
+#' easydr_funnel(easydr.object)$egger
 #'
 #' @exportS3Method print easydr_egger
 print.easydr_egger <- function(x, digits = 4, ...) {

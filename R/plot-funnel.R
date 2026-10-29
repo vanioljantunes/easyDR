@@ -50,9 +50,9 @@
 #' package. Journal of Statistical Software 36(3), 1-48.
 #'
 #' @examples
-#' fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-#'               dose.unit = "g/day")
-#' f <- easydr_funnel(fit, labels = TRUE)
+#' easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+#'                         dose.unit = "g/day")
+#' f <- easydr_funnel(easydr.object, labels = TRUE)
 #' f$egger
 #'
 #' @param filetype the format a saved figure is written in: `"png"` (the

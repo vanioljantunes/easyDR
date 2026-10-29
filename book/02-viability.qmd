@@ -220,8 +220,8 @@ Now we fit. The point of fitting here is not to learn anything about alcohol or
 about aripiprazole. It is to confirm that the data can carry a model at all.
 
 ```{r}
-fit_c <- easydr(aripiprazole, sm = "MD", shape = "linear")
-fit_c
+easydr.object.cont <- easydr(aripiprazole, sm = "MD", shape = "linear")
+easydr.object.cont
 ```
 
 There is a lot in that output, and almost all of it belongs to Chapter 4. For
@@ -230,8 +230,8 @@ viability line confirming that five of five trials carry three or more levels.
 The estimate is finite and its interval is usable. The data carries a model.
 
 ```{r}
-fit_b <- easydr(alcohol_cvd, sm = "OR", shape = "linear")
-fit_b
+easydr.object.bin <- easydr(alcohol_cvd, sm = "OR", shape = "linear")
+easydr.object.bin
 ```
 
 Again, **6 studies, 25 dose categories**, a finite estimate and a usable
@@ -302,7 +302,7 @@ from the fit we already have.
 #| fig-cap: "Aripiprazole: every dose arm against its study's reference."
 #| fig-width: 8
 #| fig-height: 4.6
-easydr_forest(fit_c)
+easydr_forest(easydr.object.cont)
 ```
 
 ```{r}
@@ -310,7 +310,7 @@ easydr_forest(fit_c)
 #| fig-cap: "Aripiprazole: the preliminary linear fit with its confidence band."
 #| fig-width: 7
 #| fig-height: 4.4
-easydr_curve(fit_c)
+easydr_curve(easydr.object.cont)
 ```
 
 We see one row per study, and beside each one the two numbers Step 2 and Step
@@ -326,7 +326,7 @@ The same pair for the binary example:
 #| fig-cap: "Alcohol and cardiovascular disease: every category against its study's reference."
 #| fig-width: 8
 #| fig-height: 5
-easydr_forest(fit_b)
+easydr_forest(easydr.object.bin)
 ```
 
 ```{r}
@@ -334,7 +334,7 @@ easydr_forest(fit_b)
 #| fig-cap: "Alcohol and cardiovascular disease: the preliminary linear fit with its confidence band."
 #| fig-width: 7
 #| fig-height: 4.4
-easydr_curve(fit_b)
+easydr_curve(easydr.object.bin)
 ```
 
 Read these two figures together and nothing else is needed to judge viability.

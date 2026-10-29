@@ -227,9 +227,9 @@ interpretation.
 # the person-years.
 head(alcohol_cancer)
 
-fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-              dose.unit = "g/day", at = c(10, 25, 50))
-fit
+easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                        dose.unit = "g/day", at = c(10, 25, 50))
+easydr.object
 
 # A spline on the same table. The shape is named, never chosen for you.
 easydr(alcohol_cancer, sm = "RR", shape = "rcs", dose.unit = "g/day")

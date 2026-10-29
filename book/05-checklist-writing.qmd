@@ -12,7 +12,7 @@ options(width = 66)
 
 data(alcohol_cvd)
 
-fit <- easydr(
+easydr.object <- easydr(
   alcohol_cvd,
   sm = "OR",
   shape = "rcs",
@@ -20,7 +20,7 @@ fit <- easydr(
   at = c(10, 25, 50)
 )
 
-by_design <- easydr(
+easydr.object.subgroup <- easydr(
   alcohol_cvd,
   sm = "OR",
   shape = "linear",
@@ -247,7 +247,7 @@ belong in it.
 #| fig-cap: "Supplementary figure: leave-one-out. Each row refits the model without one study, which shows whether the result rests on a single contributor."
 #| fig-width: 9
 #| fig-height: 5
-easydr_loo(fit, quiet = TRUE)
+easydr_loo(easydr.object, quiet = TRUE)
 ```
 
 ::: {.callout-note appearance="simple"}
@@ -332,7 +332,7 @@ reader sees at a glance which studies could carry a trend at all.
 #| fig-cap: "Figure 2: one dose-response trend per study, with the number of levels and the dose range each one covers."
 #| fig-width: 10
 #| fig-height: 5
-easydr_forest(fit)
+easydr_forest(easydr.object)
 ```
 
 ### Figure 3. The dose-response curve
@@ -345,7 +345,7 @@ band, the shape with its knots, and the test for departure from linearity.
 #| fig-cap: "Figure 3: the fitted dose-response curve for the main outcome, with its 95% confidence band. Reference 0 g/day, restricted cubic spline, knots as printed in the subtitle."
 #| fig-width: 7
 #| fig-height: 4.6
-easydr_curve(fit)
+easydr_curve(easydr.object)
 ```
 
 ### Figure 4. Subgroup curves
@@ -359,7 +359,7 @@ mixes case-control data with cumulative incidence.
 #| fig-cap: "Figure 4: the curve by study design. Strata on common axes, so that the comparison is visual as well as numerical."
 #| fig-width: 7.5
 #| fig-height: 4.8
-easydr_curve(by_design)
+easydr_curve(easydr.object.subgroup)
 ```
 
 We see two strata that separate only at the higher intakes, and the table
@@ -414,7 +414,7 @@ usually the intakes that existing guidance already speaks about.
 ```{r}
 #| label: tbl-doses
 #| tbl-cap: "Table 2: the fitted effect at the pre-specified intakes, with confidence and prediction intervals."
-knitr::kable(easydr_table(fit, doses = c(10, 25, 50)))
+knitr::kable(easydr_table(easydr.object, doses = c(10, 25, 50)))
 ```
 
 `easydr_table()` is the function that builds it. It takes the fit and the
