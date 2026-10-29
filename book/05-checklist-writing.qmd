@@ -1,73 +1,510 @@
-# Checklist, writing and interpretation
+# Writing the manuscript
 
-What to verify before submitting, and how to report a curve honestly once it
-survives that check.
+```{r}
+#| include: false
+suppressMessages(library(easyDR))
+knitr::opts_chunk$set(collapse = FALSE, comment = "", fig.align = "center")
+options(width = 66)
+```
 
-::: {.callout-warning}
-Draft. The section structure below is fixed and matches the class; the prose is
-being written.
+By now we have judged whether a question is viable, registered it, and fitted
+a curve. What remains is the part reviewers actually read. In this chapter we
+walk through the main parts of the manuscript and of the supplementary
+material, in the order they appear on the page, and we say what belongs in
+each one.
 
-Every `##` section gets its own figure, as in Chapter 1. One H2 is one slide, so
-the figure is also that slide's visual, and a section without one leaves the
-deck with a blank.
+Much of the content has already been built in the earlier chapters. Where that
+is so, we point back rather than repeat ourselves, and we spend the space here
+on the one thing no earlier chapter covers: how to put the work on the page so
+that a reader can check it.
+
+We stay with `alcohol_cvd`, the data set we have used since Chapter 1, and we
+fit it once here so that every table and figure below comes from the same
+model.
+
+```{r}
+data(alcohol_cvd)
+
+fit <- easydr(
+  alcohol_cvd,
+  sm = "OR",
+  shape = "rcs",
+  dose.unit = "g/day",
+  at = c(10, 25, 50)
+)
+```
+
+## The checklist
+
+A dose-response review is reported under **PRISMA** like any other systematic
+review [@page2021]. Yet PRISMA knows nothing about dose levels, reference
+categories or spline knots. The table below is therefore the short supplement
+to it: what a dose-response manuscript carries that a conventional one does
+not.
+
+```{r}
+#| label: tbl-checklist
+#| tbl-cap: "What belongs in each part of a dose-response manuscript. This supplements the PRISMA checklist rather than replacing it."
+#| echo: false
+checklist <- data.frame(
+  Section = c(
+    "Introduction",
+    "Methods",
+    "Results",
+    "Discussion",
+    "Conclusion",
+    "Supplementary material",
+    "Proposed figures",
+    "Proposed tables"
+  ),
+  `What belongs there` = c(
+    "Why the shape matters, and not only whether the exposure matters. The decision a curve would inform. The registration number.",
+    "Eligibility, including the three-level rule. Search and dates. What was extracted per dose level. How doses were assigned and harmonised. The reference category rule. Model, shape, knots. Heterogeneity, bias, subgroups and sensitivity. Software with versions, and the repository.",
+    "Study and participant counts. The dose range covered. Table 1 and Table 2. The pooled trend, the test for departure from linearity, heterogeneity, and the curve. Subgroups and sensitivity as pre-specified.",
+    "What the shape means on the dose scale. Comparison with published curves. Where the evidence thins out. Limitations specific to dose-response, including the unit of analysis and dose harmonisation.",
+    "One or two sentences answering the question that was asked, at a named dose, without leaving the observed range.",
+    "Full search strings. Outcome definitions per study. The dose conversion table. Risk of bias per domain. Leave-one-out and the shapes not chosen. The analysis code.",
+    "PRISMA flow, forest of study trends, the dose-response curve, subgroup curves.",
+    "Table 1 with study and participant characteristics, Table 2 with the effect at the doses of interest."
+  ),
+  check.names = FALSE
+)
+knitr::kable(checklist)
+```
+
+Let us take the rows in order.
+
+## Introduction
+
+Two sentences carry a dose-response introduction that a conventional one does
+not. The first says why the shape matters. The second says what decision would
+change if the shape were known.
+
+We made that argument in full in Chapter 1: a single pooled estimate answers
+"does it matter" and cannot answer "how much". The introduction is where the
+argument is made for one specific exposure, briefly, and then dropped.
+
+::: {.callout-note appearance="simple"}
+**Example**
+
+> _Meta-analyses of alcohol and cardiovascular disease have pooled the highest
+> reported intake against the lowest. That contrast answers whether drinkers
+> differ from non-drinkers, and it cannot say how risk changes across the
+> range of intake. Public health guidance is written in grams per day, so the
+> quantity that matters for guidance is the shape of the relationship rather
+> than a single contrast. We therefore estimated the dose-response
+> relationship between alcohol intake and cardiovascular disease (PROSPERO
+> CRD420XXXXXXXX)._
+
+Three sentences, three jobs: the gap, why the shape is the decision-relevant
+quantity, and the registration number from Chapter 3.
 :::
 
-The checklist comes first: run it before writing a word, since every item is
-something a reviewer can check and you cannot fix after submission. The writing
-sections then say how to put the result on the page without claiming more than
-it earned. The two were separate classes until 2026-10-20.
+@bryazka2022 is worth reading as a model. Its introduction does not argue that
+alcohol matters. It argues that the dose question is open, which is what earns
+the paper its method.
 
-## Before extraction
+## Methods
 
-Protocol registered, dose metric declared, reference handling decided.
+The longest section, and almost all of it has been built already. Chapter 2
+covered extraction and the reference category, Chapter 3 the protocol and the
+risk of bias, Chapter 4 the model itself.
 
-## After extraction
+What we add here is the reminder that each of those decisions has to appear in
+the manuscript, and not only in the protocol. A reader cannot check the
+registration against the paper if the paper leaves out the thing that was
+registered.
 
-Viability check run, doses harmonised, covariance inputs complete.
+The order that reads well:
 
-## Model specification
+1. Protocol and registration
+2. Eligibility, including the three-level rule and what happened to the
+   studies that fell below it
+3. Search, databases and dates, with the full strings in the supplement
+4. Extraction, one row per dose level per study, and what was taken per level
+5. Dose assignment and harmonisation, including the open-ended top category
+6. The reference category, and what was done when studies disagreed
+7. The model: one-stage or two-stage, covariance method, shape, knots
+8. Heterogeneity, publication bias, sensitivity and subgroups
+9. Software, package versions, and where the code lives
 
-Functional form justified, knots declared, two-stage versus one-stage defended.
+::: {.callout-note appearance="simple"}
+**Example**
 
-## Reporting the fit
+The statistical paragraph, written out in full in Chapter 4, reduces to this
+shape:
 
-What numbers belong in the paper, and in what units.
+> _We fitted a two-stage random-effects dose-response model. Within-study
+> covariances between estimates sharing a reference category were
+> reconstructed by the method of Greenland and Longnecker. The dose-response
+> relationship was modelled with a restricted cubic spline with three knots
+> placed at the 10th, 50th and 90th percentiles of the observed intake
+> distribution, specified in the protocol before any data were extracted.
+> Departure from linearity was tested with a Wald test on the spline terms._
 
-## The figure
+Every clause names a decision a reader is free to disagree with, which is the
+point of writing it out.
+:::
 
-Exposure range, confidence band, reference point, and what not to extrapolate.
+## Results
 
-## Common failures
+The results section has a fixed running order, and it is the order of the
+figures. One paragraph of characteristics comes first: how many studies, how
+many participants and cases, the dose range the pooled data covers, and which
+designs are included.
 
-The errors found most often in the published audit, each with the fix.
+```{r}
+c(studies  = length(unique(alcohol_cvd$studlab)),
+  levels   = nrow(alcohol_cvd),
+  cases    = sum(alcohol_cvd$event.e),
+  max_dose = max(alcohol_cvd$dose))
+```
 
-## Writing the methods
+Then the pooled result. Let us read it from the fitted object rather than
+retype it by hand:
 
-The sentences that have to be there: covariance handling, functional form, knots,
-and the model class.
+```{r}
+fit
+```
 
-## Writing the results
+::: {.callout-note appearance="simple"}
+**Example**
 
-Reporting a shape rather than a number, and giving effects at specific doses
-that readers care about.
+> _Six study contrasts contributed 25 intake categories covering 0 to 77.2
+> grams per day. The restricted cubic spline showed a departure from
+> linearity, with risk lowest at moderate intake and rising at higher intake.
+> Estimates at 10, 25 and 50 grams per day are given in Table 2, and the
+> fitted curve in Figure 3._
 
-## Making claims the curve supports
+We see what the paragraph does not do. It does not interpret, it does not
+recommend an intake, and it says nothing about what happens beyond 77.2 grams
+per day.
+:::
 
-Interpolation inside the observed range is fair. Extrapolation beyond it is the
-single most common over-reach.
+## Discussion
 
-## Thresholds and optimal doses
+The discussion is where a dose-response paper most often goes wrong, because a
+curve invites claims that a curve cannot support. Three things belong here and
+nowhere else.
 
-Why a visually obvious plateau is weaker evidence than it looks, and how to
-phrase a threshold claim.
+**What the shape means on the dose scale.** Not "alcohol was associated with
+cardiovascular disease", which the curve did not test, but what happens
+between two named intakes.
 
-## Reading someone else as a critic
+**Comparison with published curves.** Dose-response results are comparable to
+each other in a way that pooled estimates are not, because both are functions
+of the same quantity. Where another review fitted the same exposure, the two
+curves can be laid side by side.
 
-The Burden of Proof dispute [@burdenofproofconcerns2023] as a worked exercise in
-spotting where modelling choices carry the conclusion.
+**Limitations specific to this design.** Three of them recur: the unit of
+analysis issue from Chapter 1, dose harmonisation across studies that defined
+their categories differently, and the width of the band where the data thin
+out.
 
-## The discussion and its limits
+::: {.callout-important}
+**The claim a curve does not support**
 
-Stating what the evidence cannot answer, and why that strengthens the paper.
+A curve is estimated over the range the studies reported, and its band widens
+wherever they thin out. Reading a threshold off the point where the band
+crosses the null is the commonest error in this literature, because that point
+moves with the width of the band and not only with the size of the effect.
+
+The Burden of Proof papers [@gbd2022tobacco; @gbd2022vegetables] and the
+critique of them [@burdenofproofconcerns2023] are the best available case
+study. We recommend reading that exchange before writing a discussion that
+names an optimal dose.
+:::
+
+## Conclusion
+
+One or two sentences. They answer the question the introduction asked, at a
+named dose, inside the observed range.
+
+::: {.callout-note appearance="simple"}
+**Example**
+
+> _Across the intake range these studies report, cardiovascular risk was
+> lowest at moderate intake and did not fall further at higher intake. The
+> data do not support a recommendation above the observed range._
+
+The second sentence is the one co-authors tend to cut, and it is the one that
+should stay.
+:::
+
+## The supplementary material
+
+The supplement is where a dose-response review becomes checkable. Six things
+belong in it.
+
+1. **Full search strings**, verbatim, per database, with the dates they were run.
+2. **Outcome definitions per study**, because studies that call an outcome by
+   the same name often do not measure the same thing.
+3. **The dose conversion table**, showing how each study turned its categories
+   into numbers, including the rule used for the open-ended top category.
+4. **Risk of bias per domain per study**, as described in Chapter 3.
+5. **Sensitivity analyses**: leave-one-out, and the alternative shapes that
+   were fitted but not chosen.
+6. **The analysis code**, so that the curve can be re-run rather than re-read.
+
+```{r}
+#| label: fig-loo
+#| fig-cap: "Supplementary figure: leave-one-out. Each row refits the model without one study, which shows whether the result rests on a single contributor."
+#| fig-width: 9
+#| fig-height: 5
+easydr_loo(fit, quiet = TRUE)
+```
+
+::: {.callout-note appearance="simple"}
+**Example: the outcome definition table**
+
+A supplementary table whose only job is to let a reader see that the studies
+are not quite measuring the same thing.
+
+```{r}
+#| echo: false
+knitr::kable(data.frame(
+  Study = c("Study A", "Study B", "Study C", "Study D"),
+  `Outcome as defined in the paper` = c(
+    "Non-fatal myocardial infarction, hospital discharge code",
+    "Death from coronary heart disease, death certificate",
+    "Incident coronary heart disease, self-report with record check",
+    "Incident coronary heart disease, adjudicated by committee"
+  ),
+  check.names = FALSE
+))
+```
+
+The wording here is illustrative. The column that matters is the second one,
+and writing it out usually changes what goes into the limitations.
+:::
+
+## The figures
+
+Let us look at the figures one by one. Four figures in the paper, in this order. The order is not decoration: the
+numbering is the running order of the results, and reviewers expect it.
+
+### Figure 1. The PRISMA flow
+
+The standard flow diagram, with one difference that matters. The exclusion
+reasons at the full-text stage should name the dose-response ones separately.
+"Fewer than three dose levels" and "no counts per level" are the two a reviewer
+looks for, because together they say whether the viability check of Chapter 2
+was applied at all.
+
+```{r}
+#| label: fig-prisma
+#| fig-cap: "Figure 1: study flow, with exclusion reasons specific to a dose-response review. The counts are illustrative; the structure and the named reasons are the point."
+#| fig-width: 7.5
+#| fig-height: 7.5
+#| echo: false
+box <- function(x, y, w, h, label, fill = "#EEF3F8") {
+  rect(x - w/2, y - h/2, x + w/2, y + h/2, col = fill, border = "#277db0")
+  text(x, y, label, cex = 0.72)
+}
+
+op <- par(mar = c(0, 0, 0, 0))
+plot(NA, xlim = c(0.3, 9.8), ylim = c(0.55, 9.9),
+     axes = FALSE, xlab = "", ylab = "")
+
+box(3.2, 9.2, 5.4, 1.2, "Records identified\nDatabases (n = 1842), registers (n = 37)")
+box(3.2, 7.4, 5.4, 1.1, "Records screened\n(n = 1611)")
+box(8.0, 7.4, 3.4, 1.1, "Duplicates removed\n(n = 268)", "#F7F2E8")
+box(3.2, 5.6, 5.4, 1.1, "Full texts assessed\n(n = 96)")
+box(8.0, 5.6, 3.4, 1.1, "Excluded on title\nand abstract (n = 1515)", "#F7F2E8")
+box(3.2, 3.4, 5.4, 1.7,
+    paste("Full texts excluded (n = 90)",
+          "Fewer than three dose levels (n = 41)",
+          "No counts per dose level (n = 28)",
+          "Dose not quantifiable (n = 21)", sep = "\n"), "#F7F2E8")
+box(3.2, 1.2, 5.4, 1.1, "Studies in the\ndose-response model (n = 6)")
+
+arrows(3.2, 8.60, 3.2, 7.95, length = 0.08, col = "#277db0")
+arrows(3.2, 6.85, 3.2, 6.15, length = 0.08, col = "#277db0")
+arrows(3.2, 5.05, 3.2, 4.25, length = 0.08, col = "#277db0")
+arrows(3.2, 2.55, 3.2, 1.75, length = 0.08, col = "#277db0")
+arrows(5.9, 7.40, 6.3, 7.40, length = 0.08, col = "#277db0")
+arrows(5.9, 5.60, 6.3, 5.60, length = 0.08, col = "#277db0")
+par(op)
+```
+
+### Figure 2. The forest of study trends
+
+Not a forest of contrasts. One row per study, each row carrying that study's
+trend together with its number of dose levels and the range it covers. A
+reader sees at a glance which studies could carry a trend at all.
+
+```{r}
+#| label: fig-forest
+#| fig-cap: "Figure 2: one dose-response trend per study, with the number of levels and the dose range each one covers."
+#| fig-width: 10
+#| fig-height: 5
+easydr_forest(fit)
+```
+
+### Figure 3. The dose-response curve
+
+The figure the paper exists for. Its caption carries the reference dose, the
+band, the shape with its knots, and the test for departure from linearity.
+
+```{r}
+#| label: fig-curve
+#| fig-cap: "Figure 3: the fitted dose-response curve for the main outcome, with its 95% confidence band. Reference 0 g/day, restricted cubic spline, knots as printed in the subtitle."
+#| fig-width: 7
+#| fig-height: 4.6
+easydr_curve(fit)
+```
+
+### Figure 4. Subgroup curves
+
+Pre-specified subgroups, drawn on shared axes so that the strata can be
+compared by eye. Here the natural subgroup is study design, since the table
+mixes case-control data with cumulative incidence.
+
+```{r}
+#| label: fig-subgroup
+#| fig-cap: "Figure 4: the curve by study design. Strata on common axes, so that the comparison is visual as well as numerical."
+#| fig-width: 7.5
+#| fig-height: 4.8
+by_design <- easydr(
+  alcohol_cvd,
+  sm = "OR",
+  shape = "linear",
+  dose.unit = "g/day",
+  subgroup = "design"
+)
+
+easydr_curve(by_design)
+```
+
+We see two strata that separate only at the higher intakes, and the table
+under the plot gives the slope and the test for each one. A difference
+between strata is tested, never read off two overlapping bands.
+
+## The tables
+
+Two tables belong in the paper. More than two usually means something belongs
+in the supplement instead.
+
+### Table 1. Studies and participants
+
+One row per study: the design, how many intake categories it reported, the
+range those categories cover, and the people behind them. This is the table
+that lets a reader judge the evidence before seeing any estimate.
+
+```{r}
+#| label: tbl-baseline
+#| tbl-cap: "Table 1: characteristics of the included studies and participants."
+characteristics <- do.call(rbind, lapply(
+  split(alcohol_cvd, alcohol_cvd$studlab),
+  function(x) data.frame(
+    Study  = x$studlab[1],
+    Design = as.character(x$design[1]),
+    Levels = nrow(x),
+    `Dose range` = paste0(round(min(x$dose), 1), " to ",
+                          round(max(x$dose), 1)),
+    Cases  = sum(x$event.e),
+    N      = sum(x$n.e),
+    check.names = FALSE
+  )
+))
+
+knitr::kable(characteristics, row.names = FALSE)
+```
+
+### Table 2. The effect at the doses of interest
+
+The doses are chosen in the protocol, not after seeing the curve. They are
+usually the intakes that existing guidance already speaks about.
+
+```{r}
+#| label: tbl-doses
+#| tbl-cap: "Table 2: the fitted effect at the pre-specified intakes, with confidence and prediction intervals."
+doses <- fit$predicted[, c("dose", "est", "ci.lb", "ci.ub",
+                           "pi.lb", "pi.ub")]
+names(doses) <- c("Dose", "OR", "CI low", "CI high",
+                  "PI low", "PI high")
+
+knitr::kable(doses, digits = 2, row.names = FALSE)
+```
+
+The prediction interval is wider than the confidence interval on purpose. It
+is the interval a new study would be expected to fall in, and it is the honest
+number to quote when somebody asks what to expect next.
+
+## Cite the tools, and the repository
+
+::: {.callout-important}
+**This part is not optional**
+
+A dose-response curve is the product of several modelling decisions taken
+inside software. A methods section that says "analyses were performed in R"
+does not let anybody reproduce it, and a reader cannot tell which covariance
+approximation, which shape, or which knot rule produced the figure.
+
+Name all of it, with versions:
+
+- **{easyDR}**, this package, together with the repository that holds both the
+  package and this book: <https://github.com/vanioljantunes/easyDR>
+- **{dosresmeta}** [@crippa2016], which does the estimation
+- the method itself [@greenland1992]
+- _R_, with its version number
+
+The [Cite this material](cite.qmd) page carries the exact wording for the
+first of these, generated from the installed version. Copy it rather than
+retyping it, because the version number is the part that matters most and the
+part most often got wrong.
+:::
+
+The package will print the call back, which is the quickest way to get the
+methods sentence right:
+
+```{r}
+fit$call
+```
+
+::: {.callout-note appearance="simple"}
+**Example**
+
+> _Analyses were performed in R. Dose-response models were fitted with the
+> easyDR package (version 0.0.0.9000;
+> https://github.com/vanioljantunes/easyDR), which prepares the data and calls
+> dosresmeta (Crippa and Orsini, 2016) for estimation using the method of
+> Greenland and Longnecker (1992). The analysis code is available in the
+> supplementary material._
+:::
+
+::: {.callout-note appearance="simple"}
+**Test your knowledge!**
+
+1. A co-author proposes reporting the intake at which the confidence band
+   first crosses the null, and calling it a threshold. What is wrong with
+   that, and what would you report instead?
+2. Why does the forest plot of a dose-response paper carry one row per study
+   rather than one row per intake category?
+3. A reviewer asks why Table 2 reports a prediction interval as well as a
+   confidence interval. What is the one-sentence answer?
+4. Which three limitations are specific to a dose-response review and belong
+   in every discussion?
+
+Answers to these questions are listed in Appendix A.
+:::
+
+## Summary
+
+- A dose-response review is reported under PRISMA, plus the items in
+  @tbl-checklist that PRISMA does not cover: dose assignment, the reference
+  category, the shape and its knots.
+- The results section has a fixed running order, and the figure numbering is
+  that order: flow, study trends, the curve, subgroups.
+- Two tables belong in the paper. Table 1 describes the studies and the
+  participants, and Table 2 reports the effect at intakes chosen in the
+  protocol.
+- The supplement carries what makes the review checkable: search strings,
+  outcome definitions, the dose conversion table, risk of bias, leave-one-out,
+  the shapes that were not chosen, and the code.
+- The conclusion answers the question at a named dose, inside the observed
+  range, and says so plainly when the data do not reach further.
+- Software, package versions and the repository belong in the methods. A curve
+  reported without them is a figure that nobody can reproduce.
 
 {{< include _cta.qmd >}}
