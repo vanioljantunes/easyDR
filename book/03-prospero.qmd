@@ -18,11 +18,19 @@ with them.
 This chapter is about writing that record. It is not a tour of the PROSPERO
 form, because most of the form is the same form every systematic review fills
 in, and there are better places to learn it than a book about one design. What
-we do here is narrower and more useful: we go to the fields where a
+we do here is narrower and more useful: we go to the numbered questions where a
 dose-response review says something a standard review never has to say, and we
-write them. The purpose of the review, the eligibility criteria, the exposure
-definition and, above all, the statistical analysis plan all change, and they
-change for the same reason.
+write them. The record has twelve sections, and the ones that change are 1.5
+Review objectives, most of Section 2 on eligibility, 7.2 to 7.4 on bias and
+certainty, 8.1 Main outcomes, and, above all, 9.1 Strategy for data synthesis.
+Each section below is named for the question as PROSPERO words it on screen,
+and opens by giving the question's number and the size of box it expects, so
+the chapter can be read with the form open.
+
+One departure from the form's own order is worth announcing. We take 9.1 before
+Section 7, because the synthesis plan is what gives the risk of bias ratings a
+job, and it is hard to say what a rating is for before knowing what the model
+will do with it.
 
 The second half of the chapter rates the studies. Risk of bias sits in the same
 class as registration because the rating scheme is declared in the protocol, and
@@ -152,36 +160,49 @@ would arrive at the same primary model you did, you wrote a plan. If the person
 would have to ask you what you meant, you wrote a preference.
 :::
 
-## The sections that differ from a standard review
+## The fields that differ from a standard review
 
-Now to the form itself. Let us go only to the fields where this design forces
-different wording, and leave the rest, which are filled in exactly as they
-would be for any review.
+Now to the form itself. The PROSPERO record has twelve sections and roughly
+forty numbered questions, and most of them are filled in exactly as they would
+be for any review. Let us go only to the ones this design forces us to word
+differently, and let us call each by the number and the name it carries on
+screen, so that the chapter can be read with the form open beside it.
 
 ```{r}
 #| label: tbl-fields
-#| tbl-cap: "The PROSPERO fields a dose-response review fills in differently, and what changes in each."
+#| tbl-cap: "The numbered PROSPERO questions a dose-response review answers differently, and what changes in each."
 knitr::kable(data.frame(
-  Field = c("Review question", "Participants", "Intervention or exposure",
-            "Comparator", "Types of study", "Outcomes",
-            "Data synthesis", "Subgroups"),
+  Question = c("1.5 Review objectives",
+               "2.1 Population",
+               "2.2 Intervention(s) or exposure(s)",
+               "2.3 Comparator(s) or control(s)",
+               "2.4 Study design",
+               "7.2 Study risk of bias or quality assessment",
+               "8.1 Main outcomes",
+               "9.1 Strategy for data synthesis"),
   Changes = c(
     "Asks how the effect moves across the dose range, not whether an effect exists",
     "Unchanged, with one addition: the dose range the population is exposed to",
     "Names the dose metric, its unit, and the rule for assigning a dose to a category",
     "A level rather than a group: each study's own reference, and whether it is re-expressed",
-    "Carries the three-level and covariance requirements as eligibility criteria",
-    "One outcome per curve, with the primary one named before any fitting",
-    "The functional form, the knots, the pooling stage and the covariance method",
-    "By study design, because design decides the covariance approximation")
+    "Names the designs, and each design added here costs a tool in 7.2",
+    "One tool per design, named individually, never a bare 'JBI tools'",
+    "One outcome per curve, with the effect measure stated beside it",
+    "The functional form, the knots, the pooling stage, the covariance method")
 ))
 ```
 
-We see that the changes are not scattered through the form. They cluster in the
-fields that describe the exposure and the analysis, which is where this design
-differs from every other, and four of them deserve more than a table row.
+We see that the changes are not scattered through the form. They cluster in
+Section 2, which defines eligibility, and in Section 9, which defines the
+analysis. Searching and screening, Section 6, changed too, but we settled that
+in Chapter 2 when we agreed to keep the outcome out of the search string, and
+it goes into 6.2 and 6.6 as written there.
 
-### The purpose of the review
+Six questions deserve more than a table row.
+
+### Review objectives
+
+**Question 1.5**, 10 to 200 words, required.
 
 A standard meta-analysis asks whether an exposure is associated with an outcome.
 Our question is different in kind. We ask how the association **behaves** as the
@@ -201,20 +222,40 @@ Written out for our two examples:
 > alcohol intake, in grams of ethanol per day, and the risk of cardiovascular
 > disease in general adult populations.*
 
-Both say shape. Neither asks a yes-or-no question.
+Both say shape. Neither asks a yes-or-no question. PROSPERO allows 10 to 200
+words here and asks that the objective be answerable with data that exists in
+the included studies, which is the viability question of Chapter 2 arriving in
+the form.
 
-### The exposure, and the dose metric
+### Population
 
-This field has no counterpart in a standard review, and it is where most of the
-later pain is prevented. Three things go in it.
+**Question 2.1**, an inclusion box and an exclusion box, 200 words each.
+
+This question changes least, and it changes once. PROSPERO asks for inclusion
+and exclusion criteria for the participants, as any review would. What a
+dose-response review adds is the **range of exposure the population spans**,
+because a population none of whose members reach a high dose cannot inform the
+upper half of the curve, however many of them there are.
+
+A cohort of lifelong light drinkers is a legitimate study of alcohol. It is
+not a study that can tell us what happens at 60 grams a day, and a protocol
+that says so in 2.1 will not be surprised later by a confidence band that opens
+out at the right-hand edge of the figure.
+
+### Intervention(s) or exposure(s)
+
+**Question 2.2**, two boxes plus PICO tags.
+
+This is the question with no counterpart in a standard review, and it is where
+most of the later pain is prevented. PROSPERO gives two boxes, inclusion and
+exclusion, up to 200 words each, plus PICO tags. Three things go in them.
 
 The **unit** the dose is measured in, stated once and converted to at
-extraction rather than later. The **reference level** rule, which is placebo or
-never-exposed when such a level exists and the lowest reported category
-otherwise. And the **rule for assigning one number to a category**, because
-published papers report bands rather than doses.
+extraction rather than later. The **rule for assigning one number to a
+category**, because published papers report bands rather than doses. And the
+range of doses the review will accept, which is the exclusion box.
 
-That last one is the part authors forget. A cohort reports intake as "1 to 14
+The middle one is the part authors forget. A cohort reports intake as "1 to 14
 grams per day", "15 to 29", and "30 or more". The first two have midpoints. The
 third is open-ended and has none, so the protocol has to say in advance what we
 will do with it. A common and defensible rule is to add the width of the
@@ -230,45 +271,107 @@ see which rule makes the curve look better.
 > highest category, its lower bound plus the width of the adjacent category. The
 > reference category will be the lowest reported intake in each study.*
 
-### The eligibility criteria
+### Comparator(s) or control(s)
 
-Chapter 2 gave us five viability steps. Two of them are eligibility criteria,
-and they belong in the protocol as such rather than as methodological good
-intentions.
+**Question 2.3**, three radio buttons and two boxes.
 
-> *Studies will be eligible if they report at least three quantitative exposure
-> categories, including the reference category, and report, for each category,
-> either the number of events and the number at risk, or the mean, standard
-> deviation and sample size of the outcome. Studies reporting fewer than three
-> categories, or omitting this information, will be retained for a
-> highest-against-lowest comparison and excluded from the dose-response model.*
+PROSPERO offers three radio buttons here and asks for the alternatives the main
+intervention will be compared against. In an ordinary review the comparator is
+a **group**. In ours it is a **level**, and each study supplies its own: placebo
+or never-exposed where such a level exists, and the lowest reported category
+otherwise.
 
-Notice that the second sentence keeps the two-level studies in the review. They
-cannot carry a trend in a two-stage model, and a protocol that excluded them
-outright would be throwing away a comparison it is able to make. Say which
-analysis each study belongs to, rather than which studies exist.
+That makes this question the right place for one decision Chapter 4 will act
+on. Studies disagree about what the reference should be, and the estimates can
+be re-expressed against a common reference before pooling [@hamling2008].
+Whether we intend to do that is stated here, because a reader who sees "the
+lowest reported category in each study" and then meets a common reference in
+the results has caught us changing the comparator after the fact.
 
-### The outcome
+### Study design
+
+**Question 2.4**, 250 words of inclusion and 150 of exclusion.
+
+PROSPERO asks for the types of study eligible for inclusion, and the field
+guide gives one instruction that saves trouble later: never write
+"observational studies" as a design. Name them. Parallel randomised trial,
+cluster randomised trial, prospective cohort, retrospective cohort,
+case-control, cross-sectional, single-arm.
+
+The reason to be exact is that **every design named here costs a tool in 7.2**,
+and a dose-response review mixes designs more readily than other reviews do. A
+single case-control study among nine cohorts adds a second risk of bias tool, a
+second set of judgements to report, and a second covariance approximation in
+the model. That may well be worth it. It should be a decision, not a
+by-product.
+
+::: {.callout-important}
+**The three-level rule is a pooling rule, not an eligibility criterion**
+
+It is tempting to write Chapter 2's viability steps into 2.4, so that a study
+reporting two exposure levels is simply ineligible. Do not. A criterion written
+into Section 2 removes the study from the review and from the table of
+findings, and a two-level study still carries a highest-against-lowest
+comparison we can use.
+
+The rule belongs in **9.1 Strategy for data synthesis**, where it decides which
+analysis a study enters rather than whether it exists. The same holds for the
+requirement that a study report counts, or means with standard deviations: that
+is a statement about what the model needs, and the model lives in 9.1.
+:::
+
+### Main outcomes
+
+**Question 8.1**, and 8.2 takes the rest.
 
 One curve belongs to one outcome. A review with three outcomes is three
 dose-response analyses, and the primary one is named now, before we discover
 which of the three has the most interesting shape.
 
-## The statistical analysis plan, as a set of contingencies
+PROSPERO asks for the outcome definition, the acceptable measurement
+instruments, the timepoints, and **the effect measure to be used in synthesis**.
+That last item is easy to skip and it is the one that has to agree with 9.1. A
+dose-response review reports a trend per unit of dose, or an effect at a named
+dose, so the effect measure written here is a risk ratio per gram per day, or a
+mean difference at 20 mg per day, rather than a bare "risk ratio".
 
-Here is the section that carries the chapter. Let us write it as a sequence of
-conditional commitments, in the order the analysis will meet them, each one
-naming its trigger and its action.
+## Strategy for data synthesis, as a set of contingencies
+
+**Question 9.1**, the only question of Section 9, 500 words.
+
+Here is the box that carries the chapter, and the hardest one in the form. It
+takes 500 words, and PROSPERO's own guidance is blunt about what fails: generic
+text. A box reading "a random effects meta-analysis will be performed and
+heterogeneity assessed with $I^2$" describes no review in particular, and a
+record carrying it gets flagged as a template.
+
+The field asks for ten things: what is pooled with what and the rule that
+decides when studies are too different to pool; the effect measure per outcome,
+matching 8.1; the model, its between-study variance estimator and its
+confidence interval method; how heterogeneity will be quantified and what will
+be done about it; the subgroups, with the hypothesis behind each; the
+sensitivity analyses; what happens to studies that cannot enter a model;
+missing data; unit of analysis issues; and the software with its version.
+
+Let us write them as a sequence of conditional commitments, in the order the
+analysis will meet them, each one naming its trigger and its action.
 
 **The pooling stage.** Two-stage estimation fits a trend inside each study and
 then pools the trends [@orsini2012]. It is the default in **{easyDR}** and the
 usual primary choice, and it needs every study to carry at least three levels.
 One-stage estimation fits every study inside a single mixed model [@crippa2019],
 keeps studies that two-stage drops, and leaves no per-study estimate to draw.
-The plan therefore reads as follows. Two-stage is primary where the eligibility
-criteria are met across at least three studies. If fewer than three studies
-clear them, or if more than a quarter of eligible studies report only two
-levels, one-stage becomes primary, and the reason is reported.
+The plan therefore reads as follows. Two-stage is primary where at least three
+studies report three or more exposure levels with the information the
+covariance needs. If fewer than three studies clear that bar, or if more than a
+quarter of included studies report only two levels, one-stage becomes primary,
+and the reason is reported.
+
+**What is pooled with what.** One curve pools studies of the same exposure, in
+the same population, against the same outcome, and the rule that decides when
+studies are too different to pool is clinical rather than statistical. Two
+exposures reported by the same cohort, beer and wine for instance, enter as
+separate contrasts and the shared participants are declared as a limitation.
 
 **The within-study covariance.** Estimates within a study share a reference
 group, so they are correlated, and the correlation has to be reconstructed by
@@ -344,6 +447,29 @@ between levels is planned. Two subgroups estimated from four studies and from
 two will differ by some amount whatever the truth is, so the protocol commits us
 to comparing intervals and stating how few studies each one rests on.
 
+**Studies that cannot enter the model.** This is where Chapter 2's viability
+steps belong, and where we promised in 2.4 to put them. A study reporting two
+exposure levels, or reporting effects without the counts behind them, cannot
+carry a trend. It is not dropped from the review. It enters the
+highest-against-lowest comparison, it appears in the table of findings, and the
+protocol says in which analyses it is counted and in which it is not.
+
+**Missing data.** What will be requested from authors, what will be imputed and
+what will be excluded. The gap specific to this design is the reference group's
+standard deviation in a continuous review, handled as above. A gap in the
+counts cannot be imputed, so it moves the study to the comparison rather than
+the curve.
+
+**Unit of analysis.** A dose-response study is a multi-arm study by
+construction, and every one of its arms is measured against one reference.
+Counting those arms as independent studies is the error this whole design
+exists to avoid, so the protocol states that each study contributes one trend,
+or one set of curve coefficients, however many exposure categories it reported.
+
+**Software.** Named with its version, because a spline basis and a knot
+placement are implementation details as much as statistical ones. For this book
+that is _R_, with **{easyDR}** calling **{dosresmeta}** [@dosresmeta].
+
 ::: {.callout-note appearance="simple"}
 **Reporting it: the data synthesis field**
 
@@ -387,25 +513,43 @@ saying that effects will be reported only within the observed exposure range and
 that the range will be marked on every figure.
 :::
 
-## Risk of bias follows the study design
+## Study risk of bias or quality assessment
+
+**Question 7.2**, a radio, then tool checkboxes and a method radio.
 
 There is no risk-of-bias tool for dose-response meta-analysis, and we should be
 glad of it. The thing being rated is a study, and what a study needs rated
 depends on how it was conducted, not on what we intend to do with it afterwards.
 So we choose the tool by design, exactly as the course does.
 
+PROSPERO makes this a click. The question is "Will risk of bias be assessed?",
+and a yes opens a list of tools to tick: Cochrane RoB-1, Cochrane RoB-2, JBI
+tools, Newcastle-Ottawa, PROBAST, QUADAS-2, QUADAS-C, ROBINS-E, ROBINS-I,
+ROBIS, Other. The designs we named in 2.4 decide which ones are ticked.
+
 ```{r}
 #| label: tbl-rob
-#| tbl-cap: "The risk of bias tool follows the design of the study being rated."
+#| tbl-cap: "The risk of bias tool follows the design of the study being rated, named as PROSPERO lists it."
 knitr::kable(data.frame(
-  Design = c("Randomized trial",
-             "Non-randomized study of an intervention",
-             "Observational study of an exposure",
-             "Single-arm study or case series",
-             "Case-control study"),
-  Tool = c("RoB 2", "ROBINS-I", "ROBINS-E", "JBI", "JBI")
+  Design = c("Randomised trial",
+             "Non-randomised study of an intervention",
+             "Cohort study of an exposure",
+             "Case-control study",
+             "Single-arm study or case series"),
+  Tool = c("Cochrane RoB-2",
+           "ROBINS-I",
+           "ROBINS-E",
+           "JBI, Checklist for Case Control Studies",
+           "JBI, Checklist for Case Series")
 ))
 ```
+
+Two details of this screen are worth knowing before it is reached. **JBI tools
+opens into individual checklists**, and ticking the parent without naming the
+checklist leaves the record ambiguous, so the table above names each one. And
+**one tool per design, no more**: a record listing five tools for a review of
+eight trials reads as a copied checklist, and the obvious question at peer
+review is which tool was used on which study.
 
 Dose-response reviews mix designs more often than other reviews do, because the
 exposure is a quantity and quantities get measured in whatever study happens to
@@ -429,9 +573,13 @@ We see that four of the six contrasts come from case-control studies and two
 from studies reporting cumulative incidence, which means one review needs two
 tools. The cumulative incidence studies are observational studies of an
 exposure, so they are rated with **ROBINS-E**, and the case-control studies are
-rated with **JBI**. The five aripiprazole studies, by contrast, are randomized,
-double-blind, fixed-dose trials, so a single tool serves for all of them, and it
-is **RoB 2**.
+rated with the **JBI Checklist for Case Control Studies**. The five
+aripiprazole studies, by contrast, are randomised, double-blind, fixed-dose
+trials, so a single tool serves for all of them, and it is **Cochrane RoB-2**.
+
+PROSPERO also asks how the rating will be done, and the answer is the ordinary
+one: independently by two reviewers, disagreements resolved by discussion and
+by a third reviewer where needed, with authors contacted for clarification.
 
 ### The domain that matters most here
 
@@ -455,26 +603,52 @@ we will extract when a paper reports several. The maximally adjusted estimate is
 the usual answer, and it is only usable if we say so before we see which
 adjustment set gives the steeper curve.
 
-### Carrying the ratings into the analysis
+### Reporting bias assessment
 
-A ratings table in a supplement that no later section refers to is decoration.
-The protocol gives the ratings a job, and there are two jobs to give.
+**Question 7.3**, a radio and a 50 word box.
 
-The first is a sensitivity analysis restricted to studies not rated at high
-risk, declared now, including what we will conclude if the restricted curve
-differs in shape from the full one. The second is the certainty assessment. Risk
-of bias is one of the GRADE domains, so the ratings feed the certainty we report
-for each dose-response finding, and the protocol says which findings will be
-graded.
+The next question asks whether risk of bias due to missing results will be
+assessed, and the answer is yes, in a box of fifty words. What goes in it is
+already decided, because we committed to it in 9.1: contour-enhanced funnel
+plots, and Egger's test when at least ten studies contribute to a
+meta-analysis.
+
+The ten-study threshold is the part to keep. Below it the funnel plot and the
+asymmetry test say almost nothing, and promising one anyway is a small fiction
+that has to be explained later. Alongside it, trial registry entries and
+protocols are compared with the publications, which catches the outcome a paper
+measured and did not report.
+
+### Certainty assessment
+
+**Question 7.4**, a radio and 5 to 250 words, required.
+
+The last question of Section 7 asks whether certainty of findings will be
+assessed, and a yes commits us to GRADE across risk of bias, inconsistency,
+indirectness, imprecision and publication bias, with randomised evidence
+starting at high certainty and non-randomised at low.
+
+This is where the ratings stop being decoration. A table in a supplement that
+no later section refers to has no job; the GRADE assessment gives it one, and
+so does the second use, which belongs in 9.1: a sensitivity analysis restricted
+to studies not rated at high risk, declared in advance, including what we will
+conclude if the restricted curve differs in shape from the full one.
+
+Two commitments come with the yes, and both are easy to tick past. Saying yes
+means producing a summary of findings table, which is the first thing a methods
+reviewer looks for. And imprecision is judged against a decision threshold set
+before the analysis, not against statistical significance. In a dose-response
+review that threshold is a dose and an effect together: the smallest change in
+risk, at a dose people are actually exposed to, that would alter advice.
 
 ::: {.callout-note appearance="simple"}
 **Reporting it: the risk of bias field**
 
-> *Randomized trials will be assessed with RoB 2. Observational studies of
-> exposure will be assessed with ROBINS-E, except for case-control studies,
-> which will be assessed with the JBI critical appraisal checklist for
-> case-control studies. Two reviewers will rate each study independently, with
-> disagreements resolved by discussion. Ratings will be reported by tool and will
+> *Randomised trials will be assessed with Cochrane RoB-2. Cohort studies of
+> exposure will be assessed with ROBINS-E, and case-control studies with the
+> JBI Checklist for Case Control Studies. Two reviewers will rate each study
+> independently, with disagreements resolved by discussion and by a third
+> reviewer where needed. Ratings will be reported by tool and will
 > not be combined across tools. A sensitivity analysis will refit the primary
 > model excluding studies rated at high risk of bias overall or at high risk in
 > the exposure measurement domain. Certainty of evidence will be assessed with
@@ -490,11 +664,14 @@ graded.
 2. A protocol states: "We will test for non-linearity and report the better
    fitting model." Name the two things missing that would turn this into a plan.
 3. A cohort reports alcohol intake as 0, 1 to 14, 15 to 29, and 30 or more
-   grams per day. What has to be in the protocol before this study can be
-   extracted, and why does it have to be written first?
-4. A review includes four randomized dose-finding trials and seven cohorts. How
-   many risk of bias tools does the protocol name, and what does it say about
-   combining their ratings?
+   grams per day. Which numbered PROSPERO question has to settle this before
+   the study can be extracted, and why does it have to be written first?
+4. A team writes "studies must report at least three exposure categories" into
+   2.4 Study design. Why is that the wrong field, where does the requirement
+   belong, and what does the study lose if it stays in 2.4?
+5. A review includes four randomised dose-finding trials and seven cohorts. How
+   many tools does 7.2 name, and what does the record say about combining their
+   ratings?
 
 Answers to these questions are listed in Appendix A.
 :::
@@ -515,20 +692,23 @@ Answers to these questions are listed in Appendix A.
   to results. A usable contingency names a trigger, the action that follows, and
   what will be reported whichever way the trigger falls.
 
-- The fields that change are the review question, which asks about shape rather
-  than existence; the exposure, which names a metric, a unit, a reference rule
-  and a rule for open-ended categories; the eligibility criteria, which carry
-  the three-level and covariance requirements; and the data synthesis field,
-  which carries everything else.
+- The questions that change are 1.5 Review objectives, which asks about shape
+  rather than existence; 2.2 Intervention(s) or exposure(s), which names a
+  metric, a unit and a rule for open-ended categories; 2.3 Comparator(s), where
+  the comparator is a level rather than a group; 2.4 Study design, where each
+  design named costs a tool in 7.2; 8.1 Main outcomes, which carries the effect
+  measure; and 9.1 Strategy for data synthesis, which carries everything else.
 
-- Studies with two exposure levels are not excluded from the review. They are
-  excluded from the dose-response model and kept for the highest-against-lowest
-  comparison, and the protocol says which analysis each study belongs to.
+- A requirement about what a study must report in order to enter a model is a
+  pooling rule, not an eligibility criterion. It belongs in 9.1, not in Section
+  2. Written into Section 2 it removes the study from the review and from the
+  table of findings, when the study still carries a highest-against-lowest
+  comparison we can use.
 
-- The risk of bias tool follows the design of the study being rated: RoB 2 for
-  randomized trials, ROBINS-I for non-randomized intervention studies, ROBINS-E
-  for observational exposure studies, and JBI for single-arm and case-control
-  studies.
+- The risk of bias tool follows the design of the study being rated: Cochrane
+  RoB-2 for randomised trials, ROBINS-I for non-randomised intervention
+  studies, ROBINS-E for cohort studies of an exposure, and the matching JBI
+  checklist, named individually, for case-control studies and case series.
 
 - Mixing designs means mixing tools. Ratings from different tools are reported
   separately rather than counted into one tally.
