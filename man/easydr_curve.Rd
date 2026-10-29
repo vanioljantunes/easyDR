@@ -30,7 +30,9 @@ easydr_curve(
   path = NULL,
   file.name = NULL,
   width = NULL,
-  height = NULL
+  height = NULL,
+  mult.curves = FALSE,
+  curve.panels = NULL
 )
 }
 \arguments{
@@ -108,6 +110,15 @@ is missing.}
 
 \item{width, height}{the size of the saved figure in inches. \code{NULL} lets
 easyDR measure the figure and choose a size that fits it.}
+
+\item{mult.curves}{\code{TRUE} draws one panel per shape when \code{x} holds several,
+on shared axes so the shapes can be compared by eye. Two and three
+panels go side by side, four is a square, five is three over two, and
+six is two rows of three.}
+
+\item{curve.panels}{the shapes to draw, in the order to draw them, such as
+\code{curve.panels = c("rcs", "linear")}. \code{NULL} draws every shape the fit
+holds, in the order they were named to \code{\link[=easydr]{easydr()}}.}
 }
 \value{
 The plotted curve table, invisibly: \code{dose}, \code{est}, \code{ci.lb},

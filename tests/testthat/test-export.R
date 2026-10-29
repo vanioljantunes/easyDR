@@ -127,3 +127,109 @@ test_that("easydr_table writes a spreadsheet and a PDF", {
   expect_true(file.exists(file.path(dir, "t2.xlsx")))
   expect_true(file.exists(file.path(dir, "t2.pdf")))
 })
+
+# --- several shapes, one figure --------------------------------------------
+
+multi_fit <- function(shapes = c("linear", "quadratic", "rcs")) {
+  easydr(alcohol_cancer, sm = "RR", shape = shapes, dose.unit = "g/day")
+}
+
+test_that("a shape vector gives one fit per shape, in the order named", {
+  m <- multi_fit(c("rcs", "linear"))
+  expect_s3_class(m, "easydr_multi")
+  expect_equal(m$shapes, c("rcs", "linear"))
+  expect_equal(names(m$fits), c("rcs", "linear"))
+  for (f in m$fits) expect_s3_class(f, "easydr_result")
+  # One shape is still a plain result, not a multi of length one.
+  expect_s3_class(multi_fit("linear"), "easydr_result")
+})
+
+test_that("a multi fit matches fitting each shape on its own", {
+  m <- multi_fit(c("linear", "quadratic"))
+  one <- easydr(alcohol_cancer, sm = "RR", shape = "quadratic",
+                dose.unit = "g/day")
+  expect_equal(coef(m$fits$quadratic$fit), coef(one$fit))
+})
+
+test_that("a shape named twice is refused", {
+  expect_error(multi_fit(c("linear", "linear")), "more than once")
+})
+
+test_that("the comparison table carries what a protocol compares on", {
+  m <- multi_fit()
+  tab <- easyDR:::dr_multi_table(m)
+  expect_equal(tab$Shape, m$shapes)
+  expect_true(all(c("Terms", "Deviance", "AIC", "BIC") %in% names(tab)))
+  # AIC and BIC are what make non-nested shapes comparable, so they must be
+  # real numbers rather than the NA a failed extraction would leave.
+  expect_true(all(is.finite(tab$AIC)))
+  expect_true(all(is.finite(tab$BIC)))
+})
+
+test_that("the single-fit functions refuse a multi fit by name", {
+  m <- multi_fit()
+  for (f in list(easydr_forest, easydr_funnel, easydr_table)) {
+    expect_error(f(m), "holds 3")
+  }
+  expect_error(easydr_loo(m), "holds 3")
+  # The message has to say how to get out of the situation.
+  expect_error(easydr_forest(m), "x\\$fits\\$linear")
+})
+
+test_that("panels need mult.curves, and mult.curves needs panels", {
+  m <- multi_fit()
+  expect_error(easydr_curve(m), "mult.curves = TRUE")
+  one <- easydr(alcohol_cancer, sm = "RR", shape = "linear")
+  expect_error(easydr_curve(one, mult.curves = TRUE), "holds one")
+})
+
+test_that("curve.panels chooses the shapes and their order", {
+  dir <- withr::local_tempdir()
+  m <- multi_fit()
+  out <- easydr_curve(m, mult.curves = TRUE,
+                      curve.panels = c("rcs", "linear"),
+                      file.name = "two", path = dir)
+  expect_equal(out$shapes, c("rcs", "linear"))
+  expect_equal(out$layout$nrow, 1L)
+  expect_equal(out$layout$ncol, 2L)
+  expect_true(file.exists(file.path(dir, "two.png")))
+  expect_error(easydr_curve(m, mult.curves = TRUE, curve.panels = "emax"),
+               "not fitted here")
+})
+
+test_that("the layout is the one the author specified", {
+  expect_equal(unlist(easyDR:::dr_panel_grid(2)[c("nrow", "ncol")]),
+               c(nrow = 1L, ncol = 2L))
+  expect_equal(unlist(easyDR:::dr_panel_grid(3)[c("nrow", "ncol")]),
+               c(nrow = 1L, ncol = 3L))
+  expect_equal(unlist(easyDR:::dr_panel_grid(4)[c("nrow", "ncol")]),
+               c(nrow = 2L, ncol = 2L))
+  # Five is three over two, so the last cell of the grid stays empty.
+  five <- easyDR:::dr_panel_grid(5)
+  expect_equal(five$layout[1, ], c(1, 2, 3))
+  expect_equal(five$layout[2, ], c(4, 5, NA))
+  expect_equal(unlist(easyDR:::dr_panel_grid(6)[c("nrow", "ncol")]),
+               c(nrow = 2L, ncol = 3L))
+  expect_error(easyDR:::dr_panel_grid(7), "more than this layout covers")
+})
+
+test_that("panels share one pair of axes", {
+  m <- multi_fit()
+  lims <- easyDR:::dr_panel_limits(m$fits, m$ratio)
+  every <- range(unlist(lapply(m$fits, function(f)
+    range(c(f$curve$ci.lb, f$curve$ci.ub), na.rm = TRUE))))
+  # The shared band has to cover every panel's own band, or a curve would be
+  # drawn outside the axis it is plotted on.
+  expect_lte(lims$ylim[1], every[1])
+  expect_gte(lims$ylim[2], every[2])
+})
+
+test_that("the table under the panels reports one quantity per shape", {
+  m <- multi_fit()
+  tab <- easyDR:::dr_panel_table(m$fits, m$shapes)
+  expect_equal(names(tab), c(" ", m$shapes))
+  expect_equal(nrow(tab), 6L)
+  # Every column is the same quantity at the same dose, or the columns would
+  # not be comparable.
+  expect_match(tab[[1L]][1], "at")
+})

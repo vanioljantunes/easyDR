@@ -492,31 +492,37 @@ them as models rather than as pictures.
 | `"rcs"` | a restricted cubic spline, `knots` places them | 2 or more |
 | `"fp"` | a fractional polynomial, `powers` chooses one or two | 1 or 2 |
 
+`shape` takes a vector, so all six are fitted in one call. What comes back
+holds one fit per shape, in the order they were named.
+
+```{r}
+easydr.objects <- easydr(alcohol_cancer, sm = "RR",
+                         shape = c("linear", "log", "quadratic",
+                                   "cubic", "rcs", "fp"),
+                         dose.unit = "g/day")
+easydr.objects
+```
+
+We see what each shape costs and what it buys. Terms is the number of
+coefficients the shape spends. Deviance and R-squared say how closely it
+follows the data. AIC and BIC charge for the terms, which is what lets shapes
+that are not nested inside one another be compared: a spline is not a
+quadratic with something added, so no Wald test holds between them, and the
+information criteria are what remains.
+
+`mult.curves = TRUE` draws them. Two or three panels go side by side, four is
+a square, five is three over two, and six is two rows of three. Every panel
+shares one dose axis and one effect axis, because panels on their own scales
+cannot be compared, and comparing them is the only reason to put them side by
+side.
+
 ```{r}
 #| label: fig-six-shapes
-#| fig-cap: "The six shapes easyDR will fit, all on the eight alcohol and colorectal cancer cohorts, on the same axes. The data is identical in every panel; only the functional form changes. The band is each fit's 95% confidence interval."
-#| fig-width: 10
-#| fig-height: 6.4
+#| fig-cap: "The six shapes easyDR will fit, all on the eight alcohol and colorectal cancer cohorts, on shared axes. The data is identical in every panel; only the functional form changes. The band is each fit's 95% confidence interval, and the table reports every shape at one common dose."
+#| fig-width: 11
+#| fig-height: 8.6
 #| out-width: 100%
-shapes <- c("linear", "log", "quadratic", "cubic", "rcs", "fp")
-easydr.objects <- lapply(shapes, function(s)
-  easydr(alcohol_cancer, sm = "RR", shape = s, dose.unit = "g/day"))
-names(easydr.objects) <- shapes
-
-op <- par(mfrow = c(2, 3), mar = c(4.2, 4.2, 3, 1))
-
-for (s in shapes) {
-  cv <- easydr.objects[[s]]$curve
-  plot(cv$dose, cv$est, type = "n", ylim = c(0.8, 2.2),
-       xlab = "Alcohol intake (g/day)", ylab = "Risk ratio",
-       main = paste0("shape = ", s))
-  polygon(c(cv$dose, rev(cv$dose)), c(cv$ci.lb, rev(cv$ci.ub)),
-          col = "#1f4e7922", border = NA)
-  abline(h = 1, col = "grey70")
-  lines(cv$dose, cv$est, lwd = 2, col = "#1f4e79")
-}
-
-par(op)
+easydr_curve(easydr.objects, mult.curves = TRUE)
 ```
 
 Let us read the six panels across. The straight line climbs steadily to a risk
@@ -533,11 +539,21 @@ it starts to rise and by how much at the doses people actually drink. Two of the
 say something different at low intake. The data has not changed between the
 panels. Only the functional form has.
 
+When a paper reports two of these rather than six, `curve.panels` names the
+ones to draw and the order to draw them in, and the figure becomes the two
+panels the protocol asked for:
+
+```{r}
+#| eval: false
+easydr_curve(easydr.objects, mult.curves = TRUE,
+             curve.panels = c("linear", "rcs"))
+```
+
 Each of those fits carries its own printed verdict. Let us take the one the
 panel disagrees with most and read it.
 
 ```{r}
-easydr.objects$cubic
+easydr.objects$fits$cubic
 ```
 
 The printout names the shape, refuses to give a single slope because no single

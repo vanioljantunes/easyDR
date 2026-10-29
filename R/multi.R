@@ -130,3 +130,172 @@ print.easydr_multi <- function(x, digits = 3, ...) {
   cat("Side by side: easydr_curve(x, mult.curves = TRUE)\n")
   invisible(x)
 }
+
+# ---------------------------------------------------------------------------
+# Several curves in one figure
+# ---------------------------------------------------------------------------
+
+#' How many rows and columns for n panels
+#'
+#' Fixed by the author rather than derived: two and three go side by side,
+#' four is a square, five is three over two, six is two rows of three. Beyond
+#' six there is no layout, and there are only six shapes to fit anyway.
+#'
+#' @keywords internal
+#' @noRd
+dr_panel_grid <- function(n) {
+  if (n < 1L) {
+    stop("easydr: there is nothing to draw.", call. = FALSE)
+  }
+  if (n > 6L) {
+    stop("easydr: ", n, " panels is more than this layout covers. Draw at ",
+         "most six, naming them with curve.panels.", call. = FALSE)
+  }
+  switch(as.character(n),
+         "1" = list(nrow = 1L, ncol = 1L),
+         "2" = list(nrow = 1L, ncol = 2L),
+         "3" = list(nrow = 1L, ncol = 3L),
+         "4" = list(nrow = 2L, ncol = 2L),
+         # Three on the first row and two on the second, so the last cell is
+         # left empty rather than stretching one panel across it.
+         "5" = list(nrow = 2L, ncol = 3L,
+                    layout = rbind(c(1, 2, 3), c(4, 5, NA))),
+         "6" = list(nrow = 2L, ncol = 3L))
+}
+
+#' The dose and effect range every panel should share
+#'
+#' Panels drawn on their own scales cannot be compared, which is the only
+#' reason to put them side by side. The range is the union over the shapes
+#' being drawn, padded the way a single curve pads its own.
+#'
+#' @keywords internal
+#' @noRd
+dr_panel_limits <- function(fits, ratio) {
+  curves <- lapply(fits, function(f) f$curve)
+  xs <- range(unlist(lapply(curves, function(d) range(d$dose))))
+  ys <- range(unlist(lapply(curves, function(d)
+    range(c(d$est, d$ci.lb, d$ci.ub), na.rm = TRUE))), na.rm = TRUE)
+  list(xlim = xs, ylim = dr_pad_range(ys, ratio))
+}
+
+#' One column per shape, under the panels
+#'
+#' Every column reports the same quantity at the same dose, or the columns
+#' would not be comparable. A one-term shape left to itself reports its slope
+#' and a spline reports an effect at a dose, so a common dose is chosen and
+#' every shape is asked for that.
+#'
+#' @keywords internal
+#' @noRd
+dr_panel_table <- function(fits, shapes, at = NULL, digits = 3) {
+  first <- fits[[1L]]
+  if (is.null(at)) {
+    cand <- first$predicted$dose[!first$predicted$is_ref]
+    at <- if (length(cand) > 0L) cand[1L] else max(first$frame$dose)
+  }
+  quant <- c(dr_pooled_at(first, at)$label,
+             paste0(format(100 * first$provenance$level), "% CI"),
+             "p value", "I2", "Q (df, p)", "Studies")
+  out <- data.frame(quant, check.names = FALSE, stringsAsFactors = FALSE)
+  names(out) <- " "
+  for (s in shapes) out[[s]] <- dr_result_column(fits[[s]], at, digits)
+  out
+}
+
+#' Draw one panel per shape, on shared axes, with one table underneath
+#'
+#' @keywords internal
+#' @noRd
+dr_curve_multi <- function(x, mult.curves = FALSE, curve.panels = NULL,
+                           main = NULL, xlim = NULL, ylim = NULL,
+                           result = TRUE, result.at = NULL,
+                           digits = 3, filetype = c("png", "pdf", "tiff"),
+                           path = NULL, file.name = NULL, width = NULL,
+                           height = NULL, ...) {
+  if (!inherits(x, "easydr_multi")) {
+    stop("easydr: mult.curves draws one panel per shape, and this fit holds ",
+         "one. Fit several, such as shape = c(\"linear\", \"rcs\"), then ",
+         "draw them together.", call. = FALSE)
+  }
+  if (!isTRUE(mult.curves)) {
+    stop("easydr: this holds ", length(x$fits), " shapes (",
+         paste(x$shapes, collapse = ", "), "). Set mult.curves = TRUE to ",
+         "draw them side by side, or pick one with x$fits$", x$shapes[1L],
+         ".", call. = FALSE)
+  }
+
+  panels <- if (is.null(curve.panels)) x$shapes else curve.panels
+  if (!is.character(panels) || !length(panels)) {
+    stop("easydr: `curve.panels` names the shapes to draw, in the order to ",
+         "draw them, such as curve.panels = c(\"rcs\", \"linear\").",
+         call. = FALSE)
+  }
+  missing <- setdiff(panels, x$shapes)
+  if (length(missing)) {
+    stop("easydr: `curve.panels` names ", paste(missing, collapse = ", "),
+         ", which ", if (length(missing) == 1L) "is" else "are",
+         " not fitted here. This holds ", paste(x$shapes, collapse = ", "),
+         ".", call. = FALSE)
+  }
+  grid_spec <- dr_panel_grid(length(panels))
+  fits <- x$fits[panels]
+  # Shared limits unless the caller named their own, which they may want when
+  # a figure has to match one already published.
+  lims <- dr_panel_limits(fits, x$ratio)
+  if (!is.null(xlim)) lims$xlim <- xlim
+  if (!is.null(ylim)) lims$ylim <- ylim
+
+  # Each panel is titled with its own shape and carries no footer of its own:
+  # the figure has one footer, under the whole thing.
+  plots <- lapply(panels, function(s) {
+    built <- dr_curve_panel(fits[[s]], main = FALSE,
+                            xlim = lims$xlim, ylim = lims$ylim, ...)
+    built$plot +
+      ggplot2::ggtitle(s) +
+      ggplot2::theme(plot.title = ggplot2::element_text(
+        size = 10, face = "bold", hjust = 0.5))
+  })
+
+  body <- if (is.null(grid_spec$layout)) {
+    gridExtra::arrangeGrob(grobs = plots, nrow = grid_spec$nrow,
+                           ncol = grid_spec$ncol)
+  } else {
+    gridExtra::arrangeGrob(grobs = plots, layout_matrix = grid_spec$layout)
+  }
+
+  if (is.null(main)) {
+    main <- paste0(x$sm_label, " by shape, same studies")
+  }
+  if (identical(main, FALSE)) main <- NULL
+
+  unit <- if (is.null(x$dose_unit)) "dose" else x$dose_unit
+  foot <- paste0("Reference ", x$reference$curve, " ", unit,
+                 ".  Bands: ", format(100 * fits[[1L]]$provenance$level),
+                 "% CI.  All panels share one dose and one effect axis, so ",
+                 "the shapes can be compared by eye.")
+
+  tg <- if (isTRUE(result)) {
+    dr_stats_grob(dr_panel_table(fits, panels, result.at, digits))
+  } else {
+    NULL
+  }
+  fs <- dr_footer_stack(foot, tg)
+
+  # Width grows with the columns and height with the rows, and the table and
+  # title take their own measured space on top of that.
+  spec <- dr_file_spec(file.name, filetype, path, width, height,
+                       what = "easydr_curve(mult.curves = TRUE)")
+  title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
+  foot_in  <- dr_height_in(fs$height)
+  w_in     <- max(3.6 * grid_spec$ncol, dr_grob_width_in(tg) + 0.5)
+  size <- dr_fig_size(w_in, 2.9 * grid_spec$nrow + title_in + foot_in + 0.2,
+                      max.w = 18, max.h = 24)
+  con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
+  on.exit(dr_end_file(con), add = TRUE)
+
+  dr_draw_stack(body, NULL, title = main, footer = fs$grob,
+                footer_h = fs$height, title_hjust = 0.5)
+  invisible(list(shapes = panels, table = dr_multi_table(x, digits),
+                 layout = grid_spec))
+}

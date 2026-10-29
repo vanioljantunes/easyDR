@@ -1,7 +1,7 @@
 # Multi-shape curves, and alignment with Crippa and Orsini (2016)
 
-Progress: 5/47 (11%)
-Started: 2026-10-29 16:10 BRT   Updated: 2026-10-29 17:05 BRT
+Progress: 17/47 (36%)
+Started: 2026-10-29 16:10 BRT   Updated: 2026-10-29 18:30 BRT
 
 ## Goal
 
@@ -41,14 +41,14 @@ inspected by eye, README and both chapters are updated, committed and pushed.
       linearity, deviance, AIC
 - [x] 3. `dr_require_single()` guard on forest, funnel, loo and table, naming
       how to reach one fit
-- [ ] 4. Split `easydr_curve()` so the panel is built separately from being
+- [x] 4. Split `easydr_curve()` so the panel is built separately from being
       drawn (w=2)
-- [ ] 5. `mult.curves` and `curve.panels`, shared axes, the six layouts (w=3)
-- [ ] 6. One summary table under the panels, a column per shape
-- [ ] 7. File export on the panel figure, size from the row and column count
-- [ ] 8. Tests, and the constitution test updated (w=2)
-- [ ] 9. Chapter 4: the six-shapes section uses the feature (w=2)
-- [ ] 10. README: the feature, with the layout table
+- [x] 5. `mult.curves` and `curve.panels`, shared axes, the six layouts (w=3)
+- [x] 6. One summary table under the panels, a column per shape
+- [x] 7. File export on the panel figure, size from the row and column count
+- [x] 8. Tests, and the constitution test updated (w=2)
+- [x] 9. Chapter 4: the six-shapes section uses the feature (w=2)
+- [x] 10. README: the feature, with the layout table
 
 ### B. The Emax family
 
