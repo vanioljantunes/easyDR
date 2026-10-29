@@ -87,6 +87,7 @@ easydr_forest <- function(x, at = NULL, main = NULL, xlab = NULL, xlim = NULL,
                           path = NULL, file.name = NULL,
                           width = NULL, height = NULL) {
   order <- match.arg(order)
+  dr_require_single(x, "easydr_forest()")
   # dr_study_effects() is what refuses a caller who passed something that is
   # not a fit, so it runs first: reading x$subgroup off a character vector
   # fails with a message about the `$` operator instead.

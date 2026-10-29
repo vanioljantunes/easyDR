@@ -60,10 +60,7 @@
 easydr_table <- function(x, doses = NULL, main = NULL, digits = 2,
                          filetype = c("xlsx", "pdf"), path = NULL,
                          file.name = NULL, width = NULL, height = NULL) {
-  if (!inherits(x, "easydr_result")) {
-    stop("easydr: easydr_table() takes a fitted result from easydr().",
-         call. = FALSE)
-  }
+  dr_require_single(x, "easydr_table()")
   xref <- x$reference$curve
   if (is.null(doses)) {
     doses <- x$predicted$dose

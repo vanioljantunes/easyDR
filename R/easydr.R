@@ -234,6 +234,29 @@ easydr <- function(data,
          call. = FALSE)
   }
 
+  # Several shapes in one call fit each of them on the same table and hand
+  # back one object holding all of them, in the order they were named. The
+  # work is delegated to this same function one shape at a time, so a multi
+  # fit cannot drift from a single fit of the same shape.
+  if (is.character(shape) && length(shape) > 1L) {
+    if (anyDuplicated(shape)) {
+      stop("easydr: `shape` names ",
+           paste(unique(shape[duplicated(shape)]), collapse = ", "),
+           " more than once. Each shape is fitted once.", call. = FALSE)
+    }
+    cl  <- match.call()
+    # The caller's frame, captured before lapply, because inside the loop
+    # parent.frame() is lapply's own and the data argument would not resolve.
+    env <- parent.frame()
+    fits <- lapply(shape, function(s) {
+      one <- cl
+      one$shape <- s
+      eval(one, env)
+    })
+    names(fits) <- shape
+    return(dr_multi(fits, shape, cl))
+  }
+
   # An argument that belongs to the other kind of outcome is an error, not a
   # silently ignored name. Passing sd.e with sm = "RR" means the caller has
   # misread which measure they are fitting, and the fit would otherwise look

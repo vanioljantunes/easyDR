@@ -221,6 +221,7 @@ easydr_loo <- function(object, at = NULL, quiet = FALSE, plot = TRUE,
                        filetype = c("png", "pdf", "tiff"),
                        path = NULL, file.name = NULL,
                        width = NULL, height = NULL) {
+  dr_require_single(object, "easydr_loo()")
   inh <- dr_inherited(object)
   if (length(inh$studies) < 2L) {
     stop("easydr: leave-one-out needs at least two studies; this fit has ",

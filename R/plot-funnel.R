@@ -72,6 +72,7 @@ easydr_funnel <- function(x, at = NULL, main = NULL, xlab = NULL, ylab = NULL,
                           filetype = c("png", "pdf", "tiff"),
                           path = NULL, file.name = NULL,
                           width = NULL, height = NULL) {
+  dr_require_single(x, "easydr_funnel()")
   e   <- dr_study_effects(x, at, what = "a funnel plot")
   tab <- e$table
   ok  <- !is.na(tab$est) & !is.na(tab$se) & tab$se > 0
