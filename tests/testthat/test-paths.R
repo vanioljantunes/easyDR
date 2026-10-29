@@ -36,13 +36,16 @@ test_that("every reachable covariance and pooling combination is covered", {
 
 test_that("every shape reachable from the entry points has a check", {
   # Feature 002, FR-031 and SC-006. A shape added without a check fails here.
-  reachable <- c("linear", "rcs", "fp", "quadratic", "log")
+  reachable <- c("linear", "rcs", "fp", "quadratic", "log",
+                 "emax", "hyperbolic_emax")
   covered <- c(
     linear    = "test-published-bin.R and the feature 001 fixture",
     rcs       = "test-nonlinearity.R, captured engine run 2026-10-23",
     quadratic = "test-nonlinearity.R and test-curve.R",
     fp        = "test-shapes.R and test-published-cont.R",
-    log       = "test-nonlinearity.R, one-term branch"
+    log       = "test-nonlinearity.R, one-term branch",
+    emax      = "test-emax.R, profiled over ED50 and steepness",
+    hyperbolic_emax = "test-emax.R, profiled over ED50, steepness fixed at 1"
   )
   expect_setequal(names(covered), reachable)
 

@@ -51,6 +51,52 @@ dr_require_single <- function(x, what) {
   invisible(x)
 }
 
+#' The same fit, estimated by maximum likelihood
+#'
+#' Restricted maximum likelihood is the right default for estimating the
+#' between-study variance, and the wrong basis for comparing models whose
+#' fixed effects differ. A REML likelihood is computed on contrasts that
+#' depend on the design matrix, so two shapes have REML likelihoods of
+#' different quantities and the difference between them means nothing. The
+#' comparison therefore refits under ML.
+#'
+#' The shape is handed back already resolved, so a profiled Emax is not
+#' profiled a second time and the refit is the same curve.
+#'
+#' @keywords internal
+#' @noRd
+dr_refit_ml <- function(f) {
+  if (identical(f$provenance$method, "ml")) return(f)
+  inh <- try(dr_inherited(f), silent = TRUE)
+  if (inherits(inh, "try-error")) return(NULL)
+  args <- inh$args
+  args$method.tau <- "ML"
+  args$shape <- f$shape
+  out <- try(suppressWarnings(
+    do.call(inh$entry, c(list(data = inh$data), args))), silent = TRUE)
+  if (inherits(out, "try-error")) NULL else out
+}
+
+#' AIC or BIC, charged for every parameter the fit actually spent
+#'
+#' The engine counts the coefficients it estimated. A profiled shape also
+#' spent the parameters the profile searched over, and they were estimated
+#' from the same data, so leaving them uncounted hands the Emax family a
+#' discount no other shape gets and makes the comparison meaningless.
+#'
+#' @keywords internal
+#' @noRd
+dr_ic <- function(f, which = c("AIC", "BIC"), ml = NULL) {
+  which <- match.arg(which)
+  use   <- if (is.null(ml)) f else ml
+  base  <- dr_try_num(if (which == "AIC") stats::AIC(use$fit) else
+                        stats::BIC(use$fit))
+  extra <- f$shape$profiled_params
+  if (is.null(extra) || !is.finite(base)) return(base)
+  penalty <- if (which == "AIC") 2 else log(max(f$counts$categories, 2))
+  base + penalty * as.numeric(extra)
+}
+
 #' A number, or NA when the engine will not give one
 #' @keywords internal
 #' @noRd
@@ -77,6 +123,8 @@ dr_multi_table <- function(x, digits = 3) {
   rows <- lapply(x$shapes, function(s) {
     f  <- x$fits[[s]]
     nl <- f$nonlinearity
+    # One refit per shape, reused by both information criteria.
+    ml <- dr_refit_ml(f)
     data.frame(
       Shape = s,
       Terms = f$shape$terms,
@@ -84,8 +132,8 @@ dr_multi_table <- function(x, digits = 3) {
       Deviance = if (is.null(f$gof$deviance)) NA_real_ else
         round(f$gof$deviance, 2),
       `R-squared` = if (is.null(f$gof$r2)) NA_real_ else round(f$gof$r2, 3),
-      AIC = round(dr_try_num(stats::AIC(f$fit)), 1),
-      BIC = round(dr_try_num(stats::BIC(f$fit)), 1),
+      AIC = round(dr_ic(f, "AIC", ml), 1),
+      BIC = round(dr_ic(f, "BIC", ml), 1),
       check.names = FALSE, stringsAsFactors = FALSE
     )
   })
@@ -123,9 +171,16 @@ print.easydr_multi <- function(x, digits = 3, ...) {
 
   print(dr_multi_table(x, digits), row.names = FALSE, right = FALSE)
 
-  cat("\nAIC and BIC charge for the extra terms, which is what lets shapes",
-      "\nthat are not nested inside one another be compared. The lowest is",
-      "\nthe shape the data supports, not the shape that fits closest.\n")
+  cat("\nDeviance scores the fitted curve against a saturated model and",
+      "\njudges the shape alone. AIC and BIC also pay for the",
+      "\nbetween-study variance, and are computed by maximum",
+      "\nlikelihood, because a REML likelihood depends on the design",
+      "\nand two shapes would not be comparable. Both charge for every",
+      "\nparameter the shape spent, including the ones an Emax profile",
+      "\nsearched over.\n")
+  cat("\nThe two can disagree: a shape can track the doses closely and",
+      "\nstill leave the studies far apart. Say in the protocol which",
+      "\nof them decides, before seeing either.\n")
   cat("\nOne fit: x$fits$", x$shapes[1L], "\n", sep = "")
   cat("Side by side: easydr_curve(x, mult.curves = TRUE)\n")
   invisible(x)

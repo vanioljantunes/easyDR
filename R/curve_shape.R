@@ -12,10 +12,11 @@
 #' for the monotone case, the mirror of a bell added for exposures whose effect
 #' falls and then returns, and a name for a curve that does nothing.
 #'
-#' `"plateau"` is deliberately not called Emax. Emax is a parametric model from
-#' pharmacology, which Crippa and Orsini compare spline models against; it
-#' names a functional form that was fitted, not a shape that was observed. A
-#' spline that happens to flatten has not fitted an Emax model.
+#' `"plateau"` is deliberately not called Emax, even though easyDR can now fit
+#' an Emax model with `shape = "emax"`. The distinction is the point: Emax
+#' names a functional form that was fitted, and `"plateau"` names a shape that
+#' was observed in a curve. A spline that happens to flatten has not fitted an
+#' Emax model, and labelling it Emax would claim a model nobody chose.
 #'
 #' @section What the labels are judged on:
 #' The labels describe how the effect **changes** from one dose to the next,

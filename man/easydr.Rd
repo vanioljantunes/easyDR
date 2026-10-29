@@ -25,6 +25,8 @@ easydr(
   method.smd = "cohens",
   knots = NULL,
   powers = NULL,
+  ed50 = NULL,
+  steepness = NULL,
   at = NULL,
   grid = NULL,
   dose.unit = NULL,

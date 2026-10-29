@@ -11,7 +11,8 @@
 #'
 #' @keywords internal
 #' @noRd
-dr_shape <- function(shape, dose, knots = NULL, powers = NULL, studies = NULL) {
+dr_shape <- function(shape, dose, knots = NULL, powers = NULL,
+                     ed50 = NULL, steepness = NULL, studies = NULL) {
   # An already-resolved shape passes straight through, keeping the parameters it
   # was fitted with. That is what lets a sensitivity refit carry the full fit's
   # knots instead of re-deriving them from a subset, which would silently change
@@ -23,14 +24,16 @@ dr_shape <- function(shape, dose, knots = NULL, powers = NULL, studies = NULL) {
     return(shape)
   }
   shape <- match.arg(shape, c("linear", "rcs", "fp", "quadratic", "cubic",
-                              "log"))
+                              "log", "emax", "hyperbolic_emax"))
   out <- switch(shape,
                 linear    = dr_shape_linear(),
                 quadratic = dr_shape_quadratic(),
                 cubic     = dr_shape_cubic(dose),
                 log       = dr_shape_log(dose),
                 rcs       = dr_shape_rcs(dose, knots),
-                fp        = dr_shape_fp(dose, powers))
+                fp        = dr_shape_fp(dose, powers),
+                emax             = dr_shape_emax(dose, ed50, steepness),
+                hyperbolic_emax  = dr_shape_hyperbolic_emax(dose, ed50))
   dr_check_shape(out, dose, studies)
   out
 }
@@ -312,4 +315,158 @@ dr_contrast <- function(shape, doses, xref) {
   ref <- B[1L, , drop = FALSE]
   out <- B[-1L, , drop = FALSE]
   sweep(out, 2L, as.numeric(ref), "-")
+}
+
+# ---------------------------------------------------------------------------
+# The Emax family
+#
+# Emax is not linear in its parameters, and the engine fits models that are.
+# What rescues it is that for a fixed ED50 the curve is linear in the
+# transformed dose d/(d + ED50): one coefficient, Emax, and an ordinary GLS.
+# So ED50 is profiled, the same way Royston and Altman profile a fractional
+# polynomial power, by fitting over a grid and keeping the best.
+#
+# Because effects in a dose-response meta-analysis are contrasts against a
+# reference dose, E(reference) is zero by construction and the usual E0 term
+# is absorbed. That leaves two parameters for the hyperbolic form, Emax and
+# ED50, and three when the steepness is free.
+#
+# The profiled parameter is estimated from the same data as the coefficient,
+# so a confidence interval that conditions on it is too narrow. That is why
+# the Emax family carries a bootstrap, which re-profiles on every draw.
+# ---------------------------------------------------------------------------
+
+#' The hyperbolic Emax curve, steepness fixed at one
+#'
+#' `E(d) = Emax * d / (d + ED50)`.
+#'
+#' @keywords internal
+#' @noRd
+dr_shape_hyperbolic_emax <- function(dose, ed50 = NULL) {
+  dr_emax_shape(dose, ed50 = ed50, steepness = 1, name = "hyperbolic_emax")
+}
+
+#' The Emax curve with a free steepness
+#'
+#' `E(d) = Emax * d^h / (d^h + ED50^h)`.
+#'
+#' @keywords internal
+#' @noRd
+dr_shape_emax <- function(dose, ed50 = NULL, steepness = NULL) {
+  dr_emax_shape(dose, ed50 = ed50, steepness = steepness, name = "emax")
+}
+
+#' Both members of the family, since they differ only in what is profiled
+#' @keywords internal
+#' @noRd
+dr_emax_shape <- function(dose, ed50, steepness, name) {
+  obs <- dose[is.finite(dose) & dose > 0]
+  if (length(obs) < 2L) {
+    stop("easydr: the Emax family needs doses above zero, and this table ",
+         "has ", length(obs), ".", call. = FALSE)
+  }
+  hyperbolic <- identical(name, "hyperbolic_emax")
+
+  make <- function(theta, h) {
+    theta <- as.numeric(theta)
+    h     <- as.numeric(h)
+    if (!is.finite(theta) || theta <= 0) {
+      stop("easydr: `ed50` must be a dose above zero.", call. = FALSE)
+    }
+    if (!is.finite(h) || h <= 0) {
+      stop("easydr: `steepness` must be above zero.", call. = FALSE)
+    }
+    lab <- if (hyperbolic) {
+      paste0("hyperbolic Emax, ED50 = ", signif(theta, 4))
+    } else {
+      paste0("Emax, ED50 = ", signif(theta, 4), ", steepness = ",
+             signif(h, 3))
+    }
+    list(name = name, terms = 1L, min_levels = 3L, knots = NULL,
+         powers = NULL, scaling = NULL,
+         ed50 = theta, steepness = h,
+         # Emax itself, which is the coefficient, not a per-unit slope. The
+         # curve has no constant slope, so none is claimed.
+         slope_label = NULL,
+         # The parameters the profile spent, which AIC and BIC have to charge
+         # for: the engine only knows about the one coefficient it fitted.
+         profiled_params = if (hyperbolic) 1L else 2L,
+         label = lab,
+         basis = function(d) {
+           z <- ifelse(d > 0, d^h / (d^h + theta^h), 0)
+           m <- cbind(z)
+           colnames(m) <- "emax"
+           m
+         })
+  }
+
+  given_theta <- !is.null(ed50)
+  given_h     <- hyperbolic || !is.null(steepness)
+  if (given_theta && given_h) {
+    return(make(ed50, if (hyperbolic) 1 else steepness))
+  }
+
+  # The grid. ED50 is a dose, so the candidates are doses: percentiles of the
+  # observed range rather than a fixed sequence, which keeps the grid on the
+  # scale the data is on whatever the units are. The steepness candidates are
+  # the ones the dose-finding literature uses.
+  theta_grid <- if (given_theta) {
+    as.numeric(ed50)
+  } else {
+    g <- stats::quantile(obs, probs = seq(0.05, 0.95, length.out = 20),
+                         names = FALSE)
+    sort(unique(g[is.finite(g) & g > 0]))
+  }
+  h_grid <- if (hyperbolic) {
+    1
+  } else if (!is.null(steepness)) {
+    as.numeric(steepness)
+  } else {
+    c(0.5, 0.75, 1, 1.5, 2, 3)
+  }
+
+  out <- make(stats::median(theta_grid), h_grid[ceiling(length(h_grid) / 2)])
+  out$profile    <- TRUE
+  out$candidates <- expand.grid(ed50 = theta_grid, steepness = h_grid,
+                                KEEP.OUT.ATTRS = FALSE)
+  out$respecify  <- function(row) make(row$ed50, row$steepness)
+  out
+}
+
+#' Fit the shape once per candidate and keep the best
+#'
+#' Chosen on the log likelihood, which for a fixed number of coefficients
+#' orders the candidates the same way the deviance does. A candidate the
+#' engine cannot fit is skipped rather than failing the call: a grid is
+#' expected to contain values the data will not support.
+#'
+#' @keywords internal
+#' @noRd
+dr_profile_shape <- function(shape, frame, sm, intake, proc, method,
+                             covariance, method.smd) {
+  if (!isTRUE(shape$profile)) return(shape)
+  cand <- shape$candidates
+  best <- NULL
+  best_ll <- -Inf
+  for (i in seq_len(nrow(cand))) {
+    s <- try(shape$respecify(cand[i, , drop = FALSE]), silent = TRUE)
+    if (inherits(s, "try-error")) next
+    f <- try(suppressWarnings(
+      dr_fit(frame, sm = sm, intake = intake, proc = proc, method = method,
+             covariance = covariance, method.smd = method.smd, shape = s)),
+      silent = TRUE)
+    if (inherits(f, "try-error")) next
+    ll <- dr_try_num(stats::logLik(f))
+    if (is.finite(ll) && ll > best_ll) {
+      best_ll <- ll
+      best    <- s
+    }
+  }
+  if (is.null(best)) {
+    stop("easydr: no ", shape$name, " candidate could be fitted to this ",
+         "table. The Emax family needs doses above zero and enough levels ",
+         "to estimate where the curve bends.", call. = FALSE)
+  }
+  best$profiled_over <- nrow(cand)
+  best
 }

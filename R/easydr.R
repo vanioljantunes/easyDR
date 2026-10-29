@@ -203,6 +203,8 @@ easydr <- function(data,
                    method.smd = "cohens",
                    knots = NULL,
                    powers = NULL,
+                   ed50 = NULL,
+                   steepness = NULL,
                    at = NULL,
                    grid = NULL,
                    dose.unit = NULL,
@@ -230,7 +232,11 @@ easydr <- function(data,
 ",
          "  shape = \"rcs\"         a restricted cubic spline, see `knots`
 ",
-         "  shape = \"fp\"          a fractional polynomial, see `powers`",
+         "  shape = \"fp\"          a fractional polynomial, see `powers`
+",
+         "  shape = \"emax\"        an Emax curve, see `ed50`
+",
+         "  shape = \"hyperbolic_emax\"   Emax with the steepness fixed at 1",
          call. = FALSE)
   }
 
@@ -282,7 +288,8 @@ easydr <- function(data,
     easydrcont(data = data, dose = dose, studlab = studlab, sm = sm,
                mean.e = mean.e, sd.e = sd.e, n.e = n.e, ref = ref,
                method.tau = method.tau, proc = proc, method.smd = method.smd,
-               shape = shape, knots = knots, powers = powers, grid = grid,
+               shape = shape, knots = knots, powers = powers,
+               ed50 = ed50, steepness = steepness, grid = grid,
                at = at, dose.unit = dose.unit, level = level,
                random = random, common = common)
   } else {
@@ -290,7 +297,8 @@ easydr <- function(data,
               event.e = event.e, n.e = n.e, TE = TE, lower = lower,
               upper = upper, ref = ref, design = design,
               method.tau = method.tau, proc = proc, covariance = covariance,
-              shape = shape, knots = knots, powers = powers, grid = grid,
+              shape = shape, knots = knots, powers = powers,
+              ed50 = ed50, steepness = steepness, grid = grid,
               at = at, dose.unit = dose.unit, level = level,
               random = random, common = common)
   }
