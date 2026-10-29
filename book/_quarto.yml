@@ -18,6 +18,7 @@ book:
     style: docked
   chapters:
     - index.qmd
+    - cite.qmd
     - 01-what-is-it.qmd
     - 02-viability.qmd
     - 03-prospero.qmd

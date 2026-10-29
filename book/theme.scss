@@ -365,3 +365,16 @@ figcaption, .figure-caption {
   white-space: pre;
   overflow-x: auto;
 }
+
+// ---- the author sits under the book's name -------------------------------
+// Quarto's sidebar shows the title alone. The author belongs with it, and
+// there is no option for a sidebar subtitle, so it is set here.
+
+#quarto-sidebar .sidebar-title::after {
+  content: "Vanio Antunes";
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #5f6b72;
+}

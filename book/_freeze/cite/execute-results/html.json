@@ -1,0 +1,17 @@
+{
+  "hash": "e23aa7adba0818e62df9d4852dc514f7",
+  "result": {
+    "engine": "knitr",
+    "markdown": "# Cite this material {.unnumbered .no-slide}\n\nThe book and the **{easyDR}** package live in the same repository and share a\nversion, so one citation covers both. If you used the package to fit something,\nor the book to decide how, please cite it.\n\n\n::: {.cell}\n::: {.cell-output .cell-output-stdout}\n\n```\nAntunes V (2026). Dose-Response Meta-Analysis: A hands-on\n  guide, and the easyDR package for R. Version 0.0.0.9000.\n  https://github.com/vanioljantunes/easyDR\n```\n\n\n:::\n:::\n\n\nFor a reference manager, in BibTeX:\n\n```bibtex\n@manual{easydr,\n  title  = {Dose-Response Meta-Analysis: A hands-on guide, and the\n            {easyDR} package for {R}},\n  author = {Vanio Antunes},\n  year   = {2026},\n  url    = {https://github.com/vanioljantunes/easyDR},\n  note   = {Book: https://vanioljantunes.github.io/easyDR/}\n}\n```\n\n## What to cite alongside it {.unnumbered .no-slide}\n\n**{easyDR}** prepares the data and reports the result. The estimation is done\nby **{dosresmeta}** [@crippa2016], which in turn implements the method of\n@greenland1992. A methods section that names only this package is incomplete,\nso cite those two as well whenever you report a fitted curve.\n\nBoth packages carry their own citation, which _R_ will print on request:\n\n\n::: {.cell}\n\n```{.r .cell-code}\ncitation(\"easyDR\")\ncitation(\"dosresmeta\")\n```\n:::\n\n",
+    "supporting": [
+      "cite_files"
+    ],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}
