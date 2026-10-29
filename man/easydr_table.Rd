@@ -9,6 +9,11 @@ easydr_table(
   doses = NULL,
   main = NULL,
   digits = 2,
+  gof = FALSE,
+  target = FALSE,
+  gamma = c(0.5, 0.8),
+  B = 500L,
+  seed = NULL,
   filetype = c("xlsx", "pdf"),
   path = NULL,
   file.name = NULL,
@@ -27,6 +32,19 @@ the doses the fit already reports.}
 reference dose.}
 
 \item{digits}{digits for the reported effects.}
+
+\item{gof}{\code{TRUE} attaches the goodness of fit: the deviance against a
+saturated model with its test, and the R-squared.}
+
+\item{target}{\code{TRUE} attaches target doses with bootstrap intervals, from
+\code{\link[=easydr_target_dose]{easydr_target_dose()}}.}
+
+\item{gamma}{the fractions of the maximum effect to report when
+\code{target = TRUE}.}
+
+\item{B}{bootstrap draws when \code{target = TRUE}.}
+
+\item{seed}{a seed for that bootstrap, so the table can be reproduced.}
 
 \item{filetype}{\code{"xlsx"} or \code{"pdf"}. Only used when \code{file.name} is given.}
 

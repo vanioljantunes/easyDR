@@ -30,6 +30,14 @@
 #'   `.xlsx` file. `NULL` writes a title from the summary measure and the
 #'   reference dose.
 #' @param digits digits for the reported effects.
+#' @param gof `TRUE` attaches the goodness of fit: the deviance against a
+#'   saturated model with its test, and the R-squared.
+#' @param target `TRUE` attaches target doses with bootstrap intervals, from
+#'   [easydr_target_dose()].
+#' @param gamma the fractions of the maximum effect to report when
+#'   `target = TRUE`.
+#' @param B bootstrap draws when `target = TRUE`.
+#' @param seed a seed for that bootstrap, so the table can be reproduced.
 #' @param filetype `"xlsx"` or `"pdf"`. Only used when `file.name` is given.
 #' @param path the directory to write into. `NULL` is the working directory.
 #' @param file.name the name of the file to write. `NULL`, the default,
@@ -58,6 +66,8 @@
 #'
 #' @export
 easydr_table <- function(x, doses = NULL, main = NULL, digits = 2,
+                         gof = FALSE, target = FALSE, gamma = c(0.5, 0.8),
+                         B = 500L, seed = NULL,
                          filetype = c("xlsx", "pdf"), path = NULL,
                          file.name = NULL, width = NULL, height = NULL) {
   dr_require_single(x, "easydr_table()")
@@ -100,6 +110,14 @@ easydr_table <- function(x, doses = NULL, main = NULL, digits = 2,
   if (is.null(main)) {
     main <- paste0(x$sm_label, " against ", xref,
                    if (!is.null(unit)) paste0(" ", unit))
+  }
+  # The goodness of fit belongs with the table in a manuscript, because a
+  # reader deciding what a row at 25 means wants to know how closely the
+  # curve followed the data it came from.
+  if (isTRUE(gof)) attr(out, "gof") <- dr_gof_line(x)
+  if (isTRUE(target)) {
+    td <- easydr_target_dose(x, gamma = gamma, B = B, seed = seed)
+    attr(out, "target") <- td$table
   }
   attr(out, "main") <- main
   attr(out, "reference") <- xref

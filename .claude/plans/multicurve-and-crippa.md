@@ -1,7 +1,7 @@
 # Multi-shape curves, and alignment with Crippa and Orsini (2016)
 
-Progress: 28/47 (60%)
-Started: 2026-10-29 16:10 BRT   Updated: 2026-10-29 21:05 BRT
+Progress: 41/47 (87%)
+Started: 2026-10-29 16:10 BRT   Updated: 2026-10-29 22:40 BRT
 
 ## Goal
 
@@ -65,23 +65,23 @@ inspected by eye, README and both chapters are updated, committed and pushed.
 
 ### C. Target dose
 
-- [ ] 16. `ed_gamma()`: the dose reaching a stated fraction of the maximum
+- [x] 16. `ed_gamma()`: the dose reaching a stated fraction of the maximum
       effect inside the observed range (w=2)
-- [ ] 17. `easydr_target_dose()`: ED50, ED80 and EDmax with parametric
+- [x] 17. `easydr_target_dose()`: ED50, ED80 and EDmax with parametric
       bootstrap intervals (w=3)
-- [ ] 18. Exported, documented, and refused for a shape with no maximum
-- [ ] 19. `easydr_table()` gains optional target-dose rows (w=2)
+- [x] 18. Exported, documented, and refused for a shape with no maximum
+- [x] 19. `easydr_table()` gains optional target-dose rows (w=2)
 
 ### D. Goodness of fit
 
-- [ ] 20. Deviance against the saturated model, R-squared and adjusted
+- [x] 20. Deviance against the saturated model, R-squared and adjusted
       R-squared in `print()` and `summary()` (w=2)
-- [ ] 21. The same statistics available to `easydr_table()`
+- [x] 21. The same statistics available to `easydr_table()`
 
 ### E. Tests
 
 - [ ] 22. Emax family: fit, profile, bootstrap, refusals (w=3)
-- [ ] 23. Target dose: known closed-form cases, bootstrap behaviour,
+- [x] 23. Target dose: known closed-form cases, bootstrap behaviour,
       refusals (w=3)
 - [ ] 24. Constitution and grammar tests updated for the new exports (w=2)
 
