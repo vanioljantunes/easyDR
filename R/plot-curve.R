@@ -36,6 +36,14 @@
 #'   `FALSE`, the default, draws the confidence band alone.
 #' @param points `TRUE`, the default, marks the doses the fit reports, which
 #'   are the ones named in `at`.
+#' @param studies `TRUE` draws the evidence behind the curve: one bubble per
+#'   reported dose category, at the effect that study reported for it against
+#'   its own reference, with the bubble area scaled to the participants that
+#'   category carried. The reference categories are not drawn, because every
+#'   one of them sits on the null by construction. `FALSE` is the default.
+#' @param studlabel `TRUE` writes each study's label once, beside its
+#'   highest-dose bubble, so a reader can tell which study a run of bubbles
+#'   belongs to. It needs `studies = TRUE`.
 #' @param reference `TRUE`, the default, draws the null line and marks the
 #'   reference dose.
 #' @param rug `TRUE`, the default, ticks the doses the fit reports along the
@@ -86,7 +94,8 @@
 #' @export
 easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          xlim = NULL, ylim = NULL, round = NULL,
-                         prediction = FALSE, points = TRUE, reference = TRUE,
+                         prediction = FALSE, points = TRUE, studies = FALSE,
+                         studlabel = FALSE, reference = TRUE,
                          rug = TRUE, result = TRUE, result.at = NULL,
                          subgroup = NULL, digits = 3, col = "#1F2A44",
                          fill.ci = "grey75", fill.pi = "grey90",
@@ -110,9 +119,31 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   if (is.null(ylab)) ylab <- x$sm_label
   if (is.null(main)) main <- paste0("Dose-response: ", x$shape$label)
   if (identical(main, FALSE)) main <- NULL
+  # The studies behind the curve. A ratio measure already carries each category
+  # as a log contrast against its study reference, so exponentiating it is the
+  # reported effect. A continuous measure carries the group mean instead, and
+  # the effect is that mean minus the study's own reference mean. The reference
+  # categories themselves are left out: they sit on the null by construction and
+  # would draw a row of bubbles that says nothing.
+  obs <- NULL
+  if (isTRUE(studies)) {
+    obs <- x$frame
+    ref <- vapply(split(obs$y[obs$is_ref], obs$studlab[obs$is_ref]),
+                  function(z) z[1L], numeric(1))
+    obs <- obs[!obs$is_ref, , drop = FALSE]
+    obs$est <- if (x$ratio) exp(obs$y) else obs$y - ref[obs$studlab]
+    if (!any(is.finite(obs$n))) obs$n <- 1
+  } else if (isTRUE(studlabel)) {
+    warning("easydr: studlabel needs studies = TRUE, so no labels were drawn.",
+            call. = FALSE)
+  }
+
   if (is.null(xlim)) xlim <- range(tab$dose)
   if (is.null(ylim)) {
-    v    <- c(tab$ci.lb, tab$ci.ub, if (show_pi) c(tab$pi.lb, tab$pi.ub))
+    # The bubbles are data, so the axis makes room for them rather than
+    # clipping a reported effect out of the figure.
+    v    <- c(tab$ci.lb, tab$ci.ub, if (show_pi) c(tab$pi.lb, tab$pi.ub),
+              obs$est)
     ylim <- dr_pad_range(range(c(v, if (x$ratio) 1 else 0), na.rm = TRUE),
                          x$ratio)
   }
@@ -133,6 +164,32 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
       ggplot2::geom_vline(xintercept = x$reference$curve, linetype = "dotted",
                           colour = "grey45", linewidth = 0.4)
   }
+  if (!is.null(obs)) {
+    p <- p +
+      ggplot2::geom_point(
+        data = obs, inherit.aes = FALSE,
+        ggplot2::aes(x = .data$dose, y = .data$est, size = .data$n),
+        colour = col, fill = col, shape = 21L, alpha = 0.25, stroke = 0) +
+      ggplot2::scale_size_area(max_size = 7, guide = "none")
+    if (isTRUE(studlabel)) {
+      # One label per study, at its highest dose. A label on the right half of
+      # the panel is written to the left of its bubble, so the last study does
+      # not have its name cut off by the panel edge, and consecutive labels
+      # alternate above and below, which is what keeps two studies that end at
+      # the same dose from printing on top of each other.
+      lab <- do.call(rbind, lapply(split(obs, obs$studlab), function(d)
+        d[which.max(d$dose), , drop = FALSE]))
+      mid <- mean(range(obs$dose))
+      lab$hj <- ifelse(lab$dose > mid, 1.1, -0.1)
+      lab$vj <- ifelse(seq_len(nrow(lab)) %% 2L == 0L, 1.6, -0.8)
+      p <- p + ggplot2::geom_text(
+        data = lab, inherit.aes = FALSE,
+        ggplot2::aes(x = .data$dose, y = .data$est, label = .data$studlab,
+                     hjust = .data$hj, vjust = .data$vj),
+        size = 2.6, colour = "grey25")
+    }
+  }
+
   p <- p + ggplot2::geom_line(ggplot2::aes(y = .data$est), colour = col,
                               linewidth = 0.9)
 
@@ -241,6 +298,8 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   foot <- c(paste0("Reference ", x$reference$curve, " ", unit,
                    ".  Band: ", bands,
                    ".  Shape = ", x$shape$label,
+                   if (isTRUE(studies))
+                     ".  Bubbles: reported effects, sized by participants.",
                    if (use_sub)
                      ".  The dark line and the band are the overall fit.",
                    if (any(tab$extrapolated))

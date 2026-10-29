@@ -80,25 +80,28 @@ Let us look at what a single study actually gives us.
 
 ```{r}
 #| label: fig-one-study
-#| fig-cap: "One cohort, five reported categories, one trend. Each point is the log risk ratio of a category against that study's own reference, placed at the dose assigned to the category. The line is the trend this study contributes, and the trend is what gets pooled."
-#| fig-width: 7
-#| fig-height: 4.4
-bianchi <- subset(alcohol_cvd, studlab == "Bianchi")
+#| fig-cap: "Every reported category of all six studies, one colour per study. Each point is the log risk ratio of a category against its own study's reference, placed at the dose assigned to the category. A study is a run of points in one colour, and the trend through that run is what gets pooled."
+#| fig-width: 7.2
+#| fig-height: 4.6
+study <- factor(alcohol_cvd$studlab)
 
-plot(bianchi$dose, log(bianchi$TE),
-     pch = 19, col = "#1f4e79", cex = 1.3,
+plot(log(TE) ~ dose, data = alcohol_cvd, col = study, pch = 19,
      xlab = "Alcohol intake (g/day)",
-     ylab = "log risk ratio vs this study's reference",
-     main = "Bianchi: five categories, one trend")
+     ylab = "log risk ratio vs own reference")
 abline(h = 0, col = "grey70")
-abline(lm(log(TE) ~ 0 + dose, data = bianchi), col = "#c00000", lwd = 2)
+legend("topleft", levels(study), col = seq_along(levels(study)),
+       pch = 19, bty = "n", cex = 0.8)
 ```
 
-We see five points and one line. The points are what the paper printed, and the
-line is what the paper contributes to the meta-analysis. Every later decision in
-this chapter is a decision about that line: what shape it is allowed to take,
-how its uncertainty is calculated, and how it is averaged with the lines of the
-other studies.
+We see six runs of points, one per study, and no two of them cover the same
+doses. Bianchi reaches past 60 grams a day, the two Malarcher contrasts stop
+below 20, and every run is measured against its own reference, so all six
+reference categories lie stacked on each other at the origin. The points are
+what the papers printed. What the
+meta-analysis pools is the slope through each run, one per colour. Every later
+decision in this chapter is a decision about those slopes: what shape they are
+allowed to take, how their uncertainty is calculated, and how they are averaged
+with one another.
 
 ## The data the method needs
 
@@ -150,35 +153,11 @@ because the slope depends on it. This is one of the few places where a
 dose-response review can be quietly steered toward an answer.
 :::
 
-What the table contains is therefore not a free choice either. Let us see how the
-dose levels of our two examples are spread, because that spread is what a curve
-has to be fitted through.
-
-```{r}
-#| label: fig-dose-coverage
-#| fig-cap: "Every reported category of both examples, one row per study. The open circles are each study's reference level. A curve can only be estimated where the circles are, and a shape with more terms needs more circles per row."
-#| fig-width: 7.5
-#| fig-height: 5
-op <- par(mfrow = c(1, 2), mar = c(4.2, 7.5, 3, 1))
-
-for (d in list(list(x = aripiprazole, t = "aripiprazole (mg/day)"),
-               list(x = alcohol_cvd,  t = "alcohol_cvd (g/day)"))) {
-  s <- factor(d$x$studlab, levels = rev(unique(d$x$studlab)))
-  plot(d$x$dose, as.integer(s), yaxt = "n", pch = ifelse(d$x$ref, 1, 19),
-       col = "#1f4e79", cex = 1.2, ylab = "", xlab = "dose", main = d$t,
-       ylim = c(0.5, nlevels(s) + 0.5))
-  axis(2, at = seq_len(nlevels(s)), labels = levels(s), las = 1,
-       cex.axis = 0.8)
-}
-
-par(op)
-```
-
-We see that aripiprazole gives three or four arms per trial across 0 to 30
-milligrams a day, and that `alcohol_cvd` gives five categories per contrast
-across a much wider range, out to 77 grams a day. Both pass the viability checks
-of Chapter 2. Yet no aripiprazole trial reports more than four distinct dose
-levels, including its reference arm, and that ceiling will come back to us when
+What the table contains is therefore not a free choice either. Both examples
+passed the viability checks of Chapter 2, and two counts from there are worth
+keeping in mind. `alcohol_cvd` gives five categories per contrast, out to 77
+grams a day. No aripiprazole trial reports more than four distinct doses,
+counting its reference arm, and that ceiling of four will come back to us when
 we place spline knots.
 
 ## Why a study's estimates are not independent
@@ -206,21 +185,20 @@ much this matters on real data. easyDR reconstructs the covariance by default;
 
 ```{r}
 gl <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
-
-indep <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
-                dose.unit = "g/day", covariance = "indep")
-
-data.frame(
-  covariance = c("Greenland and Longnecker", "treated as independent"),
-  slope_log  = c(gl$slope$estimate, indep$slope$estimate),
-  se         = c(gl$slope$se, indep$slope$se),
-  RR_per_g   = c(exp(gl$slope$estimate), exp(indep$slope$estimate)),
-  I2         = c(gl$heterogeneity$i2, indep$heterogeneity$i2))
+gl
 ```
 
-We see that the slope on the log scale moves from
-`r signif(gl$slope$estimate, 3)` to `r signif(indep$slope$estimate, 3)`, which
-is close to a doubling, and that the heterogeneity moves with it. The standard
+```{r}
+indep <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                dose.unit = "g/day", covariance = "indep")
+indep
+```
+
+The second line of each printout names the covariance that was used, and the
+two fits disagree from there down. We see that the slope on the log scale moves
+from `r signif(gl$slope$estimate, 3)` to `r signif(indep$slope$estimate, 3)`,
+which is close to a doubling, and that the heterogeneity moves with it, from
+`r round(gl$heterogeneity$i2, 1)`% to `r round(indep$heterogeneity$i2, 1)`%. The standard
 errors happen to be similar here, and that is worth saying plainly rather than
 glossing over: ignoring the correlation does not inflate precision in a
 predictable direction. What it reliably does is estimate a different trend from
@@ -280,6 +258,7 @@ directly and look at the matrix it produces for one study.
 ```{r}
 #| label: tbl-covmat
 #| tbl-cap: "The reconstructed covariance matrix of the four non-reference categories of the Bianchi cohort, rebuilt from the published effects and the printed counts."
+bianchi <- subset(alcohol_cvd, studlab == "Bianchi")
 bianchi$logrr <- log(bianchi$TE)
 bianchi$se <- (log(bianchi$upper) - log(bianchi$lower)) / (2 * qnorm(0.975))
 
@@ -369,13 +348,15 @@ the curve the two stages produce.
 
 ```{r}
 #| label: fig-curve-binary
-#| fig-cap: "The pooled dose curve for alcohol intake and cardiovascular disease. The line is the fitted trend, the band its 95% confidence interval, and the ticks along the axis are the doses the studies actually reported."
-#| fig-width: 7
-#| fig-height: 4.4
+#| fig-cap: "The pooled dose curve for alcohol intake and cardiovascular disease, with the evidence behind it. The line is the fitted trend, the band its 95% confidence interval, and each bubble one reported dose category, sized by the participants it carried and labelled with its study."
+#| fig-width: 7.2
+#| fig-height: 4.8
+#| out-width: 100%
 fit_b <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
                 dose.unit = "g/day", at = c(10, 20, 30))
 
 easydr_curve(fit_b,
+             studies = TRUE, studlabel = TRUE,
              main = "Alcohol and cardiovascular disease",
              xlab = "Alcohol intake (g/day)",
              ylab = "Risk ratio",
@@ -383,9 +364,18 @@ easydr_curve(fit_b,
 ```
 
 We see one line across the observed range, a band that stays finite, and the
-reported doses marked on the axis. Everything we do for the rest of the chapter
-changes this picture in one of two ways: by changing the shape the line is
-allowed to take, or by changing which studies are in it.
+categories the studies reported drawn underneath it. The two arguments that put
+them there are worth keeping on by default: `studies = TRUE` draws one bubble
+per reported category at the effect that study gave it, sized by the
+participants in that category, and `studlabel = TRUE` writes each study's name
+once beside its highest-dose bubble. A curve drawn without them asks the reader
+to trust it. A curve drawn with them shows how much scatter the band is
+summarising, and Bianchi's categories above 40 grams a day are visibly the ones
+pulling hardest.
+
+Everything we do for the rest of the chapter changes this picture in one of two
+ways: by changing the shape the line is allowed to take, or by changing which
+studies are in it.
 
 ## The first stage in code: one trend per study
 
@@ -396,8 +386,9 @@ fit gave it, and the weight it carried into the pooling.
 ```{r}
 #| label: fig-forest-binary
 #| fig-cap: "One row per study, each row a trend rather than a contrast. The dose levels and dose range columns are what tell us whether a study could carry a trend at all."
-#| fig-width: 8.5
-#| fig-height: 5
+#| fig-width: 7.2
+#| fig-height: 4.8
+#| out-width: 100%
 easydr_forest(fit_b, main = "Alcohol and cardiovascular disease")
 ```
 
@@ -503,6 +494,7 @@ them as models rather than as pictures.
 #| fig-cap: "The six shapes easyDR will fit, all on the eight alcohol and colorectal cancer cohorts, on the same axes. The data is identical in every panel; only the functional form changes. The band is each fit's 95% confidence interval."
 #| fig-width: 10
 #| fig-height: 6.4
+#| out-width: 100%
 shapes <- c("linear", "log", "quadratic", "cubic", "rcs", "fp")
 fits <- lapply(shapes, function(s)
   easydr(alcohol_cancer, sm = "RR", shape = s, dose.unit = "g/day"))
@@ -538,15 +530,16 @@ it starts to rise and by how much at the doses people actually drink. Two of the
 say something different at low intake. The data has not changed between the
 panels. Only the functional form has.
 
+Each of those fits carries its own printed verdict. Let us take the one the
+panel disagrees with most and read it.
+
 ```{r}
-data.frame(
-  shape = shapes,
-  terms = vapply(fits, function(f) f$shape$terms, integer(1)),
-  label = vapply(fits, function(f) f$curve_label, character(1)),
-  row.names = NULL)
+fits$cubic
 ```
 
-The `shape` argument has no default, and easyDR will not guess one. Fitting six
+The printout names the shape, refuses to give a single slope because no single
+number describes a curve, and labels the curve in the vocabulary dose-response
+reviews publish. The `shape` argument has no default, and easyDR will not guess one. Fitting six
 shapes and keeping the one we like best is a researcher degree of freedom, and
 the size of the problem has been measured. Sappani and colleagues
 [-@sappani2025] reviewed 146 dose-response meta-analyses and reanalysed 242
@@ -696,6 +689,7 @@ than taste.
 #| fig-width: 7
 #| fig-height: 4.4
 easydr_curve(fit_rcs,
+             studies = TRUE,
              main = "Aripiprazole: restricted cubic spline",
              xlab = "Dose (mg/day)",
              ylab = "Mean difference, PANSS change",
@@ -822,8 +816,9 @@ sub$subgroup$table
 ```{r}
 #| label: fig-subgroup-forest
 #| fig-cap: "The forest plot grouped by study design, with a subtotal diamond for each level and the overall fit at the foot. The squares and the weights remain each study's share of the overall fit, so they still sum down the page."
-#| fig-width: 8.5
-#| fig-height: 5.6
+#| fig-width: 7.2
+#| fig-height: 5.4
+#| out-width: 100%
 easydr_forest(sub, main = "Alcohol and cardiovascular disease, by design")
 ```
 
@@ -838,17 +833,14 @@ easydr_curve(sub,
              ylab = "Risk ratio")
 ```
 
-Let us read the two levels aloud.
+Each level is a fit of its own, so let us print them and read the two aloud.
 
 ```{r}
-data.frame(
-  level = names(sub$subgroup$fits),
-  studies = sub$subgroup$table$studies,
-  RR_per_g = vapply(sub$subgroup$fits,
-                    function(f) exp(f$slope$estimate), numeric(1)),
-  I2 = vapply(sub$subgroup$fits,
-              function(f) f$heterogeneity$i2, numeric(1)),
-  row.names = NULL)
+sub$subgroup$fits[["case-control"]]
+```
+
+```{r}
+sub$subgroup$fits[["cumulative incidence"]]
 ```
 
 We see that the four case-control cohorts carry nearly all of the disagreement,
@@ -882,15 +874,12 @@ orders the rows by how far the estimate moved.
 ```{r}
 #| label: fig-loo
 #| fig-cap: "The dose-response refitted once per omitted study, drawn over the pooled curve in bold. The curve that walks furthest from the bold line is the one whose omitted study was carrying the result."
-#| fig-width: 7.5
+#| fig-width: 7.2
 #| fig-height: 5
+#| out-width: 100%
 cvd <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
 
-loo <- easydr_loo(cvd, quiet = TRUE)
-```
-
-```{r}
-loo$table[, c("label", "estimate", "lb", "ub", "shift", "i2")]
+easydr_loo(cvd)
 ```
 
 We see that dropping Bianchi moves the slope furthest, and that it takes the
