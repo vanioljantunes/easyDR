@@ -1,7 +1,7 @@
 # Multi-shape curves, and alignment with Crippa and Orsini (2016)
 
-Progress: 25/47 (53%)
-Started: 2026-10-29 16:10 BRT   Updated: 2026-10-29 19:40 BRT
+Progress: 28/47 (60%)
+Started: 2026-10-29 16:10 BRT   Updated: 2026-10-29 21:05 BRT
 
 ## Goal
 
@@ -56,7 +56,7 @@ inspected by eye, README and both chapters are updated, committed and pushed.
       ED50, profiled over a grid on deviance (w=3)
 - [x] 12. `dr_shape_emax()`: the same over a two-dimensional grid of ED50 and
       steepness (w=3)
-- [ ] 13. Parametric bootstrap that re-profiles each draw, and replaces the
+- [x] 13. Parametric bootstrap that re-profiles each draw, and replaces the
       reported intervals for the Emax family (w=3)
 - [x] 14. The two shapes reachable from `easydr()`, `easydr_curve()` and the
       shape table
@@ -112,6 +112,33 @@ hyperbolic Emax has the lowest deviance and the highest AIC. Both are right.
 Deviance scores the curve against a saturated model, AIC also pays for the
 between-study variance. The printed output now says so rather than declaring
 a winner.
+
+## The bootstrap, and what validating it found
+
+Checking the bootstrap against the closed-form interval for a straight line,
+where nothing is profiled and the two must agree, found two errors before
+anything shipped.
+
+The draw was taken around the observed contrasts, which adds a second helping
+of the within-study error the data already carries one realisation of. Every
+interval came out too wide and, once REML re-estimated the variance
+components on the noisier draw, the centre moved too. Drawing from the fitted
+model fixed it.
+
+Then the draw dropped each study's own baseline. `frame$y` holds what a study
+reported on its own scale, an arm mean or a log effect, not a contrast, so
+centring the draw on the predicted contrast alone biased the pooled slope to
+about 60 per cent of its value.
+
+With both fixed, the bootstrap centres agree with the closed form.
+
+A third problem showed up only once the bootstrap ran: the ED50 grid spanned
+the observed doses, and 136 draws out of 150 pinned ED50 to its lowest grid
+point. The grid is now log spaced from a tenth of the smallest dose to twice
+the largest, and a profile that still stops at an end is flagged rather than
+reported as an estimate. Re-profiling then widens the interval by about 28
+per cent near the bend and by nothing out on the plateau, which is where
+ED50 uncertainty should and should not matter.
 
 ## Blocked
 

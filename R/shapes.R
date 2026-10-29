@@ -413,9 +413,14 @@ dr_emax_shape <- function(dose, ed50, steepness, name) {
   theta_grid <- if (given_theta) {
     as.numeric(ed50)
   } else {
-    g <- stats::quantile(obs, probs = seq(0.05, 0.95, length.out = 20),
-                         names = FALSE)
-    sort(unique(g[is.finite(g) & g > 0]))
+    # ED50 is a scale parameter, so the grid is spaced on the log scale and
+    # reaches well below the smallest observed dose and above the largest.
+    # A grid that only spans the observed doses pins ED50 to its own edge
+    # whenever the data wants a curve that saturates immediately, and returns
+    # that edge as though it were an estimate.
+    lo <- min(obs) / 10
+    hi <- max(obs) * 2
+    exp(seq(log(lo), log(hi), length.out = 25L))
   }
   h_grid <- if (hyperbolic) {
     1
@@ -468,5 +473,15 @@ dr_profile_shape <- function(shape, frame, sm, intake, proc, method,
          "to estimate where the curve bends.", call. = FALSE)
   }
   best$profiled_over <- nrow(cand)
+  # A profile that stops at the end of its own grid has not found a maximum,
+  # it has run out of room. The value is still returned, because it is the
+  # best of what was tried, but it is flagged so that nothing downstream
+  # reports it as an estimate of where the curve bends.
+  edge <- range(cand$ed50)
+  if (isTRUE(all.equal(best$ed50, edge[1L])) ||
+      isTRUE(all.equal(best$ed50, edge[2L]))) {
+    best$ed50_at_boundary <- TRUE
+    best$label <- paste0(best$label, " (at the edge of the search range)")
+  }
   best
 }
