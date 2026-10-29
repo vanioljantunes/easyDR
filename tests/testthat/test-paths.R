@@ -117,7 +117,7 @@ test_that("the exported surface is exactly what the constitution allows", {
   plain <- funs[!startsWith(funs, "print.") & !startsWith(funs, "summary.")]
 
   expect_setequal(plain, c("easydr", "easydr_forest", "easydr_curve",
-                           "easydr_loo", "easydr_funnel"))
+                           "easydr_loo", "easydr_funnel", "easydr_table"))
   # One entry point and seven things to do with its result. The workers behind
   # it, and the cumulative analysis, stay internal.
   expect_false(any(c("easydrbin", "easydrcont", "dr_cumul", "dr_viability",

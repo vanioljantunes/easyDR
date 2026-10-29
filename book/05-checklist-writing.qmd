@@ -366,6 +366,15 @@ We see two strata that separate only at the higher intakes, and the table
 under the plot gives the slope and the test for each one. A difference
 between strata is tested, never read off two overlapping bands.
 
+### Getting the figures out of R
+
+Each of the four figures writes itself to a file when it is given one. The
+format is `filetype`, which is `"png"` unless a journal asks for `"tiff"` or
+`"pdf"`, the folder is `path`, and the name is `file.name`. The size is
+measured from the figure, so a forest of twenty studies comes out taller than
+one of six, and `width` and `height` are there for the journal that specifies
+its own. The README and Chapter 4 show the calls.
+
 ## The tables
 
 Two tables belong in the paper. More than two usually means something belongs
@@ -405,13 +414,14 @@ usually the intakes that existing guidance already speaks about.
 ```{r}
 #| label: tbl-doses
 #| tbl-cap: "Table 2: the fitted effect at the pre-specified intakes, with confidence and prediction intervals."
-doses <- fit$predicted[, c("dose", "est", "ci.lb", "ci.ub",
-                           "pi.lb", "pi.ub")]
-names(doses) <- c("Dose", "OR", "CI low", "CI high",
-                  "PI low", "PI high")
-
-knitr::kable(doses, digits = 2, row.names = FALSE)
+knitr::kable(easydr_table(fit, doses = c(10, 25, 50)))
 ```
+
+`easydr_table()` is the function that builds it. It takes the fit and the
+doses, adds the reference dose because every other row is measured against it,
+and marks any row that falls beyond the range the studies reported. Given a
+`filetype` and a `file.name` it writes the same table to a spreadsheet or to a
+PDF, which is the form a journal asks for. `main` is the title it carries.
 
 The prediction interval is wider than the confidence interval on purpose. It
 is the interval a new study would be expected to fall in, and it is the honest

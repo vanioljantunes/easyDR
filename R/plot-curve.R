@@ -91,6 +91,15 @@
 #'              round = 2,
 #'              prediction = TRUE)
 #'
+#' @param filetype the format a saved figure is written in: `"png"` (the
+#'   default), `"pdf"` or `"tiff"`. Only used when `file.name` is given.
+#' @param path the directory to write the figure into. `NULL` is the working
+#'   directory.
+#' @param file.name the name of the file to write. `NULL`, the default, draws
+#'   on the current device and writes nothing. The extension is added when it
+#'   is missing.
+#' @param width,height the size of the saved figure in inches. `NULL` lets
+#'   easyDR measure the figure and choose a size that fits it.
 #' @export
 easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          xlim = NULL, ylim = NULL, round = NULL,
@@ -99,7 +108,10 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          rug = TRUE, result = TRUE, result.at = NULL,
                          subgroup = NULL, digits = 3, col = "#1F2A44",
                          fill.ci = "grey75", fill.pi = "grey90",
-                         legend = NULL) {
+                         legend = NULL,
+                         filetype = c("png", "pdf", "tiff"),
+                         path = NULL, file.name = NULL,
+                         width = NULL, height = NULL) {
   if (!inherits(x, "easydr_result")) {
     stop("easydr: easydr_curve() takes a fitted result from easydr().",
          call. = FALSE)
@@ -313,10 +325,35 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   if (isTRUE(result)) {
     tg <- dr_stats_grob(dr_summary_table(x, result.at, digits, use_sub))
     fs <- dr_footer_stack(foot, tg)
+  } else {
+    tg <- NULL
+    fs <- NULL
+  }
+
+  # The panel is the figure here, and the band under it is whatever the
+  # footer needs. The width follows the summary table when there is one,
+  # because a subgroup table with four columns is wider than a plot of a
+  # single curve wants to be.
+  spec <- dr_file_spec(file.name, filetype, path, width, height,
+                       what = "easydr_curve()")
+  foot_in  <- if (is.null(fs)) {
+    (1.35 * 9 * length(foot) + 8) / 72
+  } else {
+    dr_height_in(fs$height)
+  }
+  title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
+  w_in     <- max(7.2, dr_grob_width_in(tg) + 0.5)
+  size <- dr_fig_size(w_in,
+                      min(max(0.50 * w_in, 3.1), 4.4) + foot_in + title_in +
+                        0.12)
+  con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
+  on.exit(dr_end_file(con), add = TRUE)
+
+  if (is.null(fs)) {
+    dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5)
+  } else {
     dr_draw_stack(p, NULL, title = main, footer = fs$grob,
                   footer_h = fs$height, title_hjust = 0.5)
-  } else {
-    dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5)
   }
   invisible(tab)
 }

@@ -16,7 +16,12 @@ easydr_forest(
   legend = NULL,
   columns = TRUE,
   row.height = 0.26,
-  effect.width = 3.1
+  effect.width = 3.1,
+  filetype = c("png", "pdf", "tiff"),
+  path = NULL,
+  file.name = NULL,
+  width = NULL,
+  height = NULL
 )
 }
 \arguments{
@@ -60,6 +65,19 @@ same spacing.}
 \item{effect.width}{width of the interval panel, in inches. The two text
 panels take the width their characters need and this takes the rest, so
 the figure has one width whatever the device is.}
+
+\item{filetype}{the format a saved figure is written in: \code{"png"} (the
+default), \code{"pdf"} or \code{"tiff"}. Only used when \code{file.name} is given.}
+
+\item{path}{the directory to write the figure into. \code{NULL} is the working
+directory.}
+
+\item{file.name}{the name of the file to write. \code{NULL}, the default, draws
+on the current device and writes nothing. The extension is added when it
+is missing.}
+
+\item{width, height}{the size of the saved figure in inches. \code{NULL} lets
+easyDR measure the figure and choose a size that fits it.}
 }
 \value{
 The plotted table, invisibly: one row per study with \code{est}, \code{se},

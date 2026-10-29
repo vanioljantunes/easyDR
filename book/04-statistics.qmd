@@ -970,6 +970,69 @@ With eight cohorts, as here, the honest report is that asymmetry could not be
 assessed usefully, not that there was none.
 :::
 
+## The table that goes beside the curve
+
+A curve answers what the shape is. A reader planning a dose asks what the
+effect is at 10 grams, and at 25, and at 50. That is a different object, and
+it is the table a manuscript prints beside its curve.
+
+`easydr_table()` builds it. We give it the fit and the doses, and it adds the
+reference dose, because every other row is measured against it.
+
+```{r}
+easydr_table(fit_b, doses = c(10, 25, 50))
+```
+
+We see one row per dose, the summary measure, its confidence interval and its
+prediction interval. A dose beyond the range the studies reported is still
+estimated, since the model is a function and a function has a value
+everywhere, and such a row is flagged in an `Extrapolated` column that appears
+only when there is something in it to read.
+
+The doses belong in the protocol rather than in the output. Choosing them
+after seeing the shape is choosing the result.
+
+The same call writes the table out. `filetype = "xlsx"` needs the
+**{writexl}** package, which easyDR suggests rather than requires, and
+`filetype = "pdf"` draws the table as a bordered one-page figure instead.
+
+```{r}
+#| eval: false
+easydr_table(fit_b,
+             doses     = c(10, 25, 50),
+             main      = "Table 2. Alcohol and cardiovascular disease",
+             filetype  = "xlsx",
+             file.name = "table2")
+```
+
+## Saving the figures
+
+Every figure in this chapter takes the same four arguments, and writes itself
+to a file when we name one. Leave `file.name` out, as we have throughout, and
+the figure is drawn and nothing is written.
+
+* **`file.name`**. The name to save under. The extension is added when it is
+  missing.
+* **`filetype`**. `"png"` by default, or `"pdf"`, or `"tiff"`. A TIFF is
+  written LZW-compressed, which is what most journals ask for.
+* **`path`**. The directory to write into. The working directory by default.
+* **`width`, `height`**. Inches. Leaving them out is usually the right choice.
+
+```{r}
+#| eval: false
+easydr_curve(fit_b,  file.name = "figure-3", path = "figures")
+easydr_forest(fit_b, file.name = "figure-2", path = "figures",
+              filetype = "tiff")
+easydr_loo(fit_b, quiet = TRUE, file.name = "figure-s2", path = "figures")
+```
+
+The size is not a constant. Each figure measures its own pieces before the
+device is opened: a forest knows its panel widths in inches and its fixed row
+height, so a table of twenty studies comes out taller than one of six, and a
+curve with a subgroup table under it comes out wider than one without. The
+message printed afterwards says which size was used, so a figure that needs a
+journal's exact dimensions can be asked for with `width` and `height`.
+
 ## Writing it up
 
 Let us put the chapter into the two paragraphs a paper actually needs. The

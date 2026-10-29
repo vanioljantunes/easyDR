@@ -18,7 +18,8 @@ Its source is in [`book/`](book) as Quarto files.
 | **[3 . Subgroups](#3-subgroups)** | One column name, and the model refitted inside each level, in the forest and in the curve |
 | **[4 . Leave one out](#4-leave-one-out)** | Whether one study is carrying the result |
 | **[5 . Publication bias](#5-publication-bias)** | The funnel plot, and Egger's test for small-study effects |
-| **[6 . Validation](#6-validation)** | Reproduce a published analysis, and check your install against it |
+| **[6 . The table, and saving what you made](#6-the-table-and-saving-what-you-made)** | `easydr_table()` for the effect at the doses you name, and the `file.name` argument every figure now takes |
+| **[7 . Validation](#7-validation)** | Reproduce a published analysis, and check your install against it |
 
 <sub>[References](#references) . [License](#license)</sub>
 
@@ -63,6 +64,10 @@ from your table.
 | `easydr_forest()` | What did each study contribute? | `x`, `at`, `order`, `subgroup`, `columns`, `main`, `xlim` |
 | `easydr_loo()` | Is one study carrying it? | `object`, `at`, `plot`, `quiet` |
 | `easydr_funnel()` | Are the small studies different? | `x`, `at`, `labels`, `levels`, `shade` |
+| `easydr_table()` | What is the effect at 10, 25, 50? | `x`, `doses`, `main`, `digits`, `filetype`, `path`, `file.name` |
+
+Every one of the four figures also takes `filetype`, `path`, `file.name`,
+`width` and `height`, which are covered in Section 6.
 
 A few of those arguments decide more than the others, so they are worth
 spelling out.
@@ -445,7 +450,90 @@ standard normal deviate on its precision, and read the intercept.
 
 ---
 
-## 6. Validation
+## 6. The table, and saving what you made
+
+### The effect at the doses you name
+
+A curve answers what the shape is. A reader planning a dose asks what the
+effect is at 10 grams, and at 25, and at 50. That is the table a manuscript
+prints beside its curve, and `easydr_table()` builds it.
+
+The doses belong in your protocol rather than in the output. Choosing them
+after seeing the shape is choosing the result.
+
+```r
+# Paste the whole block into R.
+library(easyDR)
+data(alcohol_cvd)
+
+fit <- easydr(alcohol_cvd, sm = "OR", shape = "rcs", dose.unit = "g/day")
+
+easydr_table(fit, doses = c(10, 25, 50))
+#>   Dose (g/day)   OR 95% CI low 95% CI high 95% PI low 95% PI high
+#> 1            0 1.00       1.00        1.00       1.00        1.00
+#> 2           10 0.81       0.69        0.94       0.57        1.14
+#> 3           25 0.74       0.56        0.98       0.40        1.38
+#> 4           50 1.50       0.39        5.74       0.04       58.59
+```
+
+The reference dose joins the table whether you asked for it or not, because
+every other row is measured against it. A dose beyond the range the studies
+reported is still estimated, and an `Extrapolated` column appears to say so.
+That column is absent when there is nothing in it to read.
+
+`main` titles the table, `digits` rounds it, and `filetype` writes it out:
+
+```r
+# Paste the whole block into R.
+easydr_table(fit,
+             doses     = c(10, 25, 50),
+             main      = "Table 2. Alcohol and cardiovascular disease",
+             filetype  = "xlsx",
+             file.name = "table2")
+#> easydr: wrote C:/your/working/directory/table2.xlsx
+```
+
+`filetype = "pdf"` draws the same table as a one-page bordered figure instead.
+The spreadsheet needs **writexl**, which is suggested rather than required:
+`install.packages("writexl")` if you want it.
+
+### Saving a figure
+
+Every figure takes the same four arguments. Name a file and it is written;
+leave `file.name` out and the figure is drawn on screen as before.
+
+| Argument | What it does |
+|:---|:---|
+| `file.name` | The name to save under. The extension is added if you leave it off. `NULL`, the default, writes nothing |
+| `filetype` | `"png"` by default, or `"pdf"` or `"tiff"`. A TIFF is written LZW-compressed, which is what most journals ask for |
+| `path` | The directory to write into. Your working directory by default |
+| `width`, `height` | Inches. Leave them out and easyDR measures the figure |
+
+```r
+# Paste the whole block into R.
+easydr_curve(fit,  file.name = "figure-3", path = "figures")
+easydr_forest(fit, file.name = "figure-2", path = "figures", filetype = "tiff")
+easydr_funnel(fit, file.name = "figure-s1", path = "figures")
+easydr_loo(fit, quiet = TRUE, file.name = "figure-s2", path = "figures")
+#> easydr: wrote figures/figure-3.png  (7.2 x 6.41 inches)
+```
+
+The size is not a constant. Each figure measures its own pieces before the
+device is opened: a forest knows its panel widths in inches and its row
+height, so a table of eight studies comes out taller than one of six, and a
+curve with a subgroup table under it comes out wider than one without. The
+message tells you what was used.
+
+Name `width` and `height` yourself when a journal asks for an exact size:
+
+```r
+# Paste the whole block into R.
+easydr_curve(fit, file.name = "figure-3", width = 7, height = 5)
+```
+
+---
+
+## 7. Validation
 
 Everything above is a picture of what easyDR does. This section is not. Run the
 script, and you should get the values printed below, on your own machine.

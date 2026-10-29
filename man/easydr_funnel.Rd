@@ -13,7 +13,12 @@ easydr_funnel(
   levels = c(99, 95, 90),
   shade = c("white", "grey85", "grey70"),
   labels = FALSE,
-  digits = 4
+  digits = 4,
+  filetype = c("png", "pdf", "tiff"),
+  path = NULL,
+  file.name = NULL,
+  width = NULL,
+  height = NULL
 )
 }
 \arguments{
@@ -33,6 +38,19 @@ outermost first.}
 \item{labels}{\code{TRUE} writes the study labels beside the points.}
 
 \item{digits}{digits for the table under the plot.}
+
+\item{filetype}{the format a saved figure is written in: \code{"png"} (the
+default), \code{"pdf"} or \code{"tiff"}. Only used when \code{file.name} is given.}
+
+\item{path}{the directory to write the figure into. \code{NULL} is the working
+directory.}
+
+\item{file.name}{the name of the file to write. \code{NULL}, the default, draws
+on the current device and writes nothing. The extension is added when it
+is missing.}
+
+\item{width, height}{the size of the saved figure in inches. \code{NULL} lets
+easyDR measure the figure and choose a size that fits it.}
 }
 \value{
 Invisibly, a list with the plotted \code{table} and \code{egger}: the

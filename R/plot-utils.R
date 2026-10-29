@@ -385,9 +385,13 @@ dr_stats_grob <- function(df, base_size = 9) {
 #' padding or the font changes, and the band then overlaps the plot above it.
 #' The grob knows, so it is asked.
 #'
+#' The padding is what keeps the last row off the edge of the page. A band
+#' measured at exactly the table's own height puts the bottom border on the
+#' last pixel of a saved figure, where it reads as a cut-off row.
+#'
 #' @keywords internal
 #' @noRd
-dr_grob_height <- function(g, pad = 10) {
+dr_grob_height <- function(g, pad = 26) {
   h <- try(grid::convertHeight(sum(g$heights), "points", valueOnly = TRUE),
            silent = TRUE)
   if (inherits(h, "try-error") || !is.finite(h)) h <- 110
@@ -542,4 +546,150 @@ dr_footer_stack <- function(text, table_grob, footer_size = 9) {
   list(grob = gridExtra::arrangeGrob(grobs = list(tx, table_grob), ncol = 1,
                                      heights = grid::unit.c(txh, th)),
        height = grid::unit.c(txh + th))
+}
+
+# ---------------------------------------------------------------------------
+# Writing a figure to a file
+#
+# Every exported plot draws on the current device. Saving one therefore means
+# opening a device of the right size first, drawing into it, and closing it.
+# The size is the part worth getting right: a device an inch too short cuts
+# the last line off the footer, and one three inches too tall prints a band of
+# white under the figure. Each plot knows its own pieces, so each one measures
+# itself and hands the numbers here.
+# ---------------------------------------------------------------------------
+
+#' Measure a grid unit in inches, opening a scratch device if none is open
+#'
+#' `grid::convertHeight()` needs a device to measure against. A script run
+#' with `Rscript` has none, and R would open `Rplots.pdf` in the working
+#' directory as a side effect of the measurement. A null PDF device is opened
+#' and closed instead, which leaves nothing behind.
+#'
+#' @keywords internal
+#' @noRd
+dr_measure <- function(expr) {
+  if (is.null(grDevices::dev.list())) {
+    grDevices::pdf(NULL)
+    on.exit(grDevices::dev.off(), add = TRUE)
+  }
+  expr
+}
+
+#' Height of a grid unit in inches, or zero when it cannot be measured
+#' @keywords internal
+#' @noRd
+dr_height_in <- function(u) {
+  if (is.null(u)) return(0)
+  v <- try(dr_measure(grid::convertHeight(u, "in", valueOnly = TRUE)),
+           silent = TRUE)
+  if (inherits(v, "try-error") || !is.finite(v)) 0 else sum(v)
+}
+
+#' Width of a grob in inches, or zero when it cannot be measured
+#' @keywords internal
+#' @noRd
+dr_grob_width_in <- function(g) {
+  if (is.null(g) || is.null(g$widths)) return(0)
+  v <- try(dr_measure(grid::convertWidth(sum(g$widths), "in",
+                                         valueOnly = TRUE)), silent = TRUE)
+  if (inherits(v, "try-error") || !is.finite(v)) 0 else v
+}
+
+#' Hold a figure size inside the range a page can carry
+#'
+#' The measured size is what the figure wants. The clamp is what a reader can
+#' open: a funnel of three studies would otherwise come out two inches tall,
+#' and a leave-one-out of forty studies taller than any screen.
+#'
+#' @keywords internal
+#' @noRd
+dr_fig_size <- function(width, height, min.w = 5, max.w = 16,
+                        min.h = 3, max.h = 24) {
+  if (!is.finite(width))  width  <- 7
+  if (!is.finite(height)) height <- 5
+  c(width  = min(max(width,  min.w), max.w),
+    height = min(max(height, min.h), max.h))
+}
+
+#' Validate the file arguments every plot function now takes
+#'
+#' Returns `NULL` when no file was asked for, which is the signal the plot
+#' draws on the current device and nothing is written.
+#'
+#' @keywords internal
+#' @noRd
+dr_file_spec <- function(file.name, filetype = c("png", "pdf", "tiff"),
+                         path = NULL, width = NULL, height = NULL,
+                         res = 300, what = "this plot") {
+  if (is.null(file.name) || isFALSE(file.name)) return(NULL)
+  if (!is.character(file.name) || length(file.name) != 1L ||
+      !nzchar(file.name)) {
+    stop("easydr: `file.name` must be a single file name, such as ",
+         "file.name = \"forest\". Leave it out to draw on screen.",
+         call. = FALSE)
+  }
+  filetype <- match.arg(tolower(filetype), c("png", "pdf", "tiff"))
+  if (is.null(path)) path <- getwd()
+  if (!is.character(path) || length(path) != 1L) {
+    stop("easydr: `path` must be a single directory.", call. = FALSE)
+  }
+  if (!dir.exists(path)) {
+    stop("easydr: the directory `path` names does not exist: ", path,
+         call. = FALSE)
+  }
+  dr_check_dim(width,  "width")
+  dr_check_dim(height, "height")
+  ext <- paste0(".", filetype)
+  if (!grepl(paste0("\\", ext, "$"), file.name, ignore.case = TRUE)) {
+    file.name <- paste0(file.name, ext)
+  }
+  list(file = file.path(path, file.name), filetype = filetype,
+       width = width, height = height, res = res, what = what)
+}
+
+#' @keywords internal
+#' @noRd
+dr_check_dim <- function(v, nm) {
+  if (is.null(v)) return(invisible(NULL))
+  if (!is.numeric(v) || length(v) != 1L || !is.finite(v) || v <= 0) {
+    stop("easydr: `", nm, "` must be a single positive number of inches, ",
+         "or NULL to let easyDR work it out.", call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+#' Open the device a figure is written to
+#'
+#' `width` and `height` are what the plot measured for itself. Anything the
+#' caller named on the function wins over them, so a reviewer who needs a
+#' figure at a journal's exact size can still have it.
+#'
+#' @keywords internal
+#' @noRd
+dr_begin_file <- function(spec, width, height) {
+  if (is.null(spec)) return(NULL)
+  w <- if (is.null(spec$width))  width  else spec$width
+  h <- if (is.null(spec$height)) height else spec$height
+  switch(spec$filetype,
+         png  = grDevices::png(spec$file, width = w, height = h,
+                               units = "in", res = spec$res),
+         tiff = grDevices::tiff(spec$file, width = w, height = h,
+                                units = "in", res = spec$res,
+                                compression = "lzw"),
+         pdf  = grDevices::pdf(spec$file, width = w, height = h,
+                               onefile = FALSE))
+  list(spec = spec, width = w, height = h)
+}
+
+#' Close the device and say where the figure went
+#' @keywords internal
+#' @noRd
+dr_end_file <- function(con) {
+  if (is.null(con)) return(invisible(NULL))
+  grDevices::dev.off()
+  message("easydr: wrote ", con$spec$file, "  (",
+          format(round(con$width, 2)), " x ", format(round(con$height, 2)),
+          " inches)")
+  invisible(con$spec$file)
 }

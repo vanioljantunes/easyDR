@@ -55,11 +55,23 @@
 #' f <- easydr_funnel(fit, labels = TRUE)
 #' f$egger
 #'
+#' @param filetype the format a saved figure is written in: `"png"` (the
+#'   default), `"pdf"` or `"tiff"`. Only used when `file.name` is given.
+#' @param path the directory to write the figure into. `NULL` is the working
+#'   directory.
+#' @param file.name the name of the file to write. `NULL`, the default, draws
+#'   on the current device and writes nothing. The extension is added when it
+#'   is missing.
+#' @param width,height the size of the saved figure in inches. `NULL` lets
+#'   easyDR measure the figure and choose a size that fits it.
 #' @export
 easydr_funnel <- function(x, at = NULL, main = NULL, xlab = NULL, ylab = NULL,
                           levels = c(99, 95, 90),
                           shade = c("white", "grey85", "grey70"),
-                          labels = FALSE, digits = 4) {
+                          labels = FALSE, digits = 4,
+                          filetype = c("png", "pdf", "tiff"),
+                          path = NULL, file.name = NULL,
+                          width = NULL, height = NULL) {
   e   <- dr_study_effects(x, at, what = "a funnel plot")
   tab <- e$table
   ok  <- !is.na(tab$est) & !is.na(tab$se) & tab$se > 0
@@ -176,6 +188,24 @@ easydr_funnel <- function(x, at = NULL, main = NULL, xlab = NULL, ylab = NULL,
   # whichever grob measures short lets the other one land on top of it.
   p  <- p + ggplot2::labs(subtitle = paste(note, collapse = "\n"))
   tg <- dr_stats_grob(stats_df)
+
+  # A funnel is read as a shape, so its panel stays close to square. The
+  # subtitle carries the caveats and is drawn inside the panel, so it is
+  # counted in: it squeezes the panel from the top.
+  spec <- dr_file_spec(file.name, filetype, path, width, height,
+                       what = "easydr_funnel()")
+  title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
+  # The subtitle and the shaded-region legend are both drawn above the panel
+  # and both take their space from it. Counting only the subtitle pushed the
+  # last row of the table off the bottom of the page.
+  note_in  <- (1.35 * 11 * length(note) + 10) / 72 + 0.40
+  w_in     <- max(7.0, dr_grob_width_in(tg) + 0.5)
+  size <- dr_fig_size(w_in,
+                      min(max(0.52 * w_in, 3.3), 4.6) + note_in + title_in +
+                        dr_height_in(dr_grob_height(tg)) + 0.25)
+  con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
+  on.exit(dr_end_file(con), add = TRUE)
+
   g  <- dr_draw_stack(p, NULL, title = main, footer = tg,
                       footer_h = dr_grob_height(tg))
 
