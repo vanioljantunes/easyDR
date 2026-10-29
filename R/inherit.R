@@ -26,7 +26,8 @@
 #' @keywords internal
 #' @noRd
 dr_entry <- function(kind, data, call, roles_args, sm, method.tau, proc,
-                     covariance, method.smd, shape, knots, powers, grid, at,
+                     covariance, method.smd, shape, knots, powers,
+                     ed50 = NULL, steepness = NULL, grid, at,
                      dose.unit, level, common, random) {
   dr_check_level(level)
   method <- dr_method_tau(method.tau, common, random)
@@ -34,7 +35,14 @@ dr_entry <- function(kind, data, call, roles_args, sm, method.tau, proc,
   roles <- dr_roles(data, roles_args, kind = kind)
   prep  <- dr_prepare(data, roles, sm)
   shp   <- dr_shape(shape, prep$frame$dose, knots = knots, powers = powers,
+                    ed50 = ed50, steepness = steepness,
                     studies = prep$frame$studlab)
+  # A shape with a parameter that is not linear in the model, which is the
+  # Emax family, is resolved by fitting over a grid and keeping the best.
+  # Every other shape passes straight through.
+  shp   <- dr_profile_shape(shp, prep$frame, sm = sm, intake = roles$intake,
+                            proc = proc, method = method,
+                            covariance = covariance, method.smd = method.smd)
   fit   <- dr_fit(prep$frame, sm = sm, intake = roles$intake, proc = proc,
                   method = method, covariance = covariance,
                   method.smd = method.smd, shape = shp)

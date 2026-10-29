@@ -1,7 +1,7 @@
 # Multi-shape curves, and alignment with Crippa and Orsini (2016)
 
-Progress: 17/47 (36%)
-Started: 2026-10-29 16:10 BRT   Updated: 2026-10-29 18:30 BRT
+Progress: 25/47 (53%)
+Started: 2026-10-29 16:10 BRT   Updated: 2026-10-29 19:40 BRT
 
 ## Goal
 
@@ -52,15 +52,15 @@ inspected by eye, README and both chapters are updated, committed and pushed.
 
 ### B. The Emax family
 
-- [ ] 11. `dr_shape_hyperbolic_emax()`: linear in d/(d+ED50) for a fixed
+- [x] 11. `dr_shape_hyperbolic_emax()`: linear in d/(d+ED50) for a fixed
       ED50, profiled over a grid on deviance (w=3)
-- [ ] 12. `dr_shape_emax()`: the same over a two-dimensional grid of ED50 and
+- [x] 12. `dr_shape_emax()`: the same over a two-dimensional grid of ED50 and
       steepness (w=3)
 - [ ] 13. Parametric bootstrap that re-profiles each draw, and replaces the
       reported intervals for the Emax family (w=3)
-- [ ] 14. The two shapes reachable from `easydr()`, `easydr_curve()` and the
+- [x] 14. The two shapes reachable from `easydr()`, `easydr_curve()` and the
       shape table
-- [ ] 15. Correct the comment in `R/curve_shape.R` that says the package does
+- [x] 15. Correct the comment in `R/curve_shape.R` that says the package does
       not fit Emax, which this feature makes untrue
 
 ### C. Target dose
@@ -98,6 +98,20 @@ inspected by eye, README and both chapters are updated, committed and pushed.
 - [ ] 30. Chapter 5, section 5.7: knot-location sensitivity across the 10th,
       25th, 50th, 75th and 90th percentiles
 - [ ] 31. README, full suite, render, figures inspected, commit, push (w=2)
+
+## Found along the way
+
+AIC and BIC from a REML fit are not comparable across shapes, because a REML
+likelihood is computed on contrasts that depend on the design matrix. The
+comparison now refits every shape under ML. It also charges for the
+parameters an Emax profile searched over, which the engine does not know
+about and which would otherwise hand the family a discount.
+
+Deviance and AIC can still disagree, and do on the aripiprazole table: the
+hyperbolic Emax has the lowest deviance and the highest AIC. Both are right.
+Deviance scores the curve against a saturated model, AIC also pays for the
+between-study variance. The printed output now says so rather than declaring
+a winner.
 
 ## Blocked
 
