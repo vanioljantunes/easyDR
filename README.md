@@ -66,6 +66,15 @@ from your table.
 | `easydr_funnel()` | Are the small studies different? | `x`, `at`, `labels`, `levels`, `shade` |
 | `easydr_table()` | What is the effect at 10, 25, 50? | `x`, `doses`, `main`, `digits`, `filetype`, `path`, `file.name` |
 
+`shape` takes a vector. `easydr(shape = c("linear", "rcs"))` fits each of them
+on the same table and returns one object holding all of them, which prints as
+a comparison of terms, deviance, R-squared, AIC and BIC.
+`easydr_curve(x, mult.curves = TRUE)` draws them as panels on shared axes, and
+`curve.panels` names which ones and in what order. The panel counts are fixed:
+two and three side by side, four as a square, five as three over two, six as
+two rows of three. The other functions report one model, so they refuse an
+object holding several and say how to pick one.
+
 Every one of the four figures also takes `filetype`, `path`, `file.name`,
 `width` and `height`, which are covered in Section 6.
 
@@ -234,13 +243,24 @@ are all six, fitted to the same eight cohorts, on the same axes.
 # Paste the whole block into R.
 library(easyDR)
 
-for (s in c("linear", "log", "quadratic", "cubic", "rcs", "fp")) {
-  easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = s,
-                          dose.unit = "g/day")
-  print(easydr.object)
-  easydr_curve(easydr.object, main = paste0("shape = ", s),
-               result = FALSE)
-}
+# shape takes a vector, so all six are fitted in one call.
+easydr.object <- easydr(alcohol_cancer, sm = "RR",
+                        shape = c("linear", "log", "quadratic",
+                                  "cubic", "rcs", "fp"),
+                        dose.unit = "g/day")
+
+# Terms, deviance, R-squared, AIC and BIC, one row per shape.
+easydr.object
+
+# One panel per shape, on shared axes.
+easydr_curve(easydr.object, mult.curves = TRUE)
+
+# Two of them, in the order named.
+easydr_curve(easydr.object, mult.curves = TRUE,
+             curve.panels = c("linear", "rcs"))
+
+# One of them, to go on with.
+easydr.object$fits$rcs
 
 # A fractional polynomial takes one power as well as a pair.
 easydr(alcohol_cancer, sm = "RR", shape = "fp", powers = -0.5,

@@ -119,9 +119,11 @@ test_that("the exported surface is exactly what the constitution allows", {
   expect_setequal(plain, c("easydr", "easydr_forest", "easydr_curve",
                            "easydr_loo", "easydr_funnel", "easydr_table"))
   # One entry point and seven things to do with its result. The workers behind
-  # it, and the cumulative analysis, stay internal.
+  # it, the multi-fit container and the cumulative analysis stay internal:
+  # easydr() builds the container itself when it is given several shapes.
   expect_false(any(c("easydrbin", "easydrcont", "dr_cumul", "dr_viability",
                      "curve_shape", "easydr_select", "easydr_metareg",
-                     "easydr_bubble") %in% plain))
+                     "easydr_bubble", "dr_multi", "dr_curve_multi") %in%
+                     plain))
   expect_lte(length(plain), 12L)
 })

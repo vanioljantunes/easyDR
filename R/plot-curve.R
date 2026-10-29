@@ -100,6 +100,13 @@
 #'   is missing.
 #' @param width,height the size of the saved figure in inches. `NULL` lets
 #'   easyDR measure the figure and choose a size that fits it.
+#' @param mult.curves `TRUE` draws one panel per shape when `x` holds several,
+#'   on shared axes so the shapes can be compared by eye. Two and three
+#'   panels go side by side, four is a square, five is three over two, and
+#'   six is two rows of three.
+#' @param curve.panels the shapes to draw, in the order to draw them, such as
+#'   `curve.panels = c("rcs", "linear")`. `NULL` draws every shape the fit
+#'   holds, in the order they were named to [easydr()].
 #' @export
 easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          xlim = NULL, ylim = NULL, round = NULL,
@@ -111,11 +118,92 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          legend = NULL,
                          filetype = c("png", "pdf", "tiff"),
                          path = NULL, file.name = NULL,
-                         width = NULL, height = NULL) {
-  if (!inherits(x, "easydr_result")) {
-    stop("easydr: easydr_curve() takes a fitted result from easydr().",
-         call. = FALSE)
+                         width = NULL, height = NULL,
+                         mult.curves = FALSE,
+                         curve.panels = NULL) {
+  # Several shapes go to the panel drawer, which builds one of these plots
+  # per shape and lays them out. A single fit asked for panels is a mistake
+  # worth naming rather than quietly drawing one panel.
+  if (inherits(x, "easydr_multi") || isTRUE(mult.curves)) {
+    return(dr_curve_multi(
+      x, mult.curves = mult.curves, curve.panels = curve.panels,
+      main = main, xlab = xlab, ylab = ylab, xlim = xlim, ylim = ylim,
+      round = round, prediction = prediction, points = points,
+      studies = studies, studlabel = studlabel, reference = reference,
+      rug = rug, result = result, result.at = result.at, digits = digits,
+      col = col, fill.ci = fill.ci, fill.pi = fill.pi, legend = legend,
+      filetype = filetype, path = path, file.name = file.name,
+      width = width, height = height))
   }
+  dr_require_single(x, "easydr_curve()")
+
+  built   <- dr_curve_panel(
+    x, main = main, xlab = xlab, ylab = ylab, xlim = xlim, ylim = ylim,
+    round = round, prediction = prediction, points = points,
+    studies = studies, studlabel = studlabel, reference = reference,
+    rug = rug, subgroup = subgroup, col = col, fill.ci = fill.ci,
+    fill.pi = fill.pi, legend = legend)
+  p       <- built$plot
+  foot    <- built$foot
+  tab     <- built$tab
+  use_sub <- built$use_sub
+  main    <- built$main
+
+  # The summary sits under the figure, below the footer, the way the funnel
+  # puts Egger's numbers under its panel. Inside the panel it covered the
+  # curve on a fit that rises into its own corner, and it could hold only one
+  # column, which left nowhere for a subgroup to go.
+  if (isTRUE(result)) {
+    tg <- dr_stats_grob(dr_summary_table(x, result.at, digits, use_sub))
+    fs <- dr_footer_stack(foot, tg)
+  } else {
+    tg <- NULL
+    fs <- NULL
+  }
+
+  # The panel is the figure here, and the band under it is whatever the
+  # footer needs. The width follows the summary table when there is one,
+  # because a subgroup table with four columns is wider than a plot of a
+  # single curve wants to be.
+  spec <- dr_file_spec(file.name, filetype, path, width, height,
+                       what = "easydr_curve()")
+  foot_in  <- if (is.null(fs)) {
+    (1.35 * 9 * length(foot) + 8) / 72
+  } else {
+    dr_height_in(fs$height)
+  }
+  title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
+  w_in     <- max(7.2, dr_grob_width_in(tg) + 0.5)
+  size <- dr_fig_size(w_in,
+                      min(max(0.50 * w_in, 3.1), 4.4) + foot_in + title_in +
+                        0.12)
+  con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
+  on.exit(dr_end_file(con), add = TRUE)
+
+  if (is.null(fs)) {
+    dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5)
+  } else {
+    dr_draw_stack(p, NULL, title = main, footer = fs$grob,
+                  footer_h = fs$height, title_hjust = 0.5)
+  }
+  invisible(tab)
+}
+
+#' Build the curve panel, without drawing it
+#'
+#' Split out of `easydr_curve()` so that several shapes can be laid out side
+#' by side: the panel drawer needs the ggplot object, and the drawing step
+#' needs to happen once for the whole figure rather than once per panel.
+#'
+#' @keywords internal
+#' @noRd
+dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
+                           xlim = NULL, ylim = NULL, round = NULL,
+                           prediction = FALSE, points = TRUE, studies = FALSE,
+                           studlabel = FALSE, reference = TRUE, rug = TRUE,
+                           subgroup = NULL, col = "#1F2A44",
+                           fill.ci = "grey75", fill.pi = "grey90",
+                           legend = NULL) {
   use_sub <- dr_use_subgroups(x, subgroup, "easydr_curve()")
   tab  <- x$curve
   unit <- if (is.null(x$dose_unit)) "dose" else x$dose_unit
@@ -318,42 +406,6 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                      ".  Crosses mark doses beyond the observed range."),
             legend)
 
-  # The summary sits under the figure, below the footer, the way the funnel
-  # puts Egger's numbers under its panel. Inside the panel it covered the
-  # curve on a fit that rises into its own corner, and it could hold only one
-  # column, which left nowhere for a subgroup to go.
-  if (isTRUE(result)) {
-    tg <- dr_stats_grob(dr_summary_table(x, result.at, digits, use_sub))
-    fs <- dr_footer_stack(foot, tg)
-  } else {
-    tg <- NULL
-    fs <- NULL
-  }
-
-  # The panel is the figure here, and the band under it is whatever the
-  # footer needs. The width follows the summary table when there is one,
-  # because a subgroup table with four columns is wider than a plot of a
-  # single curve wants to be.
-  spec <- dr_file_spec(file.name, filetype, path, width, height,
-                       what = "easydr_curve()")
-  foot_in  <- if (is.null(fs)) {
-    (1.35 * 9 * length(foot) + 8) / 72
-  } else {
-    dr_height_in(fs$height)
-  }
-  title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
-  w_in     <- max(7.2, dr_grob_width_in(tg) + 0.5)
-  size <- dr_fig_size(w_in,
-                      min(max(0.50 * w_in, 3.1), 4.4) + foot_in + title_in +
-                        0.12)
-  con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
-  on.exit(dr_end_file(con), add = TRUE)
-
-  if (is.null(fs)) {
-    dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5)
-  } else {
-    dr_draw_stack(p, NULL, title = main, footer = fs$grob,
-                  footer_h = fs$height, title_hjust = 0.5)
-  }
-  invisible(tab)
+  list(plot = p, foot = foot, tab = tab, use_sub = use_sub,
+       main = main)
 }
