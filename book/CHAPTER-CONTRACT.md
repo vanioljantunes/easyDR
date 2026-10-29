@@ -84,9 +84,14 @@ only far enough to report that it **converged and produced a finite estimate
 with a usable interval**. It does not name a shape, test non-linearity, or
 read a slope aloud. That is Chapter 4.
 
-## Length and furniture
+## Furniture
 
-About 3,000 words. Every chapter ends with:
+A chapter is as long as its material. There is no word target. There was one
+until 2026-10-29, "about 3,000 words", and it was dropped because it was a bad
+rule: a chapter that walks a form field by field is longer than one that fits a
+model, and padding or cutting to reach a number serves nobody.
+
+Every chapter ends with:
 
 - a **Test your knowledge** box, four questions, answers in the appendix
 - **Summary** bullets, one per key idea, no new information
