@@ -2,9 +2,31 @@
 
 ```{r}
 #| include: false
+# This chapter shows what goes on the page, not how to produce it, so every
+# chunk below runs with echo turned off. The fit behind the figures is the
+# one built in Chapter 4.
 suppressMessages(library(easyDR))
-knitr::opts_chunk$set(collapse = FALSE, comment = "", fig.align = "center")
+knitr::opts_chunk$set(echo = FALSE, collapse = FALSE, comment = "",
+                      fig.align = "center")
 options(width = 66)
+
+data(alcohol_cvd)
+
+fit <- easydr(
+  alcohol_cvd,
+  sm = "OR",
+  shape = "rcs",
+  dose.unit = "g/day",
+  at = c(10, 25, 50)
+)
+
+by_design <- easydr(
+  alcohol_cvd,
+  sm = "OR",
+  shape = "linear",
+  dose.unit = "g/day",
+  subgroup = "design"
+)
 ```
 
 By now we have judged whether a question is viable, registered it, and fitted
@@ -18,22 +40,6 @@ is so, we point back rather than repeat ourselves, and we spend the space here
 on the one thing no earlier chapter covers: how to put the work on the page so
 that a reader can check it.
 
-We stay with `alcohol_cvd`, the data set we have used since Chapter 1, and we
-fit it once here so that every table and figure below comes from the same
-model.
-
-```{r}
-data(alcohol_cvd)
-
-fit <- easydr(
-  alcohol_cvd,
-  sm = "OR",
-  shape = "rcs",
-  dose.unit = "g/day",
-  at = c(10, 25, 50)
-)
-```
-
 ## The checklist
 
 A dose-response review is reported under **PRISMA** like any other systematic
@@ -45,7 +51,6 @@ not.
 ```{r}
 #| label: tbl-checklist
 #| tbl-cap: "What belongs in each part of a dose-response manuscript. This supplements the PRISMA checklist rather than replacing it."
-#| echo: false
 checklist <- data.frame(
   Section = c(
     "Introduction",
@@ -153,19 +158,10 @@ figures. One paragraph of characteristics comes first: how many studies, how
 many participants and cases, the dose range the pooled data covers, and which
 designs are included.
 
-```{r}
-c(studies  = length(unique(alcohol_cvd$studlab)),
-  levels   = nrow(alcohol_cvd),
-  cases    = sum(alcohol_cvd$event.e),
-  max_dose = max(alcohol_cvd$dose))
-```
-
-Then the pooled result. Let us read it from the fitted object rather than
-retype it by hand:
-
-```{r}
-fit
-```
+Then the pooled result itself: the trend, the test for departure from
+linearity, and the heterogeneity. Let us read those numbers off the fitted
+model rather than retype them, because a number retyped by hand is a number
+that can disagree with its own figure.
 
 ::: {.callout-note appearance="simple"}
 **Example**
@@ -261,7 +257,6 @@ A supplementary table whose only job is to let a reader see that the studies
 are not quite measuring the same thing.
 
 ```{r}
-#| echo: false
 knitr::kable(data.frame(
   Study = c("Study A", "Study B", "Study C", "Study D"),
   `Outcome as defined in the paper` = c(
@@ -296,7 +291,6 @@ was applied at all.
 #| fig-cap: "Figure 1: study flow, with exclusion reasons specific to a dose-response review. The counts are illustrative; the structure and the named reasons are the point."
 #| fig-width: 7.5
 #| fig-height: 7.5
-#| echo: false
 box <- function(x, y, w, h, label, fill = "#EEF3F8") {
   rect(x - w/2, y - h/2, x + w/2, y + h/2, col = fill, border = "#277db0")
   text(x, y, label, cex = 0.72)
@@ -365,14 +359,6 @@ mixes case-control data with cumulative incidence.
 #| fig-cap: "Figure 4: the curve by study design. Strata on common axes, so that the comparison is visual as well as numerical."
 #| fig-width: 7.5
 #| fig-height: 4.8
-by_design <- easydr(
-  alcohol_cvd,
-  sm = "OR",
-  shape = "linear",
-  dose.unit = "g/day",
-  subgroup = "design"
-)
-
 easydr_curve(by_design)
 ```
 
@@ -455,12 +441,8 @@ retyping it, because the version number is the part that matters most and the
 part most often got wrong.
 :::
 
-The package will print the call back, which is the quickest way to get the
-methods sentence right:
-
-```{r}
-fit$call
-```
+The package prints its own call back on request, which is the quickest way to
+get every argument into the methods sentence without missing one.
 
 ::: {.callout-note appearance="simple"}
 **Example**
