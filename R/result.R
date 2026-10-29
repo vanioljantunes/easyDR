@@ -203,9 +203,9 @@ dr_predicted <- function(fit, doses, xref, level, sm, single_study,
 #' @return `x`, invisibly. Called for the printed output.
 #'
 #' @examples
-#' fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear", dose.unit = "g/day",
-#'                  at = c(10, 25, 50))
-#' print(fit)
+#' easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+#'                         dose.unit = "g/day", at = c(10, 25, 50))
+#' print(easydr.object)
 #'
 #' # Every default easydr applied is printed under "Defaults applied", so the
 #' # methods paragraph of a manuscript can be written from this output alone.

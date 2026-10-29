@@ -22,8 +22,8 @@ the intercept with its standard error, the test and the warning about power,
 so nothing has to be unlisted and rounded by hand.
 }
 \examples{
-fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-              dose.unit = "g/day")
-easydr_funnel(fit)$egger
+easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                        dose.unit = "g/day")
+easydr_funnel(easydr.object)$egger
 
 }

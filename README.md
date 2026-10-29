@@ -167,22 +167,22 @@ Orsini and colleagues (2012) and bundled as `alcohol_cancer`.
 library(easyDR)
 
 # at = names the doses to report effects at. The curve marks and ticks them.
-fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-              dose.unit = "g/day", at = c(10, 25, 50))
-fit
+easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                        dose.unit = "g/day", at = c(10, 25, 50))
+easydr.object
 
 # shape has no default. Leave it out and the error lists what you may write.
 try(easydr(alcohol_cancer, sm = "RR"))
 
 # the whole fit as a figure
-easydr_curve(fit,
+easydr_curve(easydr.object,
              main  = "Alcohol and colorectal cancer",
              xlab  = "Alcohol intake (g/day)",
              ylab  = "Risk ratio",
              round = 2)
 
 # what each study contributed
-easydr_forest(fit)
+easydr_forest(easydr.object)
 ```
 
 </details>
@@ -235,9 +235,11 @@ are all six, fitted to the same eight cohorts, on the same axes.
 library(easyDR)
 
 for (s in c("linear", "log", "quadratic", "cubic", "rcs", "fp")) {
-  f <- easydr(alcohol_cancer, sm = "RR", shape = s, dose.unit = "g/day")
-  print(f)
-  easydr_curve(f, main = paste0("shape = ", s), result = FALSE)
+  easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = s,
+                          dose.unit = "g/day")
+  print(easydr.object)
+  easydr_curve(easydr.object, main = paste0("shape = ", s),
+               result = FALSE)
 }
 
 # A fractional polynomial takes one power as well as a pair.
@@ -298,21 +300,24 @@ case-control cohorts from two with cumulative incidence.
 # Paste the whole block into R.
 library(easyDR)
 
-sub <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day",
-              at = c(10, 20, 30), subgroup = "design")
-sub
+easydr.object.subgroup <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                                 dose.unit = "g/day",
+                                 at = c(10, 20, 30), subgroup = "design")
+easydr.object.subgroup
 
 # grouped by default, when the fit carries a subgroup
-easydr_forest(sub, main = "Alcohol and cardiovascular disease, by design")
-easydr_curve(sub, main = "Alcohol and cardiovascular disease, by design",
+easydr_forest(easydr.object.subgroup,
+              main = "Alcohol and cardiovascular disease, by design")
+easydr_curve(easydr.object.subgroup,
+             main = "Alcohol and cardiovascular disease, by design",
              xlab = "Alcohol intake (g/day)", ylab = "Risk ratio")
 
 # the overall fit on its own
-easydr_forest(sub, subgroup = FALSE)
-easydr_curve(sub, subgroup = FALSE)
+easydr_forest(easydr.object.subgroup, subgroup = FALSE)
+easydr_curve(easydr.object.subgroup, subgroup = FALSE)
 
 # why a level could not be fitted, if one could not
-sub$subgroup$table
+easydr.object.subgroup$subgroup$table
 ```
 
 </details>
@@ -363,10 +368,14 @@ does, and orders the rows by how far the estimate moved.
 # Paste the whole block into R.
 library(easyDR)
 
-cvd <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
+easydr.object <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                        dose.unit = "g/day")
 
-easydr_loo(cvd, quiet = TRUE)                       # the figure and the table
-easydr_loo(cvd, quiet = TRUE, plot = FALSE)$table   # the table alone
+# the figure and the table
+easydr_loo(easydr.object, quiet = TRUE)
+
+# the table alone
+easydr_loo(easydr.object, quiet = TRUE, plot = FALSE)$table
 ```
 
 </details>
@@ -413,10 +422,10 @@ and colleagues 1997) in a table underneath.
 # Paste the whole block into R.
 library(easyDR)
 
-fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-              dose.unit = "g/day")
+easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                        dose.unit = "g/day")
 
-f <- easydr_funnel(fit, labels = TRUE)
+f <- easydr_funnel(easydr.object, labels = TRUE)
 f$egger
 ```
 
@@ -466,9 +475,10 @@ after seeing the shape is choosing the result.
 library(easyDR)
 data(alcohol_cvd)
 
-fit <- easydr(alcohol_cvd, sm = "OR", shape = "rcs", dose.unit = "g/day")
+easydr.object <- easydr(alcohol_cvd, sm = "OR", shape = "rcs",
+                        dose.unit = "g/day")
 
-easydr_table(fit, doses = c(10, 25, 50))
+easydr_table(easydr.object, doses = c(10, 25, 50))
 #>   Dose (g/day)   OR 95% CI low 95% CI high 95% PI low 95% PI high
 #> 1            0 1.00       1.00        1.00       1.00        1.00
 #> 2           10 0.81       0.69        0.94       0.57        1.14
@@ -485,7 +495,7 @@ That column is absent when there is nothing in it to read.
 
 ```r
 # Paste the whole block into R.
-easydr_table(fit,
+easydr_table(easydr.object,
              doses     = c(10, 25, 50),
              main      = "Table 2. Alcohol and cardiovascular disease",
              filetype  = "xlsx",
@@ -511,10 +521,12 @@ leave `file.name` out and the figure is drawn on screen as before.
 
 ```r
 # Paste the whole block into R.
-easydr_curve(fit,  file.name = "figure-3", path = "figures")
-easydr_forest(fit, file.name = "figure-2", path = "figures", filetype = "tiff")
-easydr_funnel(fit, file.name = "figure-s1", path = "figures")
-easydr_loo(fit, quiet = TRUE, file.name = "figure-s2", path = "figures")
+easydr_curve(easydr.object,  file.name = "figure-3", path = "figures")
+easydr_forest(easydr.object, file.name = "figure-2", path = "figures",
+              filetype = "tiff")
+easydr_funnel(easydr.object, file.name = "figure-s1", path = "figures")
+easydr_loo(easydr.object, quiet = TRUE, file.name = "figure-s2",
+           path = "figures")
 #> easydr: wrote figures/figure-3.png  (7.2 x 6.41 inches)
 ```
 
@@ -528,7 +540,7 @@ Name `width` and `height` yourself when a journal asks for an exact size:
 
 ```r
 # Paste the whole block into R.
-easydr_curve(fit, file.name = "figure-3", width = 7, height = 5)
+easydr_curve(easydr.object, file.name = "figure-3", width = 7, height = 5)
 ```
 
 ---
@@ -556,28 +568,28 @@ library(easyDR)
 # One call. No formula argument and no logrr column: sm = "RR" tells easyDR to
 # read the counts and the reported risk ratios, derive the contrasts, and
 # reconstruct the within-study covariances.
-fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-              dose.unit = "g/day", at = c(10, 25, 50))
-fit
+easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                        dose.unit = "g/day", at = c(10, 25, 50))
+easydr.object
 
 # The coefficient on the log scale, the goodness of fit, and what each cohort
 # contributed. This is the number to quote in a methods section.
-summary(fit)
+summary(easydr.object)
 
 # The rows behind the forest plot, with weights. The figure is drawn and the
 # table prints itself; the stored values keep full precision.
-easydr_forest(fit)$table
+easydr_forest(easydr.object)$table
 
 # Small-study effects. Egger's regression, printed as a test result with its
 # power warning. Deeks' test belongs to diagnostic test accuracy.
-easydr_funnel(fit)$egger
+easydr_funnel(easydr.object)$egger
 
 # The two checks easyDR ran before and after the model.
-fit$curve_label
-fit$viability
+easydr.object$curve_label
+easydr.object$viability
 
 # The curve, with every argument the README figure used.
-easydr_curve(fit,
+easydr_curve(easydr.object,
              main  = "Alcohol and colorectal cancer",
              xlab  = "Alcohol intake (g/day)",
              ylab  = "Risk ratio",

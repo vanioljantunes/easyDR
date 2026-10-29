@@ -43,14 +43,15 @@
 #'
 #' @examples
 #' data(alcohol_cvd)
-#' fit <- easydr(alcohol_cvd, sm = "OR", shape = "rcs", dose.unit = "g/day")
+#' easydr.object <- easydr(alcohol_cvd, sm = "OR", shape = "rcs",
+#'                         dose.unit = "g/day")
 #'
 #' # The effect at the intakes guidance speaks about.
-#' easydr_table(fit, doses = c(10, 25, 50))
+#' easydr_table(easydr.object, doses = c(10, 25, 50))
 #'
 #' \donttest{
 #' # The same table, written to a spreadsheet in the working directory.
-#' easydr_table(fit, doses = c(10, 25, 50),
+#' easydr_table(easydr.object, doses = c(10, 25, 50),
 #'              main = "Alcohol and cardiovascular disease",
 #'              filetype = "xlsx", file.name = "table2")
 #' }

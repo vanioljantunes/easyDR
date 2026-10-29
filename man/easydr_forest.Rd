@@ -110,14 +110,14 @@ stops.
 }
 
 \examples{
-fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-              dose.unit = "g/day")
-easydr_forest(fit)
+easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                        dose.unit = "g/day")
+easydr_forest(easydr.object)
 
 # A curve has no single trend, so the rows become one dose.
-rcs <- easydr(alcohol_cancer, sm = "RR", shape = "rcs",
-              dose.unit = "g/day")
-easydr_forest(rcs, at = 25)
+easydr.object.rcs <- easydr(alcohol_cancer, sm = "RR", shape = "rcs",
+                            dose.unit = "g/day")
+easydr_forest(easydr.object.rcs, at = 25)
 
 }
 \seealso{

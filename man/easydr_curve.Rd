@@ -141,15 +141,15 @@ dose every effect is measured against.
 }
 
 \examples{
-fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-              dose.unit = "g/day", at = c(10, 25, 50))
+easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                        dose.unit = "g/day", at = c(10, 25, 50))
 
 # The defaults: confidence band, reported doses marked, null line, and a
 # rug of the exposure categories the studies actually reported.
-easydr_curve(fit)
+easydr_curve(easydr.object)
 
 # Titled, labelled to two decimals, axis pinned, prediction band shown.
-easydr_curve(fit,
+easydr_curve(easydr.object,
              main  = "Alcohol and colorectal cancer",
              xlab  = "Alcohol intake (g/day)",
              ylab  = "Rate ratio",

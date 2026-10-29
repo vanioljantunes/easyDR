@@ -184,21 +184,23 @@ much this matters on real data. easyDR reconstructs the covariance by default;
 `covariance = "indep"` tells it not to.
 
 ```{r}
-gl <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
-gl
+easydr.object.gl <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                           dose.unit = "g/day")
+easydr.object.gl
 ```
 
 ```{r}
-indep <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
-                dose.unit = "g/day", covariance = "indep")
-indep
+easydr.object.indep <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                              dose.unit = "g/day",
+                              covariance = "indep")
+easydr.object.indep
 ```
 
 The second line of each printout names the covariance that was used, and the
 two fits disagree from there down. We see that the slope on the log scale moves
-from `r signif(gl$slope$estimate, 3)` to `r signif(indep$slope$estimate, 3)`,
+from `r signif(easydr.object.gl$slope$estimate, 3)` to `r signif(easydr.object.indep$slope$estimate, 3)`,
 which is close to a doubling, and that the heterogeneity moves with it, from
-`r round(gl$heterogeneity$i2, 1)`% to `r round(indep$heterogeneity$i2, 1)`%. The standard
+`r round(easydr.object.gl$heterogeneity$i2, 1)`% to `r round(easydr.object.indep$heterogeneity$i2, 1)`%. The standard
 errors happen to be similar here, and that is worth saying plainly rather than
 glossing over: ignoring the correlation does not inflate precision in a
 predictable direction. What it reliably does is estimate a different trend from
@@ -352,10 +354,10 @@ the curve the two stages produce.
 #| fig-width: 7.2
 #| fig-height: 4.8
 #| out-width: 100%
-fit_b <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
-                dose.unit = "g/day", at = c(10, 20, 30))
+easydr.object <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                        dose.unit = "g/day", at = c(10, 20, 30))
 
-easydr_curve(fit_b,
+easydr_curve(easydr.object,
              studies = TRUE, studlabel = TRUE,
              main = "Alcohol and cardiovascular disease",
              xlab = "Alcohol intake (g/day)",
@@ -389,7 +391,8 @@ fit gave it, and the weight it carried into the pooling.
 #| fig-width: 7.2
 #| fig-height: 4.8
 #| out-width: 100%
-easydr_forest(fit_b, main = "Alcohol and cardiovascular disease")
+easydr_forest(easydr.object,
+              main = "Alcohol and cardiovascular disease")
 ```
 
 The numbers behind the figure are stored, at full precision, so a methods
@@ -397,7 +400,7 @@ section can quote them.
 
 ```{r}
 #| fig-show: hide
-easydr_forest(fit_b, main = "")$table
+easydr_forest(easydr.object, main = "")$table
 ```
 
 We see that every study brought five dose levels, that the trends disagree in
@@ -423,7 +426,7 @@ Let us print the fit and go through the output in the order it appears, because
 every block of it is a question a reviewer will ask.
 
 ```{r}
-fit_b
+easydr.object
 ```
 
 The first line names the summary measure and the second the machinery: two-stage
@@ -431,23 +434,23 @@ random effects with restricted maximum likelihood, and the Greenland and
 Longnecker covariance. The slope follows, with the reference dose printed under
 it, because a trend without its reference is not interpretable.
 
-We see a risk ratio of `r round(exp(fit_b$slope$estimate), 4)` per gram a day,
-with a confidence interval from `r round(exp(fit_b$slope$lb), 3)` to
-`r round(exp(fit_b$slope$ub), 3)`. Let us be careful about what that sentence
-means. It does not say that drinkers run `r round(exp(fit_b$slope$estimate), 3)`
+We see a risk ratio of `r round(exp(easydr.object$slope$estimate), 4)` per gram a day,
+with a confidence interval from `r round(exp(easydr.object$slope$lb), 3)` to
+`r round(exp(easydr.object$slope$ub), 3)`. Let us be careful about what that sentence
+means. It does not say that drinkers run `r round(exp(easydr.object$slope$estimate), 3)`
 times the risk. It says that each additional gram a day multiplies the risk by
 that factor, measured from the reference dose, which is why the predicted
 effects at 10, 20 and 30 grams a day are printed underneath and why they
 compound rather than repeat.
 
-Then the heterogeneity. $I^2$ = `r round(fit_b$heterogeneity$i2, 1)`% here, from
-a Cochran $Q$ of `r round(fit_b$heterogeneity$Q, 2)` on
-`r fit_b$heterogeneity$df` degrees of freedom. Note what is being counted:
+Then the heterogeneity. $I^2$ = `r round(easydr.object$heterogeneity$i2, 1)`% here, from
+a Cochran $Q$ of `r round(easydr.object$heterogeneity$Q, 2)` on
+`r easydr.object$heterogeneity$df` degrees of freedom. Note what is being counted:
 disagreement between **trends**, not between category effects. The between-study
 variance itself is stored as the matrix of the second formula above.
 
 ```{r}
-fit_b$Psi
+easydr.object$Psi
 ```
 
 For a straight line it is a single number, the dose-response analogue of
@@ -496,14 +499,14 @@ them as models rather than as pictures.
 #| fig-height: 6.4
 #| out-width: 100%
 shapes <- c("linear", "log", "quadratic", "cubic", "rcs", "fp")
-fits <- lapply(shapes, function(s)
+easydr.objects <- lapply(shapes, function(s)
   easydr(alcohol_cancer, sm = "RR", shape = s, dose.unit = "g/day"))
-names(fits) <- shapes
+names(easydr.objects) <- shapes
 
 op <- par(mfrow = c(2, 3), mar = c(4.2, 4.2, 3, 1))
 
 for (s in shapes) {
-  cv <- fits[[s]]$curve
+  cv <- easydr.objects[[s]]$curve
   plot(cv$dose, cv$est, type = "n", ylim = c(0.8, 2.2),
        xlab = "Alcohol intake (g/day)", ylab = "Risk ratio",
        main = paste0("shape = ", s))
@@ -534,7 +537,7 @@ Each of those fits carries its own printed verdict. Let us take the one the
 panel disagrees with most and read it.
 
 ```{r}
-fits$cubic
+easydr.objects$cubic
 ```
 
 The printout names the shape, refuses to give a single slope because no single
@@ -590,15 +593,15 @@ That is the theory. The columns are inside the fitted object, so we can look at
 them.
 
 ```{r}
-fit_rcs <- easydr(aripiprazole, sm = "MD", shape = "rcs",
-                  dose.unit = "mg/day", at = c(10, 20, 30))
+easydr.object.rcs <- easydr(aripiprazole, sm = "MD", shape = "rcs",
+                            dose.unit = "mg/day", at = c(10, 20, 30))
 
-fit_rcs$shape$knots
-round(fit_rcs$shape$basis(c(0, 2, 5, 10, 15, 20, 30)), 3)
+easydr.object.rcs$shape$knots
+round(easydr.object.rcs$shape$basis(c(0, 2, 5, 10, 15, 20, 30)), 3)
 ```
 
 We see two columns, named `dose` and `dose_nl1`, and three knots at
-`r paste(round(fit_rcs$shape$knots, 1), collapse = ", ")` milligrams a day. The
+`r paste(round(easydr.object.rcs$shape$knots, 1), collapse = ", ")` milligrams a day. The
 first column is the dose unchanged. The second is zero at the first two doses,
 barely above zero at 5 milligrams, and then climbs steeply: it is the term that
 lets the curve bend away from the straight line, and it has no influence at all
@@ -611,13 +614,13 @@ one more column, and the column is a bend that switches on at a knot.
 #| fig-width: 7
 #| fig-height: 4.4
 grid <- seq(0, 30, length.out = 200)
-B <- fit_rcs$shape$basis(grid)
+B <- easydr.object.rcs$shape$basis(grid)
 
 matplot(grid, B, type = "l", lty = c(1, 2), lwd = 2,
         col = c("#1f4e79", "#c00000"),
         xlab = "Aripiprazole dose (mg/day)", ylab = "basis value",
         main = "The spline basis, column by column")
-abline(v = fit_rcs$shape$knots, col = "grey60", lty = 3)
+abline(v = easydr.object.rcs$shape$knots, col = "grey60", lty = 3)
 legend("topleft", colnames(B), lty = c(1, 2), lwd = 2,
        col = c("#1f4e79", "#c00000"), bty = "n")
 ```
@@ -648,7 +651,7 @@ than about biology.
 ```{r}
 positive <- aripiprazole$dose[aripiprazole$dose > 0]
 quantile(positive, c(0.10, 0.50, 0.90))
-fit_rcs$shape$knots
+easydr.object.rcs$shape$knots
 ```
 
 We see the two agree, as they must. Let us be clear about why percentiles rather
@@ -661,9 +664,9 @@ The number of knots can be given instead of their positions, and here the data
 pushes back.
 
 ```{r}
-k3 <- easydr(aripiprazole, sm = "MD", shape = "rcs", knots = 3,
-             dose.unit = "mg/day")
-k3$shape$label
+easydr.object.k3 <- easydr(aripiprazole, sm = "MD", shape = "rcs",
+                           knots = 3, dose.unit = "mg/day")
+easydr.object.k3$shape$label
 
 try(easydr(aripiprazole, sm = "MD", shape = "rcs", knots = 5,
            dose.unit = "mg/day"))
@@ -688,7 +691,7 @@ than taste.
 #| fig-cap: "The fitted spline, with its knots named in the subtitle. The curve is free to bend between the outer knots and is a straight line beyond them, which is what the restriction buys: no implausible behaviour in the tails where the data runs out."
 #| fig-width: 7
 #| fig-height: 4.4
-easydr_curve(fit_rcs,
+easydr_curve(easydr.object.rcs,
              studies = TRUE,
              main = "Aripiprazole: restricted cubic spline",
              xlab = "Dose (mg/day)",
@@ -721,12 +724,12 @@ compared against a chi-squared distribution with as many degrees of freedom as
 there are extra terms. easyDR prints it with every fit that has one.
 
 ```{r}
-fit_rcs$nonlinearity
+easydr.object.rcs$nonlinearity
 ```
 
-We see a statistic of `r round(fit_rcs$nonlinearity$statistic, 2)` on
-`r fit_rcs$nonlinearity$df` degree of freedom, with $p$ =
-`r signif(fit_rcs$nonlinearity$p, 3)`. The bend is supported here. A straight
+We see a statistic of `r round(easydr.object.rcs$nonlinearity$statistic, 2)` on
+`r easydr.object.rcs$nonlinearity$df` degree of freedom, with $p$ =
+`r signif(easydr.object.rcs$nonlinearity$p, 3)`. The bend is supported here. A straight
 line has one term, so there is nothing to test it against, and easyDR says so
 rather than printing an empty row.
 
@@ -736,12 +739,12 @@ question, and it needs the deviance, which compares the fitted model against a
 saturated fit reproducing every reported category exactly [@discacciati2017].
 
 ```{r}
-fit_rcs$gof
+easydr.object.rcs$gof
 ```
 
-We see a deviance of `r round(fit_rcs$gof$deviance, 2)` on `r fit_rcs$gof$df`
-degrees of freedom, $p$ = `r round(fit_rcs$gof$p, 3)`, and an $R^2$ of
-`r round(fit_rcs$gof$r2, 3)`. Let us read that $p$ value in the right direction,
+We see a deviance of `r round(easydr.object.rcs$gof$deviance, 2)` on `r easydr.object.rcs$gof$df`
+degrees of freedom, $p$ = `r round(easydr.object.rcs$gof$p, 3)`, and an $R^2$ of
+`r round(easydr.object.rcs$gof$r2, 3)`. Let us read that $p$ value in the right direction,
 because it runs opposite to the one above. A **large** $p$ here is good news: the
 fitted curve is not detectably worse than the saturated fit. A small one would
 say that the studies reported category effects the curve cannot reproduce, and no
@@ -754,11 +757,11 @@ Let us put the two models on one panel and read them together.
 #| fig-cap: "The straight line and the restricted cubic spline on the same continuous data. The spline rises to a maximum near 20 milligrams a day and then turns down, which the line cannot represent at any slope."
 #| fig-width: 7
 #| fig-height: 4.6
-fit_lin <- easydr(aripiprazole, sm = "MD", shape = "linear",
-                  dose.unit = "mg/day")
+easydr.object.linear <- easydr(aripiprazole, sm = "MD", shape = "linear",
+                               dose.unit = "mg/day")
 
-cl <- fit_lin$curve
-cr <- fit_rcs$curve
+cl <- easydr.object.linear$curve
+cr <- easydr.object.rcs$curve
 
 plot(cr$dose, cr$est, type = "l", lwd = 2, col = "#c00000",
      ylim = range(cl$est, cr$est),
@@ -807,10 +810,11 @@ its fitted knots, the pooling stage and the covariance approximation, so a level
 differs from the overall fit only in which studies it contains.
 
 ```{r}
-sub <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day",
-              at = c(10, 20, 30), subgroup = "design")
+easydr.object.subgroup <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                                 dose.unit = "g/day",
+                                 at = c(10, 20, 30), subgroup = "design")
 
-sub$subgroup$table
+easydr.object.subgroup$subgroup$table
 ```
 
 ```{r}
@@ -819,7 +823,8 @@ sub$subgroup$table
 #| fig-width: 7.2
 #| fig-height: 5.4
 #| out-width: 100%
-easydr_forest(sub, main = "Alcohol and cardiovascular disease, by design")
+easydr_forest(easydr.object.subgroup,
+              main = "Alcohol and cardiovascular disease, by design")
 ```
 
 ```{r}
@@ -827,7 +832,7 @@ easydr_forest(sub, main = "Alcohol and cardiovascular disease, by design")
 #| fig-cap: "One curve per study design. The levels are told apart twice over, by colour and by line type, because colour alone is lost in print and to a colour-blind reader. The band stays the overall one."
 #| fig-width: 7
 #| fig-height: 4.6
-easydr_curve(sub,
+easydr_curve(easydr.object.subgroup,
              main = "Alcohol and cardiovascular disease, by design",
              xlab = "Alcohol intake (g/day)",
              ylab = "Risk ratio")
@@ -836,11 +841,11 @@ easydr_curve(sub,
 Each level is a fit of its own, so let us print them and read the two aloud.
 
 ```{r}
-sub$subgroup$fits[["case-control"]]
+easydr.object.subgroup$subgroup$fits[["case-control"]]
 ```
 
 ```{r}
-sub$subgroup$fits[["cumulative incidence"]]
+easydr.object.subgroup$subgroup$fits[["cumulative incidence"]]
 ```
 
 We see that the four case-control cohorts carry nearly all of the disagreement,
@@ -877,9 +882,10 @@ orders the rows by how far the estimate moved.
 #| fig-width: 7.2
 #| fig-height: 5
 #| out-width: 100%
-cvd <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
+easydr.object.loo <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                            dose.unit = "g/day")
 
-easydr_loo(cvd)
+easydr_loo(easydr.object.loo)
 ```
 
 We see that dropping Bianchi moves the slope furthest, and that it takes the
@@ -927,10 +933,10 @@ because a funnel plot of six studies is barely a plot at all.
 #| fig-cap: "Contour-enhanced funnel plot of the eight study trends. The vertical line is the pooled trend, the shaded regions are the pseudo confidence regions, and the warning above the panel is printed by easyDR rather than left to be remembered."
 #| fig-width: 7
 #| fig-height: 5
-fit_c8 <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-                 dose.unit = "g/day")
+easydr.object.cancer <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                               dose.unit = "g/day")
 
-fun <- easydr_funnel(fit_c8, labels = TRUE)
+fun <- easydr_funnel(easydr.object.cancer, labels = TRUE)
 ```
 
 We see eight points, broadly inside the shaded regions, with no obvious gap on
@@ -980,7 +986,7 @@ it is the table a manuscript prints beside its curve.
 reference dose, because every other row is measured against it.
 
 ```{r}
-easydr_table(fit_b, doses = c(10, 25, 50))
+easydr_table(easydr.object, doses = c(10, 25, 50))
 ```
 
 We see one row per dose, the summary measure, its confidence interval and its
@@ -998,7 +1004,7 @@ The same call writes the table out. `filetype = "xlsx"` needs the
 
 ```{r}
 #| eval: false
-easydr_table(fit_b,
+easydr_table(easydr.object,
              doses     = c(10, 25, 50),
              main      = "Table 2. Alcohol and cardiovascular disease",
              filetype  = "xlsx",
@@ -1020,10 +1026,11 @@ the figure is drawn and nothing is written.
 
 ```{r}
 #| eval: false
-easydr_curve(fit_b,  file.name = "figure-3", path = "figures")
-easydr_forest(fit_b, file.name = "figure-2", path = "figures",
+easydr_curve(easydr.object,  file.name = "figure-3", path = "figures")
+easydr_forest(easydr.object, file.name = "figure-2", path = "figures",
               filetype = "tiff")
-easydr_loo(fit_b, quiet = TRUE, file.name = "figure-s2", path = "figures")
+easydr_loo(easydr.object, quiet = TRUE, file.name = "figure-s2",
+           path = "figures")
 ```
 
 The size is not a constant. Each figure measures its own pieces before the
@@ -1040,7 +1047,7 @@ methods paragraph commits to the model, and the results paragraph reads the fit
 aloud.
 
 ```{r}
-fit_b
+easydr.object
 ```
 
 ::: {.callout-tip}

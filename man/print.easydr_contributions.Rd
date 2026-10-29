@@ -23,9 +23,9 @@ weight. The stored values keep full precision, so \code{as.data.frame()} gives
 the untouched numbers.
 }
 \examples{
-fit <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-              dose.unit = "g/day")
-f <- easydr_forest(fit)
+easydr.object <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                        dose.unit = "g/day")
+f <- easydr_forest(easydr.object)
 f$table
 
 }
