@@ -25,7 +25,12 @@ easydr_curve(
   col = "#1F2A44",
   fill.ci = "grey75",
   fill.pi = "grey90",
-  legend = NULL
+  legend = NULL,
+  filetype = c("png", "pdf", "tiff"),
+  path = NULL,
+  file.name = NULL,
+  width = NULL,
+  height = NULL
 )
 }
 \arguments{
@@ -90,6 +95,19 @@ the prediction band.}
 
 \item{legend}{optional free text drawn under the figure, one line per
 element.}
+
+\item{filetype}{the format a saved figure is written in: \code{"png"} (the
+default), \code{"pdf"} or \code{"tiff"}. Only used when \code{file.name} is given.}
+
+\item{path}{the directory to write the figure into. \code{NULL} is the working
+directory.}
+
+\item{file.name}{the name of the file to write. \code{NULL}, the default, draws
+on the current device and writes nothing. The extension is added when it
+is missing.}
+
+\item{width, height}{the size of the saved figure in inches. \code{NULL} lets
+easyDR measure the figure and choose a size that fits it.}
 }
 \value{
 The plotted curve table, invisibly: \code{dose}, \code{est}, \code{ci.lb},

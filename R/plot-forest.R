@@ -68,12 +68,24 @@
 #'               dose.unit = "g/day")
 #' easydr_forest(rcs, at = 25)
 #'
+#' @param filetype the format a saved figure is written in: `"png"` (the
+#'   default), `"pdf"` or `"tiff"`. Only used when `file.name` is given.
+#' @param path the directory to write the figure into. `NULL` is the working
+#'   directory.
+#' @param file.name the name of the file to write. `NULL`, the default, draws
+#'   on the current device and writes nothing. The extension is added when it
+#'   is missing.
+#' @param width,height the size of the saved figure in inches. `NULL` lets
+#'   easyDR measure the figure and choose a size that fits it.
 #' @export
 easydr_forest <- function(x, at = NULL, main = NULL, xlab = NULL, xlim = NULL,
                           order = c("data", "effect", "weight", "study"),
                           subgroup = NULL, digits = 3, legend = NULL,
                           columns = TRUE, row.height = 0.26,
-                          effect.width = 3.1) {
+                          effect.width = 3.1,
+                          filetype = c("png", "pdf", "tiff"),
+                          path = NULL, file.name = NULL,
+                          width = NULL, height = NULL) {
   order <- match.arg(order)
   # dr_study_effects() is what refuses a caller who passed something that is
   # not a fit, so it runs first: reading x$subgroup off a character vector
@@ -289,6 +301,16 @@ easydr_forest <- function(x, at = NULL, main = NULL, xlab = NULL, xlim = NULL,
   }
   foot_in  <- if (is.null(legend)) 0 else (1.35 * 9 * length(legend) + 8) / 72
   title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
+
+  # The forest is the one figure whose size is exact rather than estimated:
+  # the panels are in inches already and the rows have a fixed height, so the
+  # device is opened at the size the composite will occupy.
+  spec <- dr_file_spec(file.name, filetype, path, width, height,
+                       what = "easydr_forest()")
+  size <- dr_fig_size(total_w + 0.24,
+                      dr_height_in(body_h) + title_in + foot_in + 0.20)
+  con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
+  on.exit(dr_end_file(con), add = TRUE)
 
   g <- dr_draw_stack(body, body_h, title = main, footer = legend,
                      body_w = grid::unit(total_w, "inches"))

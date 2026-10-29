@@ -11,7 +11,10 @@
 #' @keywords internal
 #' @noRd
 dr_loo_plot <- function(out, object, main = NULL, xlab = NULL, ylab = NULL,
-                        ylim = NULL, digits = 4) {
+                        ylim = NULL, digits = 4,
+                        filetype = c("png", "pdf", "tiff"),
+                        path = NULL, file.name = NULL,
+                        width = NULL, height = NULL) {
   # `out` carries the refits and the table; `object` is the fit they were all
   # taken from, which is what the bold curve and the final table row show.
   base  <- object
@@ -125,6 +128,18 @@ dr_loo_plot <- function(out, object, main = NULL, xlab = NULL, ylab = NULL,
       tg$grobs[[idx]]$gp$font <- 2L
     }
   }
+
+  # The table under a leave-one-out grows one row per study, so the height is
+  # driven by the table rather than by the panel, and the width by its columns.
+  spec <- dr_file_spec(file.name, filetype, path, width, height,
+                       what = "easydr_loo()")
+  title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
+  w_in     <- max(7.6, dr_grob_width_in(tg) + 0.5)
+  size <- dr_fig_size(w_in,
+                      min(max(0.42 * w_in, 2.9), 4.0) + title_in +
+                        dr_height_in(dr_grob_height(tg)) + 0.22)
+  con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
+  on.exit(dr_end_file(con), add = TRUE)
 
   g <- dr_draw_stack(p, NULL, title = main, footer = tg,
                      footer_h = dr_grob_height(tg))

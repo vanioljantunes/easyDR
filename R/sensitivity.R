@@ -205,9 +205,21 @@ dr_sens_row <- function(label, studies, got, base, reason) {
 #' loo <- easydr_loo(fit, quiet = TRUE, plot = FALSE)
 #' loo$table[, c("label", "estimate", "shift", "i2")]
 #'
+#' @param filetype the format a saved figure is written in: `"png"` (the
+#'   default), `"pdf"` or `"tiff"`. Only used when `file.name` is given.
+#' @param path the directory to write the figure into. `NULL` is the working
+#'   directory.
+#' @param file.name the name of the file to write. `NULL`, the default, draws
+#'   on the current device and writes nothing. The extension is added when it
+#'   is missing.
+#' @param width,height the size of the saved figure in inches. `NULL` lets
+#'   easyDR measure the figure and choose a size that fits it.
 #' @export
 easydr_loo <- function(object, at = NULL, quiet = FALSE, plot = TRUE,
-                       main = NULL, xlab = NULL, ylab = NULL, ylim = NULL) {
+                       main = NULL, xlab = NULL, ylab = NULL, ylim = NULL,
+                       filetype = c("png", "pdf", "tiff"),
+                       path = NULL, file.name = NULL,
+                       width = NULL, height = NULL) {
   inh <- dr_inherited(object)
   if (length(inh$studies) < 2L) {
     stop("easydr: leave-one-out needs at least two studies; this fit has ",
@@ -229,7 +241,10 @@ easydr_loo <- function(object, at = NULL, quiet = FALSE, plot = TRUE,
     # when every refit failed the table is the whole answer, and it says why.
     if (any(out$table$status == "fitted")) {
       out$plot <- dr_loo_plot(out, object, main = main, xlab = xlab,
-                              ylab = ylab, ylim = ylim)
+                              ylab = ylab, ylim = ylim,
+                              filetype = filetype, path = path,
+                              file.name = file.name,
+                              width = width, height = height)
       return(invisible(out))
     }
     warning("easydr: no refit succeeded, so nothing was drawn. The table ",

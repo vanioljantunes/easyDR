@@ -6,7 +6,10 @@
 easydr_bubble <- function(x, mod = NULL, main = NULL, xlab = NULL,
                           ylab = NULL, ylim = NULL, ci = TRUE, labels = FALSE,
                           col = "#4E7CA8", col.line = "#C0392B",
-                          legend = NULL) {
+                          legend = NULL,
+                          filetype = c("png", "pdf", "tiff"),
+                          path = NULL, file.name = NULL,
+                          width = NULL, height = NULL) {
   if (!inherits(x, "easydr_moderator")) {
     stop("easydr: easydr_bubble() takes the result of easydr_metareg().",
          call. = FALSE)
@@ -171,6 +174,15 @@ easydr_bubble <- function(x, mod = NULL, main = NULL, xlab = NULL,
   foot <- c(paste(test, "Bubble area is the weight the study carries."),
             "An association across studies, not a randomised comparison.",
             legend)
+
+  spec <- dr_file_spec(file.name, filetype, path, width, height,
+                       what = "easydr_bubble()")
+  title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
+  foot_in  <- (1.35 * 9 * length(foot) + 8) / 72
+  size <- dr_fig_size(7.2, min(max(0.52 * 7.2, 3.2), 4.4) + title_in +
+                        foot_in + 0.22)
+  con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
+  on.exit(dr_end_file(con), add = TRUE)
 
   g <- dr_draw_stack(p, NULL, title = main, footer = foot)
 

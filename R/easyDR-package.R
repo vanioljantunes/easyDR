@@ -76,4 +76,5 @@
 #' @importFrom utils head flush.console
 #' @importFrom mixmeta qtest
 #' @importFrom rlang .data
+#' @importFrom grDevices png tiff pdf dev.off dev.list
 NULL

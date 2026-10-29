@@ -12,7 +12,12 @@ easydr_loo(
   main = NULL,
   xlab = NULL,
   ylab = NULL,
-  ylim = NULL
+  ylim = NULL,
+  filetype = c("png", "pdf", "tiff"),
+  path = NULL,
+  file.name = NULL,
+  width = NULL,
+  height = NULL
 )
 }
 \arguments{
@@ -32,6 +37,19 @@ the table when it is asked for. \code{FALSE} draws nothing.}
 
 \item{main, xlab, ylab, ylim}{passed to that plot. \code{main = FALSE} drops the
 title; the rest default to the fit's own labels.}
+
+\item{filetype}{the format a saved figure is written in: \code{"png"} (the
+default), \code{"pdf"} or \code{"tiff"}. Only used when \code{file.name} is given.}
+
+\item{path}{the directory to write the figure into. \code{NULL} is the working
+directory.}
+
+\item{file.name}{the name of the file to write. \code{NULL}, the default, draws
+on the current device and writes nothing. The extension is added when it
+is missing.}
+
+\item{width, height}{the size of the saved figure in inches. \code{NULL} lets
+easyDR measure the figure and choose a size that fits it.}
 }
 \value{
 An object of class \code{easydr_sensitivity}: the ordered table in
