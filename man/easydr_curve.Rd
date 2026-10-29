@@ -14,6 +14,8 @@ easydr_curve(
   round = NULL,
   prediction = FALSE,
   points = TRUE,
+  studies = FALSE,
+  studlabel = FALSE,
   reference = TRUE,
   rug = TRUE,
   result = TRUE,
@@ -46,6 +48,16 @@ marks the doses without labelling them.}
 
 \item{points}{\code{TRUE}, the default, marks the doses the fit reports, which
 are the ones named in \code{at}.}
+
+\item{studies}{\code{TRUE} draws the evidence behind the curve: one bubble per
+reported dose category, at the effect that study reported for it against
+its own reference, with the bubble area scaled to the participants that
+category carried. The reference categories are not drawn, because every
+one of them sits on the null by construction. \code{FALSE} is the default.}
+
+\item{studlabel}{\code{TRUE} writes each study's label once, beside its
+highest-dose bubble, so a reader can tell which study a run of bubbles
+belongs to. It needs \code{studies = TRUE}.}
 
 \item{reference}{\code{TRUE}, the default, draws the null line and marks the
 reference dose.}

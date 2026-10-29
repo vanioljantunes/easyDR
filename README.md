@@ -59,7 +59,7 @@ from your table.
 | Function | What it answers | Main arguments |
 |:---|:---|:---|
 | `easydr()` | What is the dose-response? | `data`, `sm`, `shape`, `dose.unit`, `at`, `subgroup`, `method.tau`, `proc`, `common`, `random` |
-| `easydr_curve()` | What does it look like? | `x`, `main`, `xlab`, `ylab`, `ylim`, `round`, `prediction`, `subgroup`, `result` |
+| `easydr_curve()` | What does it look like? | `x`, `main`, `xlab`, `ylab`, `ylim`, `round`, `prediction`, `studies`, `studlabel`, `subgroup`, `result` |
 | `easydr_forest()` | What did each study contribute? | `x`, `at`, `order`, `subgroup`, `columns`, `main`, `xlim` |
 | `easydr_loo()` | Is one study carrying it? | `object`, `at`, `plot`, `quiet` |
 | `easydr_funnel()` | Are the small studies different? | `x`, `at`, `labels`, `levels`, `shade` |
