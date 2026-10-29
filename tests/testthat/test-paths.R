@@ -120,7 +120,8 @@ test_that("the exported surface is exactly what the constitution allows", {
   plain <- funs[!startsWith(funs, "print.") & !startsWith(funs, "summary.")]
 
   expect_setequal(plain, c("easydr", "easydr_forest", "easydr_curve",
-                           "easydr_loo", "easydr_funnel", "easydr_table"))
+                           "easydr_loo", "easydr_funnel", "easydr_table",
+                           "easydr_target_dose", "ed_gamma"))
   # One entry point and seven things to do with its result. The workers behind
   # it, the multi-fit container and the cumulative analysis stay internal:
   # easydr() builds the container itself when it is given several shapes.

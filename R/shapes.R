@@ -388,9 +388,6 @@ dr_emax_shape <- function(dose, ed50, steepness, name) {
          # Emax itself, which is the coefficient, not a per-unit slope. The
          # curve has no constant slope, so none is claimed.
          slope_label = NULL,
-         # The parameters the profile spent, which AIC and BIC have to charge
-         # for: the engine only knows about the one coefficient it fitted.
-         profiled_params = if (hyperbolic) 1L else 2L,
          label = lab,
          basis = function(d) {
            z <- ifelse(d > 0, d^h / (d^h + theta^h), 0)
@@ -431,6 +428,12 @@ dr_emax_shape <- function(dose, ed50, steepness, name) {
   }
 
   out <- make(stats::median(theta_grid), h_grid[ceiling(length(h_grid) / 2)])
+  # The parameters the profile will spend, which AIC and BIC have to charge
+  # for: the engine only knows about the one coefficient it fitted. A
+  # parameter the caller supplied was not estimated from this data, so it is
+  # not charged and it is not searched again in a bootstrap draw.
+  out$profiled_params <- (if (given_theta) 0L else 1L) +
+    (if (hyperbolic || !is.null(steepness)) 0L else 1L)
   out$profile    <- TRUE
   out$candidates <- expand.grid(ed50 = theta_grid, steepness = h_grid,
                                 KEEP.OUT.ATTRS = FALSE)
@@ -472,7 +475,11 @@ dr_profile_shape <- function(shape, frame, sm, intake, proc, method,
          "table. The Emax family needs doses above zero and enough levels ",
          "to estimate where the curve bends.", call. = FALSE)
   }
-  best$profiled_over <- nrow(cand)
+  best$profiled_over   <- nrow(cand)
+  # The resolved shape is a fresh one built by respecify(), so the count of
+  # what the search spent has to be carried onto it. Without this the
+  # information criteria stop charging for the profile.
+  best$profiled_params <- shape$profiled_params
   # A profile that stops at the end of its own grid has not found a maximum,
   # it has run out of room. The value is still returned, because it is the
   # best of what was tried, but it is flagged so that nothing downstream

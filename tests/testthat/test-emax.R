@@ -103,15 +103,23 @@ test_that("a bad parameter is refused rather than silently replaced", {
 })
 
 test_that("the information criteria charge for the profiled parameters", {
-  f <- easydr(aripiprazole, sm = "MD", shape = "hyperbolic_emax",
-              ed50 = 7, dose.unit = "mg/day")
+  f  <- easydr(aripiprazole, sm = "MD", shape = "hyperbolic_emax",
+               dose.unit = "mg/day")
   ml <- easyDR:::dr_refit_ml(f)
   plain <- stats::AIC(ml$fit)
   # One profiled parameter costs two AIC, which is the whole point: without
   # it the family would be compared at a discount no other shape gets.
+  expect_equal(f$shape$profiled_params, 1L)
   expect_equal(easyDR:::dr_ic(f, "AIC", ml), plain + 2)
-  f$shape$profiled_params <- NULL
-  expect_equal(easyDR:::dr_ic(f, "AIC", ml), plain)
+})
+
+test_that("a parameter the caller supplied is not charged for", {
+  # It was not estimated from this data, so there is nothing to charge.
+  f  <- easydr(aripiprazole, sm = "MD", shape = "hyperbolic_emax",
+               ed50 = 7, dose.unit = "mg/day")
+  ml <- easyDR:::dr_refit_ml(f)
+  expect_null(f$shape$profiled_params)
+  expect_equal(easyDR:::dr_ic(f, "AIC", ml), stats::AIC(ml$fit))
 })
 
 test_that("the comparison refits under ML, because REML would not compare", {

@@ -96,7 +96,10 @@ dr_boot_once <- function(x, reprofile) {
     frame$y[rows] <- dr_mvn_draw(mu, S + D %*% Psi %*% t(D))
   }
 
-  shape <- if (isTRUE(reprofile) && !is.null(x$shape$profiled_params)) {
+  # profiled_over is set by the profiler and only by the profiler, so a shape
+  # whose parameters the caller supplied is refitted as it stands rather than
+  # being searched again behind their back.
+  shape <- if (isTRUE(reprofile) && !is.null(x$shape$profiled_over)) {
     # The unresolved shape, so the profile runs again on this draw. Holding
     # ED50 at the value the real data chose is exactly the narrowness this
     # bootstrap exists to correct.
