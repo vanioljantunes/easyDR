@@ -4,7 +4,8 @@
 #| include: false
 suppressMessages({
   library(easyDR)
-  library(metafor)
+  library(meta)
+  library(netmeta)
 })
 knitr::opts_chunk$set(collapse = FALSE, comment = "", fig.align = "center")
 # Measured, not guessed: the output column fits 69 monospace characters at
@@ -23,49 +24,66 @@ chapter follows from it. Let us begin where most of us already are, with a
 pooled estimate, and watch what happens to the same evidence when we stop
 throwing the doses away.
 
-Every figure in this chapter is fitted to real data, the `alcohol_cvd` table
-that ships with **{easyDR}**: six contrasts from four studies of alcohol intake
-and cardiovascular disease. Nothing here is drawn by hand.
-
 ## What a dose-response meta-analysis is
+
+Throughout this chapter we will work with one table, `alcohol_cvd`, which ships
+with **{easyDR}**. It holds six contrasts from four studies of alcohol intake
+and cardiovascular disease, each study reporting several intake categories
+against its own non-drinking reference. Every figure in this chapter is fitted
+to it, and nothing is drawn by hand.
+
+```{r}
+library(easyDR)
+data(alcohol_cvd)
+summary(alcohol_cvd)
+```
+
+We see twenty-five rows, a dose running from 0 to 77.2 grams per day, the
+effect `TE` with its limits, the cases and totals behind each category, and the
+`ref` flag marking each study's reference level.
 
 A standard meta-analysis takes one effect estimate per study and pools them.
 Each study contributes a comparison, treated against control or exposed against
 unexposed, and the result answers one question, "does it matter", at whatever
 dose the studies happened to use.
 
-Let us do exactly that with our six contrasts. We take the highest exposure
-category each study reports, compare it against that study's reference, and
-pool the six.
+Let us do that with **{meta}**, the package most of us already reach for. We
+pool every reported category against its study's reference, and group them into
+three intake bands so the plot keeps some sense of dose.
 
 ```{r}
 #| label: fig-standard-ma
-#| fig-cap: "What a standard meta-analysis gives us from this evidence: one row per study, comparing its highest category against its reference, and a diamond. Fitted with `metafor::rma()` on the `alcohol_cvd` table."
-#| fig-width: 7.5
-#| fig-height: 4
-top <- do.call(rbind, lapply(split(alcohol_cvd, alcohol_cvd$studlab),
-                             function(x) x[which.max(x$dose), ]))
-top$yi  <- log(top$TE)
-top$sei <- (log(top$upper) - log(top$lower)) / 3.92
+#| fig-cap: "A conventional meta-analysis of the same table, drawn with `meta::forest()`. Every reported category is pooled against its study's reference, grouped into three intake bands, with a subgroup diamond for each band and a test for subgroup differences at the foot."
+#| fig-width: 10
+#| fig-height: 7
+library(meta)
 
-pooled <- rma(yi = top$yi, sei = top$sei, slab = rownames(top))
+contrasts <- alcohol_cvd[!alcohol_cvd$ref, ]
+contrasts$TE.log <- log(contrasts$TE)
+contrasts$seTE   <- (log(contrasts$upper) - log(contrasts$lower)) / 3.92
+contrasts$band   <- cut(contrasts$dose, breaks = c(0, 15, 30, Inf),
+                        labels = c("Up to 15 g/day", "15 to 30 g/day",
+                                   "Over 30 g/day"))
 
-forest(pooled, atransf = exp, refline = 0, xlab = "Odds ratio",
-       header = c("Study", "OR [95% CI]"), cex = 0.9)
+m <- metagen(TE = TE.log, seTE = seTE, data = contrasts, sm = "OR",
+             studlab = paste0(studlab, ", ", round(dose, 1), " g/day"),
+             subgroup = band, print.subgroup.name = FALSE,
+             test.subgroup = TRUE, common = FALSE, random = TRUE)
+
+forest(m, col.square = "#277db0", col.diamond = "#1F2A44",
+       print.subgroup.labels = TRUE, subgroup.hetstat = FALSE,
+       xlab = "Odds ratio", smlab = "", digits = 2)
 ```
 
-We see six rows and a diamond, and the diamond is the answer such an analysis
-offers. Let us read the number out:
+We see nineteen rows, a diamond for each intake band, and one diamond at the
+foot for everything together. The pooled odds ratio is 0.78, and the test for
+subgroup differences returns $p$ = 0.91.
 
-```{r}
-c(OR = exp(as.numeric(pooled$b)), I2 = pooled$I2)
-```
-
-An odds ratio of about 0.94 and heterogeneity of roughly 35%. Now notice what
-that number does not say. It compares each study's highest category against its
-lowest, and those highest categories are not the same dose: one study's "high"
-is 64.8 grams per day and another's is 77.2. The diamond averages across
-whatever each study happened to call high.
+Read that last number carefully, because it is the whole motivation for this
+book. The bands do not differ from each other, so a subgroup analysis would
+conclude that intake does not matter. Yet the bands *are* dose: up to 15 grams,
+15 to 30, over 30. The analysis had the dose in its hands and could only ask
+whether three boxes differ, not whether the effect moves with intake.
 
 The doses were in the table the whole time. A dose-response meta-analysis takes
 *several* estimates per study, one for each exposure level, and pools the
@@ -73,19 +91,19 @@ relationship running through them.
 
 ```{r}
 #| label: fig-dose-response
-#| fig-cap: "The same six contrasts, read as a dose-response question. The line is the pooled trend, the band its 95% confidence interval, and the ticks along the axis the doses the studies actually reported."
+#| fig-cap: "The same table read as a dose-response question. The line is the pooled trend, the band its 95% confidence interval, and the ticks along the axis the doses the studies actually reported."
 #| fig-width: 7
 #| fig-height: 4.4
 fit <- easydr(alcohol_cvd, sm = "OR", shape = "linear", dose.unit = "g/day")
 easydr_curve(fit)
 ```
 
-There is no row per study here and no diamond, because the answer is a curve.
-The rug along the bottom marks the doses that were actually reported, which is
-the range the curve is entitled to speak about.
+There is no row per category here and no diamond, because the answer is a
+curve. The rug along the axis marks the doses that were actually reported,
+which is the range the curve is entitled to speak about.
 
 A forest plot still has a place, and it is a different one. Instead of one
-contrast per study it carries one **trend** per study, with the number of dose
+contrast per row it carries one **trend** per study, with the number of dose
 levels behind it and the range those levels span.
 
 ```{r}
@@ -128,10 +146,10 @@ not-mattering region, which describes neither.
 **What dose would we actually recommend?** This is the question clinicians and
 guideline committees ask, and it is unanswerable without a curve.
 
-Imagine we had only the diamond from the first figure, an odds ratio of 0.94.
+Imagine we had only the diamond from @fig-standard-ma, an odds ratio of 0.78.
 It is compatible with a flat relationship, with a steady decline, and with a
 decline that reverses at high intake. Let us ask the same data a question with
-a shape in it, by fitting a spline rather than a line.
+a shape in it.
 
 ```{r}
 #| label: fig-threshold
@@ -169,65 +187,141 @@ is a real finding and worth reporting, because "we looked for a dose-response
 relationship and found none" is more informative than a pooled estimate that was
 never going to show one.
 
-Now for the uncomfortable part. Let us fit four shapes to the one table and ask
-each what it found.
+Those are the shapes a reader argues about. The models that produce them fall
+into two families, and the difference between the families matters more than
+the difference between members of either one.
+
+### Traditional curve models
+
+A **traditional** model writes the effect as a single formula in dose across
+the whole range. One equation, fitted once, describing every dose at the same
+time. The straight line is the simplest member.
 
 ```{r}
-#| label: fig-shapes
-#| fig-cap: "Four shapes fitted to the same six contrasts, on a log odds-ratio axis. The data did not change between panels; only the shape we asked for did. Note how much wider the band becomes once the shape is allowed to bend."
-#| fig-width: 8
-#| fig-height: 6
-shapes <- c("linear", "rcs", "log", "quadratic")
-fits   <- lapply(shapes, function(s)
-  easydr(alcohol_cvd, sm = "OR", shape = s, dose.unit = "g/day"))
-
-op <- par(mfrow = c(2, 2), mar = c(4, 4, 2.5, 1), cex = 0.8)
-for (i in seq_along(fits)) {
-  cu <- fits[[i]]$curve
-  # Odds ratios belong on a log axis. On a linear one the wider bands flatten
-  # the fitted line into the floor and the shape, which is the whole point of
-  # the panel, stops being visible.
-  plot(cu$dose, cu$est, type = "n", log = "y",
-       ylim = range(c(cu$ci.lb, cu$ci.ub)),
-       xlab = "Alcohol, g/day", ylab = "Odds ratio",
-       main = paste0(shapes[i], ": ", fits[[i]]$curve_label))
-  polygon(c(cu$dose, rev(cu$dose)), c(cu$ci.lb, rev(cu$ci.ub)),
-          col = "#CFE3EF", border = NA)
-  lines(cu$dose, cu$est, lwd = 2, col = "#1F2A44")
-  abline(h = 1, lty = 2, col = "grey40")
-}
-par(op)
+#| label: fig-linear
+#| fig-cap: "A straight line in dose. One slope describes the whole range, which is the strongest assumption we can make and the easiest to report."
+#| fig-width: 7
+#| fig-height: 4.4
+easydr_curve(easydr(alcohol_cvd, sm = "OR", shape = "linear",
+                    dose.unit = "g/day"))
 ```
 
-We see four different stories from one table. A straight line says the risk
-falls steadily. A spline says it is U-shaped. A log curve says it plateaus. A
-quadratic says it climbs. The package will name each of them for us:
+A **quadratic** adds a squared term, which lets the curve bend once and so turn.
 
 ```{r}
-vapply(fits, function(f) f$curve_label, character(1))
+#| label: fig-quadratic
+#| fig-cap: "A quadratic in dose. The extra term buys one bend, and the band widens to pay for it."
+#| fig-width: 7
+#| fig-height: 4.4
+easydr_curve(easydr(alcohol_cvd, sm = "OR", shape = "quadratic",
+                    dose.unit = "g/day"))
 ```
 
-This is the most important thing in the chapter, and it arrives early on
-purpose. **The shape is not discovered by the data. It is a claim we make, and
-the data then constrains.** That is why **{easyDR}** refuses to pick one:
-calling `easydr()` without naming a `shape` is an error rather than a default.
-Chapter 4 is about choosing defensibly, and Chapter 3 about committing to the
-choice in a protocol before the data can tempt us.
+A **log** transform of the dose makes the effect accumulate quickly at low
+intake and flatten at high intake, which is the Emax shape written as a
+formula.
+
+```{r}
+#| label: fig-log
+#| fig-cap: "A straight line in log dose. The same model that looks like a plateau on the original scale."
+#| fig-width: 7
+#| fig-height: 4.4
+easydr_curve(easydr(alcohol_cvd, sm = "OR", shape = "log",
+                    dose.unit = "g/day"))
+```
+
+What the three share is that one formula is responsible for the entire dose
+range. A point at 70 grams per day changes the fitted value at 5 grams per day,
+because they are tied together by the same coefficients.
+
+### Splines
+
+A **spline** gives that up deliberately. The dose range is cut at a few
+positions, called **knots**, and a separate cubic is fitted between them, with
+continuity imposed where they meet. A **restricted cubic spline** adds the
+further condition that the curve is straight beyond the outermost knots, which
+stops the tails flying off where the data is thinnest.
+
+```{r}
+#| label: fig-rcs
+#| fig-cap: "A restricted cubic spline. The subtitle names the knots, because the knots are a modelling choice and belong in the methods."
+#| fig-width: 7
+#| fig-height: 4.4
+easydr_curve(spline_fit)
+```
+
+The spline is the default in this literature for a reason: it can follow a
+threshold or a turn without us having to guess the formula in advance. The cost
+is that it has more parameters, so its band is wider, and that the knots are a
+choice we have to defend.
+
+Now the uncomfortable part. Every curve above was fitted to the same
+twenty-five rows, and the package will tell us what each one found:
+
+```{r}
+shapes <- c("linear", "quadratic", "log", "rcs")
+vapply(shapes, function(s)
+  easydr(alcohol_cvd, sm = "OR", shape = s)$curve_label, character(1))
+```
+
+Four models, one table, four different stories. This is the most important
+thing in the chapter, and it arrives early on purpose. **The shape is not
+discovered by the data. It is a claim we make, and the data then constrains.**
+That is why **{easyDR}** refuses to pick one: calling `easydr()` without naming
+a `shape` is an error rather than a default. Chapter 4 is about choosing
+defensibly, and Chapter 3 about committing to the choice in a protocol before
+the data can tempt us.
 
 ## Why it is not a network meta-analysis
 
-A network meta-analysis can include several doses of the same drug by treating
-each dose as a separate node. It will then rank those nodes. This looks like a
-dose-response answer and is not one.
+A network meta-analysis can include several doses of the same exposure by
+treating each dose as a separate node. It will then rank those nodes. This
+looks like a dose-response answer and is not one.
 
-The ranking tells us which of the *studied* doses performed best. It does not
-estimate the relationship between them, so it cannot interpolate to a dose
-nobody trialled, and it cannot describe a shape. Treating 10 mg and 20 mg as
-unrelated categories discards the one fact that makes them comparable: that 20
-is twice 10.
+Let us build that network from our own table. Each intake band becomes a
+treatment node, non-drinking becomes the reference node, and **{netmeta}**
+assembles the comparisons.
 
-Let us make the difference concrete. No study in our table reports 25 grams per
-day, and yet:
+```{r}
+#| label: fig-network
+#| fig-cap: "The same evidence as a network: four nodes, six studies, twenty-one comparisons. Edge thickness is the number of studies contributing to each comparison."
+#| fig-width: 6.5
+#| fig-height: 5.5
+library(netmeta)
+
+nodes <- alcohol_cvd
+nodes$node <- cut(nodes$dose, c(-Inf, 0, 15, 30, Inf),
+                  labels = c("None", "1-15 g/day", "15-30 g/day",
+                             ">30 g/day"))
+# netmeta needs each node once per study, so where a study reports two
+# categories inside one band we keep the first.
+nodes <- nodes[!duplicated(nodes[c("studlab", "node")]), ]
+
+pw <- pairwise(treat = node, event = event.e, n = n.e,
+               studlab = studlab, data = nodes, sm = "OR")
+net <- netmeta(pw, common = FALSE, random = TRUE,
+               reference.group = "None")
+
+netgraph(net, plastic = FALSE, thickness = "number.of.studies",
+         col = "#277db0", points = TRUE, cex.points = 5,
+         col.points = "#1F2A44")
+```
+
+The network fits. Now let us read what it concluded about each band against
+non-drinking:
+
+```{r}
+round(exp(net$TE.random["None", ]), 2)
+```
+
+We see the problem. The network reports 1-15 grams per day as *worse* than over
+30, because nothing in the model knows that one node is a larger dose than
+another. The nodes are labels, and the ordering that makes them comparable has
+been discarded.
+
+The ranking tells us which of the *studied* nodes performed best. It cannot
+interpolate to an intake nobody reported, and it cannot describe a shape. Our
+dose-response model can do the first without being asked twice:
 
 ```{r}
 at_25 <- easydr(alcohol_cvd, sm = "OR", shape = "linear",
@@ -235,9 +329,8 @@ at_25 <- easydr(alcohol_cvd, sm = "OR", shape = "linear",
 at_25$predicted
 ```
 
-We see an estimate at 25 grams per day with an interval around it, for a dose
-nobody measured. A network meta-analysis has no row to put there, because 25 is
-not a node.
+An estimate at 25 grams per day, with an interval, for a dose no study reports.
+A network meta-analysis has no row to put there, because 25 is not a node.
 
 Model-based network meta-analysis closes this gap deliberately, by fitting a
 dose-response function inside the network [@mawdsley2016; @pedder2021]. That is
@@ -247,41 +340,47 @@ the evidence is a network. Ordinary network meta-analysis is not.
 ## Why it is not a meta-regression or a subgroup analysis
 
 **Meta-regression** puts dose on the right-hand side of a regression across
-studies. It is the closest relative, and the difference matters: meta-regression
-usually relates one effect estimate per study to the *average* dose in that
-study, which makes it vulnerable to aggregation bias and restricts it in
-practice to a straight line.
+estimates. It is the closest relative, and the difference matters: it relates
+each estimate to its dose while ignoring that estimates from one study share a
+reference group.
 
-Let us run both on the same table and compare. First the meta-regression, one
-point per study at its mean dose:
+Let us run it on the same contrasts, with `meta::metareg()`.
 
 ```{r}
-exposed <- alcohol_cvd[!alcohol_cvd$ref, ]
-agg <- do.call(rbind, lapply(split(exposed, exposed$studlab), function(x)
-  data.frame(dose = mean(x$dose),
-             yi   = mean(log(x$TE)),
-             sei  = mean((log(x$upper) - log(x$lower)) / 3.92))))
+#| label: fig-metareg
+#| fig-cap: "Meta-regression of the log odds ratio on dose, drawn with `meta::bubble()`. Each bubble is one reported category, sized by its weight, and the line is the fitted trend."
+#| fig-width: 7.5
+#| fig-height: 4.6
+plain <- metagen(TE = TE.log, seTE = seTE, data = contrasts, sm = "OR",
+                 studlab = studlab, common = FALSE, random = TRUE)
+mr <- metareg(plain, ~ dose)
 
-metareg <- rma(yi = yi, sei = sei, mods = ~ dose, data = agg)
-c(slope = coef(metareg)[["dose"]], p = metareg$pval[2], points = metareg$k)
+bubble(mr, studlab = FALSE, xlab = "Alcohol, g/day",
+       col = "#277db0", col.line = "#1F2A44", lwd = 2)
 ```
 
-Then the dose-response model, which keeps every level:
+```{r}
+c(slope = coef(mr)[["dose"]], p = mr$pval[2], R2 = mr$R2)
+```
+
+A slope of 0.0025, a $p$ value of 0.62, and an $R^2$ of zero. The
+meta-regression finds nothing. Now the dose-response model on the identical
+rows:
 
 ```{r}
 c(slope = fit$slope$estimate, levels = nrow(alcohol_cvd))
 ```
 
-We see a meta-regression fitted to six points, reporting a slope it cannot
-distinguish from zero, and a dose-response model fitted to the twenty-five
-underlying rows, reporting a slope of the same sign with far more behind it.
-The difference is not the estimator. It is that one of them discarded the
-within-study comparisons before starting.
+We see a slope of the opposite sign, from a model that used the within-study
+comparisons rather than treating nineteen correlated estimates as if they were
+independent. The difference is not the estimator. It is what each model was
+willing to know about where the estimates came from.
 
-**Subgroup analysis** splits studies into low, medium and high and pools each.
-We get three numbers and no relationship between them. Nothing constrains them
-to lie on any curve, nothing uses the ordering, and the cut points are usually
-arbitrary.
+**Subgroup analysis** we have already run, in @fig-standard-ma. It split the
+intakes into three bands and returned $p$ = 0.91 for the difference between
+them. We get three numbers and no relationship between them. Nothing constrains
+them to lie on any curve, nothing uses the ordering, and the cut points were
+chosen by us.
 
 What all three alternatives share is that they ignore the common comparator.
 Within a study, every exposure level is compared against the same reference
@@ -338,15 +437,15 @@ model.
 ::: {.callout-note appearance="simple"}
 **Test your knowledge!**
 
-1. A reviewer objects that our dose-response curve reports an effect at a dose
-   no study used. What makes that legitimate here, and what would make it
-   illegitimate?
-2. The four panels in @fig-shapes were fitted to identical data and disagree.
-   What does that tell us about where the shape comes from?
-3. A colleague has run a meta-regression of effect on mean study dose and found
-   nothing. Why is that weaker evidence of no relationship than it appears?
-4. Why can a network meta-analysis rank 10 mg, 20 mg and 40 mg without being
-   able to say anything about 30 mg?
+1. The subgroup test in @fig-standard-ma returned $p$ = 0.91, and the
+   dose-response model on the same table found a trend. How can both be true?
+2. The network in @fig-network ranked 1-15 g/day as worse than over 30 g/day.
+   What did the model not know?
+3. Four models fitted to one table reported four different shapes. What does
+   that tell us about where the shape comes from?
+4. What is the practical difference between a traditional curve model and a
+   spline, stated in terms of what a distant data point does to a nearby fitted
+   value?
 
 Answers to these questions are listed in Appendix A.
 :::
@@ -356,20 +455,22 @@ Answers to these questions are listed in Appendix A.
 - A dose-response meta-analysis estimates how an outcome changes across levels
   of a quantitative exposure. Its output is a curve with a confidence band over
   the range the evidence covers, not a single pooled number.
-- A standard meta-analysis of the same table compares each study's highest
-  category against its lowest, which averages over the fact that those
-  categories are different doses in different studies.
+- A conventional meta-analysis of the same table, even with the intakes split
+  into bands, can only ask whether the bands differ. On `alcohol_cvd` it
+  answers no, while the dose still moves the effect.
 - The information that makes a curve possible lives in the within-study
   comparisons, where every level shares one reference group. Reconstructing the
   covariance between those correlated estimates is the method's foundation.
+- Traditional curve models use one formula across the whole dose range, so
+  every point informs every fitted value. Splines cut the range at knots and
+  fit locally, which buys flexibility at the price of a wider band and a
+  modelling choice to defend.
 - The shape is a claim we make rather than a discovery the data hands us. Four
-  shapes fitted to one table gave four different stories, which is why the
+  models fitted to one table gave four different stories, which is why the
   shape belongs in the protocol.
 - A dose-response model can speak about a dose nobody studied, because the
   ordering of doses is information. A network meta-analysis, which treats doses
-  as unrelated nodes, cannot.
-- Meta-regression across study means and subgroup analysis across arbitrary
-  bands both discard the within-study comparisons, which is where the shape
-  information is.
+  as unrelated nodes, cannot, and on this table it ranked a low intake as worse
+  than a high one.
 
 {{< include _cta.qmd >}}
