@@ -1,0 +1,47 @@
+# Cite this material {.unnumbered .no-slide}
+
+The book and the **{easyDR}** package live in the same repository and share a
+version, so one citation covers both. If you used the package to fit something,
+or the book to decide how, please cite it.
+
+```{r}
+#| echo: false
+# strwrap keeps the line inside the content column, which a single cat() of
+# the whole citation would run past.
+citation_line <- paste0(
+  "Antunes V (", format(Sys.Date(), "%Y"), "). ",
+  "Dose-Response Meta-Analysis: A hands-on guide, and the easyDR ",
+  "package for R. Version ",
+  as.character(utils::packageVersion("easyDR")), ". ",
+  "https://github.com/vanioljantunes/easyDR"
+)
+writeLines(strwrap(citation_line, width = 64, exdent = 2))
+```
+
+For a reference manager, in BibTeX:
+
+```bibtex
+@manual{easydr,
+  title  = {Dose-Response Meta-Analysis: A hands-on guide, and the
+            {easyDR} package for {R}},
+  author = {Vanio Antunes},
+  year   = {2026},
+  url    = {https://github.com/vanioljantunes/easyDR},
+  note   = {Book: https://vanioljantunes.github.io/easyDR/}
+}
+```
+
+## What to cite alongside it {.unnumbered .no-slide}
+
+**{easyDR}** prepares the data and reports the result. The estimation is done
+by **{dosresmeta}** [@crippa2016], which in turn implements the method of
+@greenland1992. A methods section that names only this package is incomplete,
+so cite those two as well whenever you report a fitted curve.
+
+Both packages carry their own citation, which _R_ will print on request:
+
+```{r}
+#| eval: false
+citation("easyDR")
+citation("dosresmeta")
+```
