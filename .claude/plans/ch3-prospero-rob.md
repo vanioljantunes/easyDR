@@ -1,5 +1,5 @@
 # easyDR book, Chapter 3: PROSPERO and risk of bias
-Progress: 8/10 (80%)
+Progress: 10/10 (100%)
 Started: 2026-10-29 08:14 BRT   Updated: 2026-10-29 09:02 BRT
 
 ## Goal
@@ -30,8 +30,8 @@ passes, `quarto render` succeeds, both repos pushed.
 - [x] 6. style_check.py --setup on the guidance sections
 - [x] 7. quarto render, confirm the chapter builds and the two kables print
 - [x] 8. Patch the deck outline: RoB 2, and the two new slides
-- [ ] 9. Commit and push easyDR
-- [ ] 10. Commit and push claudeOS for the deck change
+- [x] 9. Commit and push easyDR
+- [x] 10. Commit and push claudeOS for the deck change
 
 ## Notes
 The deck lives at `claudeOS/metahub/slides/metarank4/dose-response/dose-response/`,
