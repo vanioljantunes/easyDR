@@ -1,84 +1,1094 @@
-# Statistics theory and code
+# Statistics theory and code {#sec-statistics}
 
-What the model is doing, in enough detail to defend it in review, and then the
-same analysis run end to end on published data you can download.
+```{r}
+#| include: false
+library(easyDR)
+library(dosresmeta)
+knitr::opts_chunk$set(collapse = FALSE, comment = "")
+# Measured, not guessed: the output column fits 69 monospace characters at
+# this font size. R gets a little less than that so nothing reaches the edge,
+# and R wraps its own columns, which keeps them aligned. Never let CSS wrap
+# this text: alignment is the information.
+options(width = 66)
+```
 
-::: {.callout-warning}
-Draft. The section structure below is fixed and matches the class; the prose is
-being written.
+Chapter 2 ended with a model that converged, and we deliberately left it at
+that. We reported that a fit existed, that its estimate was finite and that its
+interval was usable, and we said nothing about what it meant. Chapter 3 then
+registered the analysis and rated the studies. Everything is now in place, and
+the question that has been waiting since Chapter 1 can finally be asked: what is
+the dose-response, and how do we defend the number we report?
 
-Every `##` section gets its own figure, as in Chapter 1. One H2 is one slide, so
-the figure is also that slide's visual, and a section without one leaves the
-deck with a blank.
+This chapter answers it twice over. Every statistical idea is followed
+immediately by the code that puts it to work, because nobody defends a model
+they have not run and nobody trusts a fit they cannot explain. The two were
+separate classes until October 2026, and they are one now for that reason.
+
+We work with the same two examples as Chapter 2, so the rows are already
+familiar: `aripiprazole` for a continuous outcome and `alcohol_cvd` for a binary
+one. A third table, `alcohol_cancer`, joins us when we need eight studies rather
+than six.
+
+::: {.callout-note appearance="simple"}
+**The data sets in this chapter**
+
+`aripiprazole` holds five fixed-dose trials of aripiprazole in schizophrenia,
+with the change on the Positive and Negative Syndrome Scale given as a mean and
+a standard deviation per dose arm. It is the data behind Crippa and Orsini
+[-@crippa2016].
+
+`alcohol_cvd` holds six dose-response contrasts of alcohol intake and
+cardiovascular disease, reported as an effect with confidence limits plus the
+cases and the totals per category.
+
+`alcohol_cancer` holds eight prospective cohorts of alcohol intake and
+colorectal cancer, the analysis published by Orsini and colleagues
+[-@orsini2012].
+
+All three come with the package:
+
+```{r}
+library(easyDR)
+```
 :::
 
-Theory first, then the code that fits it. The two were separate classes until
-2026-10-20; they are one now, because nobody defends a model they have not run
-and nobody trusts a fit they cannot explain. The code sections follow the same
-order as the theory, so each fit lands next to the reason for it.
+## What the model is estimating
 
-## The problem: correlated estimates within a study
+Let us start from the single study, because that is where the estimation starts.
 
-Why estimates sharing one reference group cannot be treated as independent, and
-what goes wrong when they are.
+A study in our table does not report an effect. It reports several, one per
+exposure category, each one measured against the same reference category. Six
+numbers from one cohort are not six pieces of evidence about one comparison;
+they are six points on one curve that the cohort traced out. The **first
+principle** of dose-response meta-analysis follows from this: the unit of
+evidence a study contributes is a **trend**, not an effect.
+
+The second principle is about what happens between studies. Two cohorts rarely
+use the same categories. One cuts alcohol intake at 10, 30 and 50 grams a day,
+the next at 0 to 12, 12 to 24 and above 24. A conventional meta-analysis has to
+force these into shared bands and then pool band against band, which throws away
+the dose and invents a comparison nobody made. A dose-response meta-analysis
+pools the trends instead, and trends from different category schemes are
+comparable because they are measured per unit of dose.
+
+The third principle is the one that makes the arithmetic harder than it looks,
+and it gets a section of its own below. Because every category of a study is
+compared with the same reference group, the estimates within a study are
+**correlated**, and pooling them as though they were independent is wrong.
+
+Let us look at what a single study actually gives us.
+
+```{r}
+#| label: fig-one-study
+#| fig-cap: "One cohort, five reported categories, one trend. Each point is the log risk ratio of a category against that study's own reference, placed at the dose assigned to the category. The line is the trend this study contributes, and the trend is what gets pooled."
+#| fig-width: 7
+#| fig-height: 4.4
+bianchi <- subset(alcohol_cvd, studlab == "Bianchi")
+
+plot(bianchi$dose, log(bianchi$TE),
+     pch = 19, col = "#1f4e79", cex = 1.3,
+     xlab = "Alcohol intake (g/day)",
+     ylab = "log risk ratio vs this study's reference",
+     main = "Bianchi: five categories, one trend")
+abline(h = 0, col = "grey70")
+abline(lm(log(TE) ~ 0 + dose, data = bianchi), col = "#c00000", lwd = 2)
+```
+
+We see five points and one line. The points are what the paper printed, and the
+line is what the paper contributes to the meta-analysis. Every later decision in
+this chapter is a decision about that line: what shape it is allowed to take,
+how its uncertainty is calculated, and how it is averaged with the lines of the
+other studies.
+
+## The data the method needs
+
+The model needs three things from every study, and the table has to carry them
+explicitly. The dose assigned to each category, the effect of that category
+against the study's own reference, and enough information per category to work
+out how uncertain that effect is.
+
+easyDR reads a long table with **one row per exposure category per study**. The
+reference category stays in the table, flagged in the `ref` column, because
+every effect the study reported is measured against it. Which columns are read
+depends on `sm`, the summary measure, exactly as it does in **{meta}**.
+
+For a **binary** outcome, we give the reported effect with its confidence limits
+and, where the paper prints them, the counts.
+
+```{r}
+head(alcohol_cvd, 6)
+```
+
+For a **continuous** outcome, the effect columns are replaced by the group
+summaries, because a mean difference can be rebuilt from them.
+
+```{r}
+head(aripiprazole, 5)
+```
+
+Let us read the binary table aloud. `studlab` repeats across the categories of a
+study, `dose` is the value assigned to the category, `TE` with `lower` and
+`upper` is the risk ratio as printed, `event.e` and `n.e` are the cases and the
+participants, `design` says how the study counted them, and `ref` is `TRUE` on
+the one row the others are measured against. The reference row carries no
+confidence limits, and that is correct rather than missing: a category compared
+with itself has an effect of exactly 1 and no uncertainty.
+
+The continuous table is shorter by two columns and tells the same story.
+`mean.e`, `sd.e` and `n.e` describe each dose arm, the reference arm sits in
+there with the rest, and nothing else is needed.
+
+::: {.callout-important}
+**The dose is a modelling choice, not a fact in the paper**
+
+A paper reports a category, not a dose. "11 to 20 grams a day" becomes a single
+number only when we assign one, usually the midpoint, and an open-ended top
+category ("more than 60 grams a day") has no midpoint at all. The usual
+convention is to add to its lower bound about three quarters of the width of the
+previous category. Whatever we choose belongs in the protocol with its reason,
+because the slope depends on it. This is one of the few places where a
+dose-response review can be quietly steered toward an answer.
+:::
+
+What the table contains is therefore not a free choice either. Let us see how the
+dose levels of our two examples are spread, because that spread is what a curve
+has to be fitted through.
+
+```{r}
+#| label: fig-dose-coverage
+#| fig-cap: "Every reported category of both examples, one row per study. The open circles are each study's reference level. A curve can only be estimated where the circles are, and a shape with more terms needs more circles per row."
+#| fig-width: 7.5
+#| fig-height: 5
+op <- par(mfrow = c(1, 2), mar = c(4.2, 7.5, 3, 1))
+
+for (d in list(list(x = aripiprazole, t = "aripiprazole (mg/day)"),
+               list(x = alcohol_cvd,  t = "alcohol_cvd (g/day)"))) {
+  s <- factor(d$x$studlab, levels = rev(unique(d$x$studlab)))
+  plot(d$x$dose, as.integer(s), yaxt = "n", pch = ifelse(d$x$ref, 1, 19),
+       col = "#1f4e79", cex = 1.2, ylab = "", xlab = "dose", main = d$t,
+       ylim = c(0.5, nlevels(s) + 0.5))
+  axis(2, at = seq_len(nlevels(s)), labels = levels(s), las = 1,
+       cex.axis = 0.8)
+}
+
+par(op)
+```
+
+We see that aripiprazole gives three or four arms per trial across 0 to 30
+milligrams a day, and that `alcohol_cvd` gives five categories per contrast
+across a much wider range, out to 77 grams a day. Both pass the viability checks
+of Chapter 2. Yet no aripiprazole trial reports more than four distinct dose
+levels, including its reference arm, and that ceiling will come back to us when
+we place spline knots.
+
+## Why a study's estimates are not independent
+
+Here is the problem the method exists to solve.
+
+Imagine a cohort that reports three categories against a non-drinking reference
+group. The reference group has its own number of cases, and that number carries
+its own random error. Every one of the three reported effects is computed with
+that same reference group in its denominator, so every one of them inherits the
+same error. If the reference group happened to record too few cases, all three
+risk ratios are pulled upward together, not independently.
+
+This has a consequence that is easy to state and easy to forget. Two estimates
+from the same study are **positively correlated**, and the strength of the
+correlation is set by how noisy the reference group is. A small reference group
+makes the whole set of estimates move together.
+
+Treat them as independent and the pooled trend is wrong in two ways at once. The
+weights are wrong, because shared error gets counted several times as though it
+were new information, and the point estimate is wrong, because the weighted
+average is taken over numbers whose dependence has been ignored. Let us see how
+much this matters on real data. easyDR reconstructs the covariance by default;
+`covariance = "indep"` tells it not to.
+
+```{r}
+gl <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
+
+indep <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                dose.unit = "g/day", covariance = "indep")
+
+data.frame(
+  covariance = c("Greenland and Longnecker", "treated as independent"),
+  slope_log  = c(gl$slope$estimate, indep$slope$estimate),
+  se         = c(gl$slope$se, indep$slope$se),
+  RR_per_g   = c(exp(gl$slope$estimate), exp(indep$slope$estimate)),
+  I2         = c(gl$heterogeneity$i2, indep$heterogeneity$i2))
+```
+
+We see that the slope on the log scale moves from
+`r signif(gl$slope$estimate, 3)` to `r signif(indep$slope$estimate, 3)`, which
+is close to a doubling, and that the heterogeneity moves with it. The standard
+errors happen to be similar here, and that is worth saying plainly rather than
+glossing over: ignoring the correlation does not inflate precision in a
+predictable direction. What it reliably does is estimate a different trend from
+the one the studies support. The estimate is what changes, and the estimate is
+what gets published.
+
+::: {.callout-important}
+**Published reviews get this wrong**
+
+A review that pools reported category effects with an ordinary random-effects
+model, dose entered as a covariate and nothing said about covariance, has made
+exactly the mistake above. It is common, it is rarely declared, and it is
+visible in the methods section whenever the within-study correlation goes
+unmentioned. This is the most useful thing to look for when peer reviewing a
+dose-response meta-analysis.
+:::
 
 ## Reconstructing the within-study covariance
 
-The Greenland and Longnecker result [@greenland1992], and the refinements by
-study design [@orsini2006].
+So we need the covariance, and no paper prints it. Greenland and Longnecker
+[-@greenland1992] showed how to rebuild it from what papers do print, and their
+result is the foundation the field rests on. Orsini and colleagues [-@orsini2006]
+extended it to the designs epidemiology actually publishes.
 
-## Two-stage estimation
+The structure is simpler than its reputation. Write $y_j$ for the log effect of
+category $j$ against the reference category, which we number 0. Then
 
-Fit a trend in each study, then pool the trends. The practical reference is
-@orsini2012.
+$$
+\operatorname{Var}(y_j) = s_{00} + s_{jj},
+\qquad
+\operatorname{Cov}(y_j, y_k) = s_{00},
+$$
 
-## One-stage estimation
+where $s_{00}$ is the variance contributed by the reference group and $s_{jj}$
+the variance contributed by category $j$ alone.
 
-A single linear mixed model across all studies, which keeps studies that
-two-stage drops [@crippa2019].
+Let us read that aloud. Each reported effect carries two sources of noise: the
+noise in its own category, and the noise in the reference group. The second one
+is **shared**, because there is only one reference group. So the covariance
+between any two estimates of the same study is the reference group's variance,
+and nothing else. The diagonal is larger than the off-diagonal by exactly the
+amount each category contributes on its own.
 
-## Choosing a functional form
+For a case-control study with crude counts, the two pieces are the familiar sums
+of reciprocals, $s_{00} = 1/A_0 + 1/B_0$ and $s_{jj} = 1/A_j + 1/B_j$, with $A$
+the cases and $B$ the non-cases. The complication, and Greenland and
+Longnecker's actual contribution, is that papers report **adjusted** effects
+while printing **crude** counts, and the two do not agree with each other. Their
+method solves for the set of "effective counts" that reproduce the published
+adjusted effects while keeping the printed margins, and then puts those effective
+counts through the formulas above.
 
-Linear, quadratic, restricted cubic splines. Where to put knots and why the
-default is defensible but not sacred.
+easyDR picks the approximation from the data it was given and prints the choice
+on the first line of every fit. We can also call the underlying reconstruction
+directly and look at the matrix it produces for one study.
 
-## Heterogeneity in a dose-response model
+```{r}
+#| label: tbl-covmat
+#| tbl-cap: "The reconstructed covariance matrix of the four non-reference categories of the Bianchi cohort, rebuilt from the published effects and the printed counts."
+bianchi$logrr <- log(bianchi$TE)
+bianchi$se <- (log(bianchi$upper) - log(bianchi$lower)) / (2 * qnorm(0.975))
 
-What heterogeneity means when the thing varying is a curve rather than a number.
+V <- covar.logrr(cases = event.e, n = n.e, y = logrr, v = se^2,
+                 type = "cc", data = bianchi, covariance = "gl")
+round(V, 4)
+```
 
-## Alternatives worth knowing
+We see the structure the formula predicted. The off-diagonal entries are all
+close to `r round(mean(V[upper.tri(V)]), 3)`, because they are all estimating the
+same quantity, the variance of the reference group. The diagonal entries are
+larger, and they grow as the categories shrink: the top category of this cohort
+has 19 cases among 34 participants, and its variance, `r round(V[4, 4], 3)`, is
+close to four times that of the first category.
 
-Robust error meta-regression [@xu2018], Bayesian formulations [@hamza2021], and
-when each is the better answer.
+A correlation is easier to judge than a covariance, so let us convert it.
 
-## The worked example
+```{r}
+round(cov2cor(V), 3)
+```
 
-What the physical activity review asked, and why it is a good first dataset.
+We see correlations of roughly 0.1 to 0.4. Those are the numbers that the
+`covariance = "indep"` fit set to zero, and the section above showed what setting
+them to zero costs.
 
-## Getting the data into shape
+::: {.callout-note appearance="simple"}
+**Which approximation easyDR used, and why**
 
-The extraction sheet as an R data frame, and the viability check before fitting.
+`gl` is Greenland and Longnecker, used whenever the counts are there. `h` is the
+Hamling and colleagues [-@hamling2008] variant, for counts reported against a
+non-reference group. `md` and `smd` rebuild the covariance of mean differences
+from the arm summaries, which is what our continuous example needs. `indep` sets
+the off-diagonal to zero and exists for the comparison we just made, not for
+analysis. Every fit in this chapter prints the one it used, and reading that line
+is how we check that the table was understood the way we meant it.
+:::
 
-## Fitting a linear dose-response model
+## What a dose curve is, and where it gets calculated
 
-The simplest defensible fit, with `dosresmeta` [@dosresmeta].
+We now have everything a curve is built from, so let us assemble it.
 
-## Fitting a spline model
+A **dose curve** is a function that returns the effect at any dose, measured
+against a reference dose. It is estimated in two places, and keeping them apart
+is what makes the rest of this chapter legible.
 
-Restricted cubic splines, knot placement, and comparing fit against the linear
-model.
+**Within a study**, the categories and the covariance matrix of the section
+above are combined into that study's own trend. Writing $\mathbf{y}_i$ for the
+vector of log effects of study $i$, $\mathbf{X}_i$ for its design matrix in
+dose, and $\mathbf{S}_i$ for the reconstructed covariance, the trend is the
+generalized least squares estimate
 
-## Plotting the curve
+$$
+\hat{\boldsymbol\beta}_i =
+\left( \mathbf{X}_i^{\top} \mathbf{S}_i^{-1} \mathbf{X}_i \right)^{-1}
+\mathbf{X}_i^{\top} \mathbf{S}_i^{-1} \mathbf{y}_i .
+$$
 
-Building the figure that will carry the paper, with the confidence band and the
-observed exposure range marked.
+**Between studies**, those trends are pooled. Each study's trend is taken to be
+its own true trend measured with error, and the true trends are allowed to
+differ from one another:
 
-## Naming the shape
+$$
+\hat{\boldsymbol\beta}_i = \boldsymbol\beta + \mathbf{u}_i + \mathbf{e}_i,
+\qquad
+\mathbf{u}_i \sim \mathcal{N}(\mathbf{0}, \boldsymbol\Psi),
+\qquad
+\mathbf{e}_i \sim \mathcal{N}(\mathbf{0}, \mathbf{V}_i) .
+$$
 
-Using the fit's own `curve_label` so the results paragraph and the figure agree.
+Let us read both formulas aloud, because they say less than they look.
 
-## Sensitivity analyses in code
+The first one is a weighted fit of the study's own points, where the weights
+come from $\mathbf{S}_i^{-1}$ rather than from the standard errors alone. That
+inverse is the whole reason the previous section mattered: the correlations go
+into the weighting, so a study whose estimates all share one noisy reference
+contributes a trend that is correctly, and modestly, weighted.
 
-Varying knots, dropping influential studies, and switching to one-stage.
+The second one is the random-effects model of any meta-analysis, with one
+difference. The thing being pooled is a vector rather than a number, and the
+between-study variance $\boldsymbol\Psi$ is therefore a matrix. For a straight
+line the vector has length one and $\boldsymbol\Psi$ collapses to the familiar
+$\tau^2$. For a spline with two terms it is a two by two matrix, because two
+studies can disagree about the slope, about the bend, or about both.
+
+This is what easyDR calls `proc = "2stage"`, and it is the default. Let us draw
+the curve the two stages produce.
+
+```{r}
+#| label: fig-curve-binary
+#| fig-cap: "The pooled dose curve for alcohol intake and cardiovascular disease. The line is the fitted trend, the band its 95% confidence interval, and the ticks along the axis are the doses the studies actually reported."
+#| fig-width: 7
+#| fig-height: 4.4
+fit_b <- easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                dose.unit = "g/day", at = c(10, 20, 30))
+
+easydr_curve(fit_b,
+             main = "Alcohol and cardiovascular disease",
+             xlab = "Alcohol intake (g/day)",
+             ylab = "Risk ratio",
+             round = 3)
+```
+
+We see one line across the observed range, a band that stays finite, and the
+reported doses marked on the axis. Everything we do for the rest of the chapter
+changes this picture in one of two ways: by changing the shape the line is
+allowed to take, or by changing which studies are in it.
+
+## The first stage in code: one trend per study
+
+The forest plot is the first stage made visible. Each row is one study's
+$\hat{\boldsymbol\beta}_i$, with the interval that the generalized least squares
+fit gave it, and the weight it carried into the pooling.
+
+```{r}
+#| label: fig-forest-binary
+#| fig-cap: "One row per study, each row a trend rather than a contrast. The dose levels and dose range columns are what tell us whether a study could carry a trend at all."
+#| fig-width: 8.5
+#| fig-height: 5
+easydr_forest(fit_b, main = "Alcohol and cardiovascular disease")
+```
+
+The numbers behind the figure are stored, at full precision, so a methods
+section can quote them.
+
+```{r}
+#| fig-show: hide
+easydr_forest(fit_b, main = "")$table
+```
+
+We see that every study brought five dose levels, that the trends disagree in
+direction, and that the weights are far from equal. A dose-response study
+contributes a trend, so a row shows the study's own slope per unit of dose. A
+shape with more than one term has no single slope, and the rows then become the
+predicted effect at one dose, with `at` choosing which.
+
+::: {.callout-note appearance="simple"}
+**What the first stage silently drops**
+
+A study needs at least as many non-reference categories as the shape has terms,
+or the generalized least squares fit for that study has nothing to estimate. A
+straight line needs one, a spline with two terms needs two, and a study that
+brought a single non-reference category is dropped from a two-stage analysis
+without changing the answer for the others. Chapter 2 checked this before the
+model ran, and `fit$viability` still carries the count.
+:::
+
+## The second stage: pooling the trends
+
+Let us print the fit and go through the output in the order it appears, because
+every block of it is a question a reviewer will ask.
+
+```{r}
+fit_b
+```
+
+The first line names the summary measure and the second the machinery: two-stage
+random effects with restricted maximum likelihood, and the Greenland and
+Longnecker covariance. The slope follows, with the reference dose printed under
+it, because a trend without its reference is not interpretable.
+
+We see a risk ratio of `r round(exp(fit_b$slope$estimate), 4)` per gram a day,
+with a confidence interval from `r round(exp(fit_b$slope$lb), 3)` to
+`r round(exp(fit_b$slope$ub), 3)`. Let us be careful about what that sentence
+means. It does not say that drinkers run `r round(exp(fit_b$slope$estimate), 3)`
+times the risk. It says that each additional gram a day multiplies the risk by
+that factor, measured from the reference dose, which is why the predicted
+effects at 10, 20 and 30 grams a day are printed underneath and why they
+compound rather than repeat.
+
+Then the heterogeneity. $I^2$ = `r round(fit_b$heterogeneity$i2, 1)`% here, from
+a Cochran $Q$ of `r round(fit_b$heterogeneity$Q, 2)` on
+`r fit_b$heterogeneity$df` degrees of freedom. Note what is being counted:
+disagreement between **trends**, not between category effects. The between-study
+variance itself is stored as the matrix of the second formula above.
+
+```{r}
+fit_b$Psi
+```
+
+For a straight line it is a single number, the dose-response analogue of
+$\tau^2$, and it is on the log scale of the slope. The prediction interval
+printed with the effects is what that number buys us: the confidence interval
+describes the average trend, while the prediction interval describes the trend we
+would expect in a new study [@orsini2022].
+
+::: {.callout-note appearance="simple"}
+**One-stage, robust error, and Bayesian**
+
+`proc = "1stage"` fits every study inside a single linear mixed model instead of
+fitting each one first. It keeps studies that the two-stage approach drops and
+behaves better when the table is sparse, which is the case Crippa and colleagues
+[-@crippa2019] built it for. The price is that there is no per-study estimate
+left to draw, so the forest plot has no rows.
+
+Two further approaches are worth knowing by name. **Robust error
+meta-regression** [@xu2018] pools the category effects directly with a robust
+variance estimator, and is the pragmatic answer when the counts needed for the
+covariance are missing. **Bayesian dose-response models** [@hamza2021] place
+priors on the curve parameters, which helps most when the studies are few and
+the shape is flexible. easyDR fits neither, and a review that needs one of them
+has outgrown this book's defaults rather than this book's logic.
+:::
+
+## The six shapes, fitted side by side
+
+Chapter 1 showed what the common shapes look like. Now that we know where the
+coefficients come from, let us fit all six to the same eight cohorts and compare
+them as models rather than as pictures.
+
+| `shape` | Fits | Terms |
+|:---|:---|:---|
+| `"linear"` | a straight line in dose | 1 |
+| `"log"` | a straight line in log dose | 1 |
+| `"quadratic"` | dose and dose squared | 2 |
+| `"cubic"` | dose, dose squared and dose cubed | 3 |
+| `"rcs"` | a restricted cubic spline, `knots` places them | 2 or more |
+| `"fp"` | a fractional polynomial, `powers` chooses one or two | 1 or 2 |
+
+```{r}
+#| label: fig-six-shapes
+#| fig-cap: "The six shapes easyDR will fit, all on the eight alcohol and colorectal cancer cohorts, on the same axes. The data is identical in every panel; only the functional form changes. The band is each fit's 95% confidence interval."
+#| fig-width: 10
+#| fig-height: 6.4
+shapes <- c("linear", "log", "quadratic", "cubic", "rcs", "fp")
+fits <- lapply(shapes, function(s)
+  easydr(alcohol_cancer, sm = "RR", shape = s, dose.unit = "g/day"))
+names(fits) <- shapes
+
+op <- par(mfrow = c(2, 3), mar = c(4.2, 4.2, 3, 1))
+
+for (s in shapes) {
+  cv <- fits[[s]]$curve
+  plot(cv$dose, cv$est, type = "n", ylim = c(0.8, 2.2),
+       xlab = "Alcohol intake (g/day)", ylab = "Risk ratio",
+       main = paste0("shape = ", s))
+  polygon(c(cv$dose, rev(cv$dose)), c(cv$ci.lb, rev(cv$ci.ub)),
+          col = "#1f4e7922", border = NA)
+  abline(h = 1, col = "grey70")
+  lines(cv$dose, cv$est, lwd = 2, col = "#1f4e79")
+}
+
+par(op)
+```
+
+Let us read the six panels across. The straight line climbs steadily to a risk
+ratio near 1.5 at 60 grams a day. The log curve rises sharply over the first few
+grams and is then almost flat, which is the same model drawn on the dose scale
+rather than the log scale. The quadratic and the spline both stay near the null
+until about 20 to 30 grams and then accelerate, reaching the highest values of
+the six. The cubic dips below the null at low intakes, rises, and flattens again
+near the top of the range. The fractional polynomial drops sharply to about 0.9
+within the first few grams and then recovers slowly.
+
+So four of the six say the risk rises with intake, and they disagree about where
+it starts to rise and by how much at the doses people actually drink. Two of them
+say something different at low intake. The data has not changed between the
+panels. Only the functional form has.
+
+```{r}
+data.frame(
+  shape = shapes,
+  terms = vapply(fits, function(f) f$shape$terms, integer(1)),
+  label = vapply(fits, function(f) f$curve_label, character(1)),
+  row.names = NULL)
+```
+
+The `shape` argument has no default, and easyDR will not guess one. Fitting six
+shapes and keeping the one we like best is a researcher degree of freedom, and
+the size of the problem has been measured. Sappani and colleagues
+[-@sappani2025] reviewed 146 dose-response meta-analyses and reanalysed 242
+datasets. The non-linearity test was reported in more than eight of ten reviews.
+Any assessment of goodness of fit appeared in one in ten, and a model comparison
+in one in eight. The asymmetry tells us what is happening. Shapes are being
+compared informally and reported selectively.
+
+So we fit the shape the protocol named, for the reason the protocol gave, and we
+report what the alternatives would have shown. The sections that follow give us
+the tools for the second half of that sentence.
+
+## What a restricted cubic spline actually is
+
+The spline is the shape most dose-response reviews end up fitting, and the one
+most often described in a way that explains nothing. Let us take it apart.
+
+A **cubic spline** is a set of cubic polynomials, one per interval between
+chosen dose values, joined so that the result is smooth at the joins. Those dose
+values are the **knots**. A **restricted** cubic spline, also called a natural
+spline, adds one constraint: beyond the first and the last knot the curve is
+forced to be a straight line. Durrleman and Simon [-@durrleman1989] introduced
+the construction to medical statistics, and Harrell [-@harrell2015] gives the
+form every package now implements.
+
+The trick, and the reason this is usable at all, is that the whole family can be
+written as a small set of ordinary columns in a design matrix. With knots
+$t_1 < \dots < t_K$, the first column is the dose itself, and for
+$j = 1, \dots, K-2$ the further columns are
+
+$$
+X_{j+1}(d) = (d - t_j)_+^3
+- (d - t_{K-1})_+^3 \frac{t_K - t_j}{t_K - t_{K-1}}
++ (d - t_K)_+^3 \frac{t_{K-1} - t_j}{t_K - t_{K-1}},
+$$
+
+where $(u)_+$ means $u$ if $u$ is positive and zero otherwise, and the whole
+column is divided by $(t_K - t_1)^2$ to keep it on a scale comparable to the
+dose.
+
+Let us read it aloud. Each column switches on at its own knot and stays zero
+below it, which is what $(u)_+$ does. The two subtracted terms are chosen so that
+the column becomes a straight line once the dose passes the last knot, which is
+the restriction. Three knots therefore give one extra column, four knots give
+two, and a model with $K$ knots spends $K - 1$ terms.
+
+That is the theory. The columns are inside the fitted object, so we can look at
+them.
+
+```{r}
+fit_rcs <- easydr(aripiprazole, sm = "MD", shape = "rcs",
+                  dose.unit = "mg/day", at = c(10, 20, 30))
+
+fit_rcs$shape$knots
+round(fit_rcs$shape$basis(c(0, 2, 5, 10, 15, 20, 30)), 3)
+```
+
+We see two columns, named `dose` and `dose_nl1`, and three knots at
+`r paste(round(fit_rcs$shape$knots, 1), collapse = ", ")` milligrams a day. The
+first column is the dose unchanged. The second is zero at the first two doses,
+barely above zero at 5 milligrams, and then climbs steeply: it is the term that
+lets the curve bend away from the straight line, and it has no influence at all
+at low doses. That is the entire mechanism. A spline fit is a linear model with
+one more column, and the column is a bend that switches on at a knot.
+
+```{r}
+#| label: fig-spline-basis
+#| fig-cap: "The two basis columns of the fitted spline across the dose range, with the knots marked. The dose column is the straight line. The non-linear column is flat until the first knot and then rises, which is how the fitted curve is allowed to bend."
+#| fig-width: 7
+#| fig-height: 4.4
+grid <- seq(0, 30, length.out = 200)
+B <- fit_rcs$shape$basis(grid)
+
+matplot(grid, B, type = "l", lty = c(1, 2), lwd = 2,
+        col = c("#1f4e79", "#c00000"),
+        xlab = "Aripiprazole dose (mg/day)", ylab = "basis value",
+        main = "The spline basis, column by column")
+abline(v = fit_rcs$shape$knots, col = "grey60", lty = 3)
+legend("topleft", colnames(B), lty = c(1, 2), lwd = 2,
+       col = c("#1f4e79", "#c00000"), bty = "n")
+```
+
+::: {.callout-important}
+**A cubic polynomial and a cubic spline are different models**
+
+`shape = "cubic"` is the third-degree polynomial in dose: one curve, three
+terms, fitted across the whole range, and free to do whatever it likes at the
+edges. `shape = "rcs"` is the restricted cubic spline: several cubics joined at
+knots, straight beyond the outer ones. They share a word and nothing else, and
+the polynomial is the one that produces implausible tails. This is worth checking
+in any review that reports "a cubic model".
+:::
+
+## Where the knots go, and why the default is defensible
+
+A spline has one decision in it that the data cannot make for us: how many
+knots, and at which doses. The fit above chose for us, so let us see what it
+chose and whether we agree.
+
+easyDR places three knots by default, at the 10th, 50th and 90th percentiles of
+the positive doses in the table. That is Harrell's recommendation
+[-@harrell2015], carried into dose-response practice by Orsini and colleagues
+[-@orsini2012], and it is a recommendation about **where the data is** rather
+than about biology.
+
+```{r}
+positive <- aripiprazole$dose[aripiprazole$dose > 0]
+quantile(positive, c(0.10, 0.50, 0.90))
+fit_rcs$shape$knots
+```
+
+We see the two agree, as they must. Let us be clear about why percentiles rather
+than round numbers. A knot placed where there is no data lets the curve bend
+where nothing constrains it, and the band there widens without the shape
+becoming better supported. Percentile placement guarantees that each interval
+between knots contains observations.
+
+The number of knots can be given instead of their positions, and here the data
+pushes back.
+
+```{r}
+k3 <- easydr(aripiprazole, sm = "MD", shape = "rcs", knots = 3,
+             dose.unit = "mg/day")
+k3$shape$label
+
+try(easydr(aripiprazole, sm = "MD", shape = "rcs", knots = 5,
+           dose.unit = "mg/day"))
+```
+
+We see that three knots fit and that five knots are refused, with the reason
+stated: the best any trial in this data offers is four distinct dose levels, and
+a five-knot spline needs five. Four knots fail as well, a little further in,
+because the first stage needs each study to bring at least as many non-reference
+categories as the design matrix has columns.
+
+This is the most useful thing to understand about knots in a dose-response
+meta-analysis, and it is a constraint the single-study spline literature never
+faces. **The knot budget is set by the weakest study, not by the pooled sample
+size.** Eighteen rows across five trials look like plenty until we remember that
+the first stage fits each trial on its own. Three knots is the practical ceiling
+for most dose-response reviews, and the reason to prefer it is arithmetic rather
+than taste.
+
+```{r}
+#| label: fig-knots
+#| fig-cap: "The fitted spline, with its knots named in the subtitle. The curve is free to bend between the outer knots and is a straight line beyond them, which is what the restriction buys: no implausible behaviour in the tails where the data runs out."
+#| fig-width: 7
+#| fig-height: 4.4
+easydr_curve(fit_rcs,
+             main = "Aripiprazole: restricted cubic spline",
+             xlab = "Dose (mg/day)",
+             ylab = "Mean difference, PANSS change",
+             result = FALSE)
+```
+
+::: {.callout-note appearance="simple"}
+**When to move the knots on purpose**
+
+Percentiles are a default, not a rule. Two situations justify naming the doses
+ourselves. If a clinically meaningful threshold exists, for instance a
+recommended maximum intake, a knot there makes the fitted curve answer the
+question that matters. And if the dose distribution is heavily skewed, the 10th
+and the 90th percentile can sit so close together that the spline is straight
+almost everywhere. Desquilbet and Mariotti [-@desquilbet2010] work through both
+cases for applied public health research. Either way the knots go in the protocol
+and in the methods sentence, and `easydr_curve()` prints them in the subtitle so
+the figure cannot disagree with the text.
+:::
+
+## Departure from linearity, and goodness of fit
+
+We have two models of the same data now, and one question: is the bend real?
+
+A shape with more than one term is tested against the straight line with a
+**Wald test** on the non-linear terms. The null hypothesis is that those
+coefficients are all zero, which is the straight line, and the statistic is
+compared against a chi-squared distribution with as many degrees of freedom as
+there are extra terms. easyDR prints it with every fit that has one.
+
+```{r}
+fit_rcs$nonlinearity
+```
+
+We see a statistic of `r round(fit_rcs$nonlinearity$statistic, 2)` on
+`r fit_rcs$nonlinearity$df` degree of freedom, with $p$ =
+`r signif(fit_rcs$nonlinearity$p, 3)`. The bend is supported here. A straight
+line has one term, so there is nothing to test it against, and easyDR says so
+rather than printing an empty row.
+
+A significant departure from linearity tells us the spline fits **better than
+the line**. It does not tell us the spline fits **well**. That is a separate
+question, and it needs the deviance, which compares the fitted model against a
+saturated fit reproducing every reported category exactly [@discacciati2017].
+
+```{r}
+fit_rcs$gof
+```
+
+We see a deviance of `r round(fit_rcs$gof$deviance, 2)` on `r fit_rcs$gof$df`
+degrees of freedom, $p$ = `r round(fit_rcs$gof$p, 3)`, and an $R^2$ of
+`r round(fit_rcs$gof$r2, 3)`. Let us read that $p$ value in the right direction,
+because it runs opposite to the one above. A **large** $p$ here is good news: the
+fitted curve is not detectably worse than the saturated fit. A small one would
+say that the studies reported category effects the curve cannot reproduce, and no
+amount of significance in the non-linearity test would rescue it.
+
+Let us put the two models on one panel and read them together.
+
+```{r}
+#| label: fig-linear-vs-spline
+#| fig-cap: "The straight line and the restricted cubic spline on the same continuous data. The spline rises to a maximum near 20 milligrams a day and then turns down, which the line cannot represent at any slope."
+#| fig-width: 7
+#| fig-height: 4.6
+fit_lin <- easydr(aripiprazole, sm = "MD", shape = "linear",
+                  dose.unit = "mg/day")
+
+cl <- fit_lin$curve
+cr <- fit_rcs$curve
+
+plot(cr$dose, cr$est, type = "l", lwd = 2, col = "#c00000",
+     ylim = range(cl$est, cr$est),
+     xlab = "Aripiprazole dose (mg/day)",
+     ylab = "Mean difference, PANSS change",
+     main = "Straight line against restricted cubic spline")
+lines(cl$dose, cl$est, lwd = 2, lty = 2, col = "#1f4e79")
+abline(h = 0, col = "grey70")
+legend("bottomright", c("restricted cubic spline", "linear"),
+       lwd = 2, lty = c(1, 2), col = c("#c00000", "#1f4e79"), bty = "n")
+```
+
+We see that the spline sits above the line across most of the range, rises to a
+maximum near 20 milligrams a day, and then turns down, crossing the line at about
+27 milligrams. The line keeps climbing, because a line has no choice. For a set of fixed-dose antipsychotic trials that difference is the whole
+clinical question, and it is invisible in a pooled high-against-low estimate.
+
+::: {.callout-important}
+**Three numbers, three different questions**
+
+The non-linearity $p$ value asks whether the curve beats the line. The deviance
+$p$ value asks whether the curve reproduces the reported categories. $R^2$ asks
+how much of the variation in the reported effects the curve accounts for. A
+review that reports only the first of the three, which is most of them
+[@sappani2025], has answered the least interesting one.
+:::
+
+## Exploring heterogeneity
+
+The fit of the binary example came with $I^2$ around 65%, and a number like that
+is an invitation rather than a result. Something is making the trends disagree.
+This section is about the two analyses that look for it, and about how little
+either of them is allowed to conclude.
+
+The thing to hold on to is that heterogeneity here is disagreement between
+**curves**. In an ordinary meta-analysis the studies disagree about one number.
+Here they can disagree about the slope, about the bend, or about both at once,
+which is why the between-study variance is a matrix. Two reviews with the same
+$I^2$ can be heterogeneous in quite different ways.
+
+### Subgroup analysis
+
+We pass `subgroup` the name of one column, and easyDR fits the whole model again
+inside each level of it. Each level inherits the shape as a resolved object with
+its fitted knots, the pooling stage and the covariance approximation, so a level
+differs from the overall fit only in which studies it contains.
+
+```{r}
+sub <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day",
+              at = c(10, 20, 30), subgroup = "design")
+
+sub$subgroup$table
+```
+
+```{r}
+#| label: fig-subgroup-forest
+#| fig-cap: "The forest plot grouped by study design, with a subtotal diamond for each level and the overall fit at the foot. The squares and the weights remain each study's share of the overall fit, so they still sum down the page."
+#| fig-width: 8.5
+#| fig-height: 5.6
+easydr_forest(sub, main = "Alcohol and cardiovascular disease, by design")
+```
+
+```{r}
+#| label: fig-subgroup-curve
+#| fig-cap: "One curve per study design. The levels are told apart twice over, by colour and by line type, because colour alone is lost in print and to a colour-blind reader. The band stays the overall one."
+#| fig-width: 7
+#| fig-height: 4.6
+easydr_curve(sub,
+             main = "Alcohol and cardiovascular disease, by design",
+             xlab = "Alcohol intake (g/day)",
+             ylab = "Risk ratio")
+```
+
+Let us read the two levels aloud.
+
+```{r}
+data.frame(
+  level = names(sub$subgroup$fits),
+  studies = sub$subgroup$table$studies,
+  RR_per_g = vapply(sub$subgroup$fits,
+                    function(f) exp(f$slope$estimate), numeric(1)),
+  I2 = vapply(sub$subgroup$fits,
+              function(f) f$heterogeneity$i2, numeric(1)),
+  row.names = NULL)
+```
+
+We see that the four case-control cohorts carry nearly all of the disagreement,
+and that the two cumulative incidence cohorts agree with each other almost
+perfectly. That is a finding worth one sentence in the results and no more,
+because it rests on four studies against two.
+
+easyDR reports no test for a difference between the levels, and the omission is
+deliberate. Two subgroups estimated from four studies and from two will differ by
+some amount whatever the truth is, and a $p$ value printed beside them invites a
+claim the data cannot carry. So we read the intervals, we say how far they
+overlap, and we say how few studies each one rests on.
+
+::: {.callout-important}
+**A subgroup is a characteristic of a study, not of a dose category**
+
+The subgroup column has to take one value per study. A column that changes
+between the dose categories of the same study describes the categories rather
+than the studies, and easyDR refuses it instead of quietly fitting something
+else. If the question really is about categories, it is a question about the
+shape of the curve, and it belongs in the shape rather than in a subgroup.
+:::
+
+### Leave one out
+
+The other way to look for the source of heterogeneity is to remove one study at
+a time and watch what happens. `easydr_loo()` refits the model with each study
+omitted, inheriting the shape and the knots exactly as a subgroup level does, and
+orders the rows by how far the estimate moved.
+
+```{r}
+#| label: fig-loo
+#| fig-cap: "The dose-response refitted once per omitted study, drawn over the pooled curve in bold. The curve that walks furthest from the bold line is the one whose omitted study was carrying the result."
+#| fig-width: 7.5
+#| fig-height: 5
+cvd <- easydr(alcohol_cvd, sm = "RR", shape = "linear", dose.unit = "g/day")
+
+loo <- easydr_loo(cvd, quiet = TRUE)
+```
+
+```{r}
+loo$table[, c("label", "estimate", "lb", "ub", "shift", "i2")]
+```
+
+We see that dropping Bianchi moves the slope furthest, and that it takes the
+heterogeneity from about 70% to zero. Most of the disagreement in this analysis
+was that one cohort. Omitting any of the other five leaves $I^2$ around 70%,
+which is the signature of a single influential study rather than of a genuinely
+scattered literature.
+
+The rows carry no $p$ value, and that too is deliberate. The refits share almost
+all of their data, so a shift between them describes what we have rather than
+testing anything about it. What the table licenses is a sentence in the
+sensitivity analysis, and a protocol-level decision about whether the conclusion
+survives the omission. For reviews where this matters more formally, Yamaguchi
+and colleagues [-@yamaguchi2026] set out influence diagnostics built for the
+dose-response case.
+
+::: {.callout-important}
+**Finding the influential study is not permission to drop it**
+
+A cohort that moves the slope is not thereby wrong. Bianchi is a case-control
+study among cohorts, and that is a reason to report its influence and to say
+what the result looks like without it. Removing it and reporting the remainder as
+the primary analysis is a different thing, and the only defensible version of it
+was pre-specified in the protocol before anyone saw the shifts.
+:::
+
+## Publication bias
+
+The last question of the analysis is whether the studies we found are the
+studies that were done.
+
+A **funnel plot** places each study's trend against its precision. If the small
+studies scatter symmetrically around the pooled value, the plot is a funnel. If
+they sit mostly to one side, the plot is asymmetric, and one explanation for
+asymmetry is that small studies with unwelcome results were never published.
+
+### The funnel plot
+
+`easydr_funnel()` draws the funnel with the pseudo confidence regions shaded the
+way `metafor::funnel()` shades them. We use the eight-cohort example here,
+because a funnel plot of six studies is barely a plot at all.
+
+```{r}
+#| label: fig-funnel
+#| fig-cap: "Contour-enhanced funnel plot of the eight study trends. The vertical line is the pooled trend, the shaded regions are the pseudo confidence regions, and the warning above the panel is printed by easyDR rather than left to be remembered."
+#| fig-width: 7
+#| fig-height: 5
+fit_c8 <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
+                 dose.unit = "g/day")
+
+fun <- easydr_funnel(fit_c8, labels = TRUE)
+```
+
+We see eight points, broadly inside the shaded regions, with no obvious gap on
+either side. That is about as much as eight points can show us.
+
+### Egger's test
+
+The eye is a poor judge of asymmetry, so the plot comes with a test. Egger and
+colleagues [-@egger1997] proposed regressing each study's standard normal
+deviate on its precision and reading the intercept: an intercept away from zero
+is asymmetry. easyDR prints it under the funnel.
+
+```{r}
+fun$egger
+```
+
+We see an intercept of `r round(fun$egger$intercept, 3)` with a standard error of
+`r round(fun$egger$se, 3)`, giving $t$ = `r round(fun$egger$t, 2)` on
+`r fun$egger$df` degrees of freedom and $p$ = `r round(fun$egger$p, 3)`. There is
+no evidence of asymmetry in these eight cohorts, and the third line of the output
+tells us how little that is worth.
+
+Why Egger here, and not Deeks? Deeks' funnel plot asymmetry test belongs to
+diagnostic test accuracy, where the effective sample size rather than the
+standard error is the sensible horizontal axis. A dose-response review gives one
+trend estimate per study with a standard error attached, which is exactly the
+setting Egger wrote his regression for.
+
+::: {.callout-important}
+**Asymmetry has several causes, and publication bias is only one**
+
+A funnel plot cannot say why the small studies sit where they do. Publication
+bias produces that pattern, and so do real differences between small and large
+studies, poorer methods in the smaller ones, and chance. Below about ten studies
+the test has little power, and a null result means almost nothing [@sterne2011].
+With eight cohorts, as here, the honest report is that asymmetry could not be
+assessed usefully, not that there was none.
+:::
+
+## Writing it up
+
+Let us put the chapter into the two paragraphs a paper actually needs. The
+methods paragraph commits to the model, and the results paragraph reads the fit
+aloud.
+
+```{r}
+fit_b
+```
+
+::: {.callout-tip}
+**Reporting the analysis**
+
+Methods, written before the data was seen and quoted from the protocol:
+
+> _We pooled dose-response trends using a two-stage random-effects model. In the
+> first stage, study-specific trends were estimated by generalized least squares,
+> with the within-study covariance between category estimates reconstructed by
+> the method of Greenland and Longnecker (1992) from the reported effects and
+> category counts. In the second stage, trends were pooled by restricted maximum
+> likelihood. The primary model was linear in dose, with the effect expressed per
+> 1 g/day of alcohol intake against a reference of 0 g/day. A restricted cubic
+> spline with three knots at the 10th, 50th and 90th percentiles of the dose
+> distribution was pre-specified as a secondary model, and departure from
+> linearity was tested by a Wald test on the non-linear term. Heterogeneity was
+> quantified by I-squared, explored by study design in a pre-specified subgroup
+> analysis, and examined for single-study influence by leave-one-out refitting.
+> Small-study effects were assessed by Egger's regression test, which we noted in
+> advance would be underpowered with fewer than ten studies._
+
+Results, read off the fit above:
+
+> _Six dose-response contrasts contributed 25 exposure categories across 0 to 77
+> g/day. The pooled trend was a risk ratio of 0.996 per 1 g/day (95% CI 0.984 to
+> 1.007) against a reference of 0 g/day, with I-squared = 64.7%. Predicted risk
+> ratios were 0.957 (0.853 to 1.074) at 10 g/day and 0.916 (0.727 to 1.154) at 20
+> g/day. In a subgroup analysis by study design, the four case-control cohorts
+> accounted for essentially all of the heterogeneity, while the two cumulative
+> incidence cohorts were homogeneous. Leave-one-out refitting showed that
+> omitting one cohort (Bianchi) reduced I-squared from about 70% to 0%, and that
+> cohort's influence is reported rather than acted upon. Egger's test gave p =
+> 0.95 on six studies and is uninformative at this number._
+
+Two habits make these paragraphs defensible. Every number in the results comes
+from printed output rather than from memory, and every choice in the methods was
+made before the data was seen. The second is what the protocol of Chapter 3 is
+for.
+:::
+
+::: {.callout-note appearance="simple"}
+**Test your knowledge!**
+
+1. A reviewer asks why your pooled slope differs from the one they get by
+   entering dose as a covariate in a standard random-effects model of the same
+   reported category effects. What has their model left out, and which of the
+   two quantities, the estimate or its standard error, is the one worth arguing
+   about?
+2. A review of nine cohorts fits a restricted cubic spline with five knots and
+   reports a departure-from-linearity $p$ value of 0.002. Two of the nine
+   cohorts reported three dose categories each. What has almost certainly
+   happened to those two studies, and why does the knot count make it
+   inevitable?
+3. A spline fit reports a departure from linearity with $p$ < 0.001 and a
+   deviance test with $p$ = 0.01. Is the curve a good description of the data?
+   Explain what each of the two $p$ values is comparing.
+4. Leave-one-out refitting shows that dropping one cohort moves the slope from
+   1.006 to 1.001 and takes $I^2$ from 68% to 4%. A co-author proposes reporting
+   the analysis without that cohort as the main result. Give the two conditions
+   under which that would be acceptable.
+
+Answers to these questions are listed in Appendix A.
+:::
+
+## Summary
+
+- A study in a dose-response meta-analysis contributes a trend rather than an
+  effect, and the trend is comparable across studies even when their exposure
+  categories are not.
+- Every category of a study is measured against the same reference group, so the
+  estimates within a study are positively correlated. The covariance between any
+  two of them is the variance contributed by that shared reference group.
+- No paper prints that covariance, so it is reconstructed from the published
+  effects and counts by the method of Greenland and Longnecker. Treating the
+  estimates as independent changes the pooled trend itself, not only its
+  interval.
+- The curve is estimated in two places. Within a study, generalized least squares
+  uses the covariance to weight that study's own categories. Between studies the
+  trends are pooled with random effects, and the between-study variance is a
+  matrix because studies can disagree about a slope and about a bend separately.
+- A cubic polynomial and a restricted cubic spline are different models. The
+  spline is several cubics joined at knots and constrained to be a straight line
+  beyond the outer knots, which is what keeps the tails plausible.
+- A spline is a linear model with extra columns. Each column is zero below its
+  knot and bends the curve above it, which is why knots are placed at
+  percentiles of the dose distribution rather than at round numbers.
+- The knot budget is set by the weakest study rather than by the pooled sample
+  size, because the first stage fits each study on its own. Three knots is the
+  practical ceiling for most dose-response reviews.
+- The non-linearity test asks whether the curve beats the line, the deviance asks
+  whether the curve reproduces the reported categories, and $R^2$ asks how much
+  variation it accounts for. The three answer different questions, and most
+  published reviews report only the first.
+- Heterogeneity in a dose-response model is disagreement between curves. Subgroup
+  analysis and leave-one-out refitting locate it, and neither licenses a test:
+  subgroup levels are compared by their intervals, and leave-one-out shifts
+  describe the data we have rather than testing anything about it.
+- Funnel plot asymmetry has several causes and publication bias is only one.
+  Below about ten studies Egger's test has little power, and the honest report is
+  that small-study effects could not be assessed.
 
 {{< include _cta.qmd >}}
