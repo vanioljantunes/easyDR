@@ -3,7 +3,9 @@
 ```{r}
 #| include: false
 library(easyDR)
-knitr::opts_chunk$set(collapse = FALSE, comment = "")
+# This chapter is a protocol chapter. It fits nothing, so the chunks exist only
+# to build the tables, and the code itself would be noise on the page.
+knitr::opts_chunk$set(echo = FALSE, collapse = FALSE, comment = "")
 options(width = 66)
 ```
 
@@ -43,9 +45,8 @@ and cardiovascular disease, reported as an effect with confidence limits plus
 the cases and totals per category. Four of those contrasts come from
 case-control studies and two from studies reporting cumulative incidence.
 
-```{r}
-library(easyDR)
-```
+Both come with the package, so `library(easyDR)` is all that is needed to
+follow along. This chapter fits nothing, though, so no code is shown in it.
 :::
 
 ## Why register, and when
@@ -418,7 +419,10 @@ Our two examples land on different tools, and for the binary one the reason is
 printed in the data. Let us look at it.
 
 ```{r}
-unique(alcohol_cvd[c("studlab", "design")])
+#| label: tbl-designs
+#| tbl-cap: "The design of each study in the binary example, as the extraction sheet recorded it."
+knitr::kable(unique(alcohol_cvd[c("studlab", "design")]), row.names = FALSE,
+             col.names = c("Study", "Design"))
 ```
 
 We see that four of the six contrasts come from case-control studies and two
