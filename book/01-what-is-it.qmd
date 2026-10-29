@@ -47,37 +47,97 @@ Each study contributes a comparison, treated against control or exposed against
 unexposed, and the result answers one question, "does it matter", at whatever
 dose the studies happened to use.
 
-Let us do that with **{meta}**, the package most of us already reach for. We
-pool every reported category against its study's reference, and group them into
-three intake bands so the plot keeps some sense of dose.
+Let us do that with **{meta}**, the package most of us already reach for. The
+table already carries the cases and the totals for every arm, so we do not
+have to transform anything by hand: we line each exposed category up with its
+study's reference arm and hand the four counts to `metabin()`.
+
+```{r}
+library(meta)
+
+reference <- alcohol_cvd[alcohol_cvd$ref, c("studlab", "event.e", "n.e")]
+names(reference) <- c("studlab", "event.c", "n.c")
+
+comparisons <- merge(alcohol_cvd[!alcohol_cvd$ref, ], reference,
+                     by = "studlab")
+
+comparisons$band <- cut(
+  comparisons$dose,
+  breaks = c(0, 15, 30, Inf),
+  labels = c("Up to 15 g/day", "15 to 30 g/day", "Over 30 g/day")
+)
+```
+
+Each row is now one intake category against the people who drank nothing in
+the same study. Let us look at one study before pooling anything.
+
+```{r}
+subset(comparisons, studlab == "Bianchi",
+       select = c(dose, event.e, n.e, event.c, n.c))
+```
+
+::: {.callout-important}
+**The unit of analysis error**
+
+Look at the last two columns. Bianchi reports four intake categories, and all
+four are compared against the same 126 cases among 414 non-drinkers. Those 414
+people appear in our analysis four times.
+
+This is the **unit of analysis error**, and the Cochrane Handbook devotes a
+section to it [@cochranehandbook]. Pooling these rows as if they were four
+independent studies counts the same control patients repeatedly, which makes
+the shared comparator look better measured than it is and narrows the
+confidence interval accordingly.
+
+There is no setting in `metabin()` that repairs this, because the problem is
+not in the estimator. It is in having asked for a pooled contrast from data
+that was never a set of independent contrasts. Keep it in mind through the
+next figure: the number it produces is not wrong arithmetic, it is an answer
+to a question the data cannot properly support.
+
+Reconstructing the covariance between estimates that share a reference group,
+rather than ignoring it, is precisely what the dose-response model does, and
+what the rest of this book is about.
+:::
+
+With that said, let us pool them the usual way and group them into three
+intake bands, so the plot keeps some sense of dose.
 
 ```{r}
 #| label: fig-standard-ma
-#| fig-cap: "A conventional meta-analysis of the same table, drawn with `meta::forest()`. Every reported category is pooled against its study's reference, grouped into three intake bands, with a subgroup diamond for each band and a test for subgroup differences at the foot."
+#| fig-cap: "A conventional meta-analysis of the same table, drawn with `meta::forest()` on counts. Every reported category is compared against its study's non-drinking arm, grouped into three intake bands, with a subgroup diamond for each band and a test for subgroup differences at the foot."
 #| fig-width: 10
 #| fig-height: 7
-library(meta)
+m <- metabin(
+  event.e = event.e,
+  n.e = n.e,
+  event.c = event.c,
+  n.c = n.c,
+  studlab = paste0(studlab, ", ", round(dose, 1), " g/day"),
+  data = comparisons,
+  sm = "OR",
+  subgroup = comparisons$band,
+  print.subgroup.name = FALSE,
+  test.subgroup = TRUE,
+  common = FALSE,
+  random = TRUE
+)
 
-contrasts <- alcohol_cvd[!alcohol_cvd$ref, ]
-contrasts$TE.log <- log(contrasts$TE)
-contrasts$seTE   <- (log(contrasts$upper) - log(contrasts$lower)) / 3.92
-contrasts$band   <- cut(contrasts$dose, breaks = c(0, 15, 30, Inf),
-                        labels = c("Up to 15 g/day", "15 to 30 g/day",
-                                   "Over 30 g/day"))
-
-m <- metagen(TE = TE.log, seTE = seTE, data = contrasts, sm = "OR",
-             studlab = paste0(studlab, ", ", round(dose, 1), " g/day"),
-             subgroup = band, print.subgroup.name = FALSE,
-             test.subgroup = TRUE, common = FALSE, random = TRUE)
-
-forest(m, col.square = "#277db0", col.diamond = "#1F2A44",
-       print.subgroup.labels = TRUE, subgroup.hetstat = FALSE,
-       xlab = "Odds ratio", smlab = "", digits = 2)
+forest(
+  m,
+  col.square = "#277db0",
+  col.diamond = "#1F2A44",
+  print.subgroup.labels = TRUE,
+  subgroup.hetstat = FALSE,
+  xlab = "Odds ratio",
+  smlab = "",
+  digits = 2
+)
 ```
 
 We see nineteen rows, a diamond for each intake band, and one diamond at the
-foot for everything together. The pooled odds ratio is 0.78, and the test for
-subgroup differences returns $p$ = 0.91.
+foot for everything together. The pooled odds ratio is 0.87, and the test for
+subgroup differences returns a $p$ value of 0.46.
 
 Read that last number carefully, because it is the whole motivation for this
 book. The bands do not differ from each other, so a subgroup analysis would
@@ -283,41 +343,75 @@ treatment node, non-drinking becomes the reference node, and **{netmeta}**
 assembles the comparisons.
 
 ```{r}
-#| label: fig-network
-#| fig-cap: "The same evidence as a network: four nodes, six studies, twenty-one comparisons. Edge thickness is the number of studies contributing to each comparison."
-#| fig-width: 6.5
-#| fig-height: 5.5
 library(netmeta)
 
 nodes <- alcohol_cvd
-nodes$node <- cut(nodes$dose, c(-Inf, 0, 15, 30, Inf),
-                  labels = c("None", "1-15 g/day", "15-30 g/day",
-                             ">30 g/day"))
+nodes$node <- cut(
+  nodes$dose,
+  breaks = c(-Inf, 0, 15, 30, Inf),
+  labels = c("None", "1-15 g/day", "15-30 g/day", ">30 g/day")
+)
+
 # netmeta needs each node once per study, so where a study reports two
 # categories inside one band we keep the first.
 nodes <- nodes[!duplicated(nodes[c("studlab", "node")]), ]
 
-pw <- pairwise(treat = node, event = event.e, n = n.e,
-               studlab = studlab, data = nodes, sm = "OR")
-net <- netmeta(pw, common = FALSE, random = TRUE,
-               reference.group = "None")
+pairs <- pairwise(
+  treat = node,
+  event = event.e,
+  n = n.e,
+  studlab = studlab,
+  data = nodes,
+  sm = "OR"
+)
 
-netgraph(net, plastic = FALSE, thickness = "number.of.studies",
-         col = "#277db0", points = TRUE, cex.points = 5,
-         col.points = "#1F2A44")
+net <- netmeta(
+  pairs,
+  common = FALSE,
+  random = TRUE,
+  reference.group = "None"
+)
 ```
 
-The network fits. Now let us read what it concluded about each band against
-non-drinking:
+Node splitting is the check that makes a network trustworthy. For every
+comparison it separates the direct evidence from the indirect evidence routed
+through the rest of the network, and asks whether the two agree.
 
 ```{r}
-round(exp(net$TE.random["None", ]), 2)
+#| label: fig-netsplit
+#| fig-cap: "Node splitting: direct and indirect evidence for every comparison in the network, with the network estimate combining them."
+#| fig-width: 9
+#| fig-height: 8.5
+forest(netsplit(net), show = "all")
 ```
 
-We see the problem. The network reports 1-15 grams per day as *worse* than over
-30, because nothing in the model knows that one node is a larger dose than
-another. The nodes are labels, and the ordering that makes them comparable has
-been discarded.
+Notice what the whole apparatus is about. Every row asks whether two routes to
+the same comparison agree, and no row asks what happens *between* the doses.
+
+The other thing a network offers is a ranking. SUCRA summarises, for each
+node, how high it tends to rank across the distribution of possible orderings.
+
+```{r}
+#| label: fig-sucra
+#| fig-cap: "SUCRA for the four intake nodes. Higher means the node ranks better more often."
+#| fig-width: 6.5
+#| fig-height: 4
+sucra <- netrank(net, small.values = "desirable")$ranking.random
+
+barplot(
+  sort(sucra),
+  col = "#277db0",
+  ylim = c(0, 1),
+  ylab = "SUCRA",
+  las = 1
+)
+```
+
+We see the problem plainly. The best-ranked node is 1-15 grams per day, and
+non-drinking ranks worst, with over 30 grams per day sitting in between. The
+ordering of the doses has been discarded, so the model is free to rank a
+middling intake above both ends without noticing that it has done anything
+odd.
 
 The ranking tells us which of the *studied* nodes performed best. It cannot
 interpolate to an intake nobody reported, and it cannot describe a shape. Our
@@ -344,35 +438,58 @@ estimates. It is the closest relative, and the difference matters: it relates
 each estimate to its dose while ignoring that estimates from one study share a
 reference group.
 
-Let us run it on the same contrasts, with `meta::metareg()`.
+Let us run it on the same comparisons, with `meta::metareg()`.
 
 ```{r}
 #| label: fig-metareg
 #| fig-cap: "Meta-regression of the log odds ratio on dose, drawn with `meta::bubble()`. Each bubble is one reported category, sized by its weight, and the line is the fitted trend."
 #| fig-width: 7.5
 #| fig-height: 4.6
-plain <- metagen(TE = TE.log, seTE = seTE, data = contrasts, sm = "OR",
-                 studlab = studlab, common = FALSE, random = TRUE)
-mr <- metareg(plain, ~ dose)
+mreg <- metareg(m, ~ dose)
 
-bubble(mr, studlab = FALSE, xlab = "Alcohol, g/day",
-       col = "#277db0", col.line = "#1F2A44", lwd = 2)
+bubble(
+  mreg,
+  studlab = FALSE,
+  xlab = "Alcohol, g/day",
+  col = "#277db0",
+  col.line = "#1F2A44",
+  lwd = 2
+)
 ```
+
+The fitted object carries everything we need, so let us simply print it.
 
 ```{r}
-c(slope = coef(mr)[["dose"]], p = mr$pval[2], R2 = mr$R2)
+summary(mreg)
 ```
 
-A slope of 0.0025, a $p$ value of 0.62, and an $R^2$ of zero. The
-meta-regression finds nothing. Now the dose-response model on the identical
-rows:
+We see a slope on dose that the model cannot distinguish from zero, an
+$R^2$ of nothing, and residual heterogeneity left over. The meta-regression
+finds no relationship.
+
+::: {.callout-important}
+**Ten studies, and these are not ten studies**
+
+The Cochrane Handbook advises against meta-regression with fewer than about
+ten studies per covariate [@cochranehandbook]. Below that the slope is fitted
+to too little information to be trusted, and a null result says more about the
+sample size of the regression than about the covariate.
+
+Our regression looks as though it had nineteen points. It did not. Those
+nineteen rows come from four studies, and rows from one study share a
+reference arm, so they are neither nineteen observations nor independent ones.
+A meta-regression on this table is underpowered twice over, and reporting its
+null as evidence of no dose effect would be a mistake.
+:::
+
+Now the dose-response model on the identical rows:
 
 ```{r}
 c(slope = fit$slope$estimate, levels = nrow(alcohol_cvd))
 ```
 
 We see a slope of the opposite sign, from a model that used the within-study
-comparisons rather than treating nineteen correlated estimates as if they were
+comparisons rather than treating correlated estimates as if they were
 independent. The difference is not the estimator. It is what each model was
 willing to know about where the estimates came from.
 
@@ -439,8 +556,8 @@ model.
 
 1. The subgroup test in @fig-standard-ma returned $p$ = 0.91, and the
    dose-response model on the same table found a trend. How can both be true?
-2. The network in @fig-network ranked 1-15 g/day as worse than over 30 g/day.
-   What did the model not know?
+2. The SUCRA ranking in @fig-sucra put 1-15 g/day above both non-drinking and
+   over 30 g/day. What did the model not know?
 3. Four models fitted to one table reported four different shapes. What does
    that tell us about where the shape comes from?
 4. What is the practical difference between a traditional curve model and a
@@ -470,7 +587,11 @@ Answers to these questions are listed in Appendix A.
   shape belongs in the protocol.
 - A dose-response model can speak about a dose nobody studied, because the
   ordering of doses is information. A network meta-analysis, which treats doses
-  as unrelated nodes, cannot, and on this table it ranked a low intake as worse
-  than a high one.
+  as unrelated nodes, cannot, and on this table its SUCRA ranked a middling
+  intake above both non-drinking and the highest intake.
+- Pooling several categories against one shared reference arm counts the same
+  control patients repeatedly. That is the unit of analysis error, and it is
+  the reason the within-study covariance has to be reconstructed rather than
+  ignored.
 
 {{< include _cta.qmd >}}
