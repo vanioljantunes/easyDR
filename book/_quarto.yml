@@ -3,7 +3,7 @@ project:
   output-dir: _book
 
 book:
-  title: "Dose-Response Meta-Analysis"
+  title: "A practical guide on how to do a dose-response meta-analysis"
   subtitle: "A hands-on guide"
   author: "Vanio Antunes"
   date: today
