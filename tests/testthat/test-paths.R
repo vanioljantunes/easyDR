@@ -121,7 +121,9 @@ test_that("the exported surface is exactly what the constitution allows", {
 
   expect_setequal(plain, c("easydr", "easydr_forest", "easydr_curve",
                            "easydr_loo", "easydr_funnel", "easydr_table",
-                           "easydr_target_dose", "ed_gamma"))
+                           "easydr_target_dose", "ed_gamma",
+                           "easydr_compare_shapes",
+                           "easydr_knot_sensitivity"))
   # One entry point and seven things to do with its result. The workers behind
   # it, the multi-fit container and the cumulative analysis stay internal:
   # easydr() builds the container itself when it is given several shapes.
