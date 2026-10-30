@@ -64,13 +64,13 @@ checklist <- data.frame(
   ),
   `What belongs there` = c(
     "Why the shape matters, and not only whether the exposure matters. The decision a curve would inform. The registration number.",
-    "Eligibility, including the three-level rule. Search and dates. What was extracted per dose level. How doses were assigned and harmonised. The reference category rule. Model, shape, knots. Heterogeneity, bias, subgroups and sensitivity. Software with versions, and the repository.",
-    "Study and participant counts. The dose range covered. Table 1 and Table 2. The pooled trend, the test for departure from linearity, heterogeneity, and the curve. Subgroups and sensitivity as pre-specified.",
+    "Eligibility, including the three-level rule. Search and dates. What was extracted per dose level. How doses were assigned and harmonised, including the rescaling of any bounded or ordinal scale. The reference category rule. Model, shape, knots, and which criterion chooses between candidate shapes. Heterogeneity, bias, subgroups and sensitivity, including knot-location sensitivity. Software with versions, and the repository.",
+    "Study and participant counts. The dose range covered. Table 1 and Table 2. The pooled trend, the curve, and heterogeneity. Goodness of fit: the deviance against a saturated model with its test, and the R-squared, alongside the Wald test for departure from linearity. Target doses: ED50, ED80 and ED max with bootstrap intervals. Subgroups and sensitivity as pre-specified.",
     "What the shape means on the dose scale. Comparison with published curves. Where the evidence thins out. Limitations specific to dose-response, including the unit of analysis and dose harmonisation.",
     "One or two sentences answering the question that was asked, at a named dose, without leaving the observed range.",
-    "Full search strings. Outcome definitions per study. The dose conversion table. Risk of bias per domain. Leave-one-out and the shapes not chosen. The analysis code.",
+    "Full search strings. Outcome definitions per study. The dose conversion table, with any scale rescaling. Risk of bias per domain. Leave-one-out, knot-location sensitivity, and the candidate shapes not chosen with their AIC and BIC. The analysis code.",
     "PRISMA flow, forest of study trends, the dose-response curve, subgroup curves.",
-    "Table 1 with study and participant characteristics, Table 2 with the effect at the doses of interest."
+    "Table 1 with study and participant characteristics, Table 2 with the effect at the doses of interest and the target doses."
   ),
   check.names = FALSE
 )
@@ -133,6 +133,53 @@ The order that reads well:
 8. Heterogeneity, publication bias, sensitivity and subgroups
 9. Software, package versions, and where the code lives
 
+### Bounded and ordinal scales
+
+A continuous outcome measured on a bounded scale needs one step the others do
+not. Many clinical scales do not start at zero. The PANSS runs from 30 to
+210, because its thirty items are each scored from 1 rather than from 0, so a
+patient with no symptoms at all still scores 30.
+
+That floor makes every proportional statement wrong. A fall from 90 to 60
+looks like a third of the scale, and as a share of what could actually have
+improved, 90 minus 30 against 60 minus 30, it is a half. A percentage change
+computed on raw PANSS scores understates every effect, and the understatement
+is larger for patients who started lower.
+
+So the scale is shifted to its theoretical minimum before any ratio or
+percentage is taken:
+
+$$
+	ext{PANSS}_{	ext{adjusted}} = 	ext{PANSS}_{	ext{raw}} - 30
+$$
+
+Three things follow, and all three belong in the methods.
+
+A **mean difference** between two arms is unaffected, because the constant
+cancels. Shifting matters for ratios and percentages, not for differences.
+
+A **standardised mean difference** is unaffected too, for the same reason: the
+numerator is a difference and the denominator is a standard deviation.
+
+A **percentage change from baseline**, and anything built on it such as a
+responder threshold, changes, and must be computed on the shifted scale.
+Leucht and colleagues established this for the PANSS, and reviews that skip
+it report smaller effects than their own data contains.
+
+The rule generalises. Any scale whose floor is not zero, including ordinal
+scores summed from items numbered from one, gets shifted to its theoretical
+minimum, and the methods say which minimum was used.
+
+::: {.callout-note appearance="simple"}
+**Example**
+
+> _PANSS total scores were rescaled by subtracting the theoretical minimum of
+> 30 before any proportional quantity was computed, so that percentage
+> changes refer to the range of the scale a patient could actually move
+> across. Mean differences and standardised mean differences were computed on
+> the raw scale, where the constant cancels._
+:::
+
 ::: {.callout-note appearance="simple"}
 **Example**
 
@@ -175,6 +222,39 @@ that can disagree with its own figure.
 We see what the paragraph does not do. It does not interpret, it does not
 recommend an intake, and it says nothing about what happens beyond 77.2 grams
 per day.
+:::
+
+### Goodness of fit, and the target dose
+
+Two reporting items separate a dose-response results section from a
+conventional one, and Chapter 4 built both.
+
+**Goodness of fit is not the departure-from-linearity test.** The Wald test
+asks whether the bend is real. The deviance against a saturated model asks a
+different question: could this curve have produced the category effects the
+studies reported at all. A curve can pass the first and fail the second, and
+a review that reports only the first has not said whether the model fits.
+Report the deviance with its degrees of freedom and p value, and the
+R-squared, beside the Wald test.
+
+**A target dose is what a guideline can use.** ED50, ED80 and ED max, each
+with a bootstrap interval, say where on the curve the benefit arrives. Where
+the maximum sits at the end of the observed range, say so: that is a limit of
+the evidence, not a plateau.
+
+::: {.callout-note appearance="simple"}
+**Example**
+
+> *The restricted cubic spline fitted the reported category effects
+> adequately (deviance 6.0 on 12 degrees of freedom, p = 0.92; R-squared
+> 0.90), and departure from linearity was supported (p < 0.001). The dose
+> reaching half the maximum fitted effect was 1.9 mg/day (95% CI 0.2 to 2.3)
+> and the dose reaching 80% was 6.3 mg/day (0.8 to 7.5). The fitted effect
+> was still increasing at the highest dose studied, so no plateau was
+> identified within the observed range.*
+
+Four numbers and one caveat. The caveat is the one that stops the ED values
+being read as a ceiling.
 :::
 
 ## Discussion
@@ -238,8 +318,17 @@ belong in it.
 3. **The dose conversion table**, showing how each study turned its categories
    into numbers, including the rule used for the open-ended top category.
 4. **Risk of bias per domain per study**, as described in Chapter 3.
-5. **Sensitivity analyses**: leave-one-out, and the alternative shapes that
-   were fitted but not chosen.
+5. **Sensitivity analyses**: leave-one-out; the alternative shapes that were
+   fitted but not chosen, with their AIC and BIC; and the knot-location
+   sensitivity.
+
+   Knot placement deserves its own line. A spline at the 10th, 50th and 90th
+   percentiles is a defensible default and still a choice, so the supplement
+   shows what the choice was worth: every combination of three knots drawn
+   from the 10th, 25th, 50th, 75th and 90th percentiles, refitted and
+   overlaid. Ten curves that lie together say the result is the data. Ten
+   that fan apart say the reader is looking at the knots, and the range over
+   which they fan should be quoted in the limitations.
 6. **The analysis code**, so that the curve can be re-run rather than re-read.
 
 ```{r}
@@ -423,6 +512,12 @@ and marks any row that falls beyond the range the studies reported. Given a
 `filetype` and a `file.name` it writes the same table to a spreadsheet or to a
 PDF, which is the form a journal asks for. `main` is the title it carries.
 
+Two arguments attach the rest of what the checklist asks for. `gof = TRUE`
+adds the deviance against a saturated model, its test and the R-squared.
+`target = TRUE` adds ED50, ED80 and ED max with their bootstrap intervals.
+Both travel with the table rather than being quoted from somewhere else,
+which is how they stop disagreeing with it.
+
 The prediction interval is wider than the confidence interval on purpose. It
 is the interval a new study would be expected to fall in, and it is the honest
 number to quote when somebody asks what to expect next.
@@ -493,7 +588,14 @@ Answers to these questions are listed in Appendix A.
   protocol.
 - The supplement carries what makes the review checkable: search strings,
   outcome definitions, the dose conversion table, risk of bias, leave-one-out,
-  the shapes that were not chosen, and the code.
+  the knot-location sensitivity, the shapes that were not chosen with their
+  AIC and BIC, and the code.
+- Goodness of fit and the departure-from-linearity test answer different
+  questions, and a results section reports both. Target doses say where on
+  the curve the benefit arrives, and say so plainly when the maximum is the
+  end of the observed range rather than a plateau.
+- A scale whose floor is not zero, such as the PANSS at 30, is shifted to
+  that floor before any ratio or percentage is taken.
 - The conclusion answers the question at a named dose, inside the observed
   range, and says so plainly when the data do not reach further.
 - Software, package versions and the repository belong in the methods. A curve

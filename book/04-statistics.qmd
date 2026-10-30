@@ -298,6 +298,66 @@ analysis. Every fit in this chapter prints the one it used, and reading that lin
 is how we check that the table was understood the way we meant it.
 :::
 
+## The covariance of a continuous outcome
+
+Everything so far rebuilt the covariance of log risks from counts. A
+continuous outcome has no counts to rebuild from, and Crippa and Orsini
+[-@crippa2016] give the two formulas that replace them.
+
+For a **mean difference** the contrast against the study's reference arm is
+$y_j = ar{x}_j - ar{x}_0$, so every contrast in a study carries the same
+reference arm and therefore the same error. The covariance between two of them
+is the variance of that shared arm:
+
+$$
+\mathrm{Cov}(y_j, y_k) = \frac{s_0^2}{n_0}, \qquad
+\mathrm{Var}(y_j) = \frac{s_j^2}{n_j} + \frac{s_0^2}{n_0}
+$$
+
+where $s_0$ and $n_0$ belong to the reference arm. The off-diagonal does not
+depend on $j$ or $k$ at all, which is worth pausing on: the whole correlation
+between a study's contrasts comes from the one arm they are all measured
+against.
+
+For a **standardised mean difference** the contrast is divided by a pooled
+standard deviation, and that divisor is itself estimated from the same data.
+The covariance gains a term for it:
+
+$$
+\mathrm{Cov}(d_j, d_k) = \frac{1}{n_0} + \frac{d_j d_k}{2(n_0 + n_j + n_k)}
+$$
+
+Let us see both, from the arm summaries the aripiprazole table carries.
+
+```{r}
+ari_one <- aripiprazole[aripiprazole$studlab ==
+                          unique(aripiprazole$studlab)[1L], ]
+ari_one[, c("studlab", "dose", "mean.e", "sd.e", "n.e")]
+```
+
+```{r}
+# The mean difference covariance, from the formula above.
+ref <- ari_one[ari_one$dose == 0, ]
+arm <- ari_one[ari_one$dose > 0, ]
+shared <- ref$sd.e^2 / ref$n.e
+V <- matrix(shared, nrow(arm), nrow(arm))
+diag(V) <- arm$sd.e^2 / arm$n.e + shared
+round(V, 3)
+```
+
+```{r}
+# The same matrix, as the engine reconstructs it.
+ari_md <- easydr(aripiprazole, sm = "MD", shape = "linear",
+                 dose.unit = "mg/day")
+round(ari_md$fit$Slist[[1L]], 3)
+```
+
+We see the same matrix, to the rounding carried by the reported standard
+deviations. The engine reaches it through
+`dosresmeta::covar.smd()`, which is Crippa and Orsini's own routine, and
+easyDR chooses between the two formulas from `sm`: `"MD"` takes the first and
+`"SMD"` the second. The printed fit names which one it used.
+
 ## What a dose curve is, and where it gets calculated
 
 We now have everything a curve is built from, so let us assemble it.
@@ -729,6 +789,39 @@ and in the methods sentence, and `easydr_curve()` prints them in the subtitle so
 the figure cannot disagree with the text.
 :::
 
+## What the knot placement was worth
+
+Three knots at the 10th, 50th and 90th percentiles is a defensible default,
+and a default is not a result. The honest way to find out what it bought is to
+try the alternatives, which is what Crippa's `knots_location` script does:
+take the 10th, 25th, 50th, 75th and 90th percentiles, form every three-knot
+combination of them, and refit.
+
+`easydr_knot_sensitivity()` is that script.
+
+```{r}
+#| label: fig-knot-sensitivity
+#| fig-cap: "The same restricted cubic spline at all ten three-knot combinations of the 10th, 25th, 50th, 75th and 90th percentiles of the alcohol intake distribution. The curves agree where the studies are dense and separate where they are not."
+#| fig-width: 8
+#| fig-height: 7.6
+#| out-width: 100%
+easydr_knot_sensitivity(easydr.object)
+```
+
+Let us read it honestly. Below about 30 grams a day the ten curves lie on top
+of one another, so over that stretch the shape is the data. Above it they fan
+out, and at the top of the range the fitted risk ratio runs from about 1.5 to
+above 5 depending on nothing but where the knots were put.
+
+That is not a defect of the method. It is the method telling us that these
+studies do not pin down the high end of the range, which the widening
+confidence band said as well. The two statements agree, and a paper that
+reports the curve without either of them is reporting the knots.
+
+The table under the figure gives the effect at a common dose for every knot
+set, so the spread can be quoted rather than described. This belongs in the
+supplement whichever way it comes out.
+
 ## Departure from linearity, and goodness of fit
 
 We have two models of the same data now, and one question: is the bend real?
@@ -803,6 +896,145 @@ $p$ value asks whether the curve reproduces the reported categories. $R^2$ asks
 how much of the variation in the reported effects the curve accounts for. A
 review that reports only the first of the three, which is most of them
 [@sappani2025], has answered the least interesting one.
+:::
+
+## A structured framework for model choice
+
+We now have six shapes, an information criterion, a test for departure from
+linearity, a goodness of fit and a knot sensitivity. What we do not yet have
+is an order to use them in, and without one the toolkit becomes the
+researcher degree of freedom it was meant to close.
+
+Here is the order. It is the one Crippa's `fp_splines_example` script
+follows, at
+<https://alecri.github.io/downloads/codes/fp_splines_example.txt>.
+
+1. **Name the shape in the protocol, with a reason.** Everything below is a
+   sensitivity analysis around that choice, not a search for a better one.
+2. **Check the data can carry it.** A shape needs more distinct dose levels
+   than it has terms, in enough studies. Chapter 2 is this step.
+3. **Fit the pre-specified shape and read its departure from linearity.** A
+   one-term shape has nothing to test; a curve does.
+4. **Fit the alternatives and compare them on an information criterion.**
+5. **Check what the arbitrary parts of the choice were worth**: knot
+   placement for a spline, the power grid for a fractional polynomial.
+6. **Report all of it.** The pre-specified shape is the result. The rest is
+   the supplement.
+
+Step 4 needs care, which is why it has a function of its own.
+
+### Why the comparison is by AIC and BIC
+
+The shapes are not nested inside one another. A spline is not a quadratic
+with a term added, and an Emax curve is neither, so there is no Wald or
+likelihood ratio test that holds between them. What remains is an information
+criterion: the fit, with the parameters charged for.
+
+Two things have to be right for that comparison to mean anything, and easyDR
+does both.
+
+**The likelihood must be a maximum likelihood, not a restricted one.** A REML
+likelihood is computed on contrasts that depend on the design matrix, so two
+shapes have REML likelihoods of different quantities and their difference is
+not interpretable. The comparison refits under ML.
+
+**Every estimated parameter must be charged for.** The engine counts the
+coefficients it fitted. An Emax curve also spent a parameter on the profile
+that found its ED50, estimated from the same data, and leaving it uncounted
+would hand that family a discount no other shape gets.
+
+```{r}
+#| label: fig-compare-shapes
+#| fig-cap: "The candidate shapes fitted to the same five aripiprazole trials, overlaid on one panel, with the comparison table underneath ranked by AIC."
+#| fig-width: 8
+#| fig-height: 6.4
+#| out-width: 100%
+easydr_compare_shapes(easydr.object.linear)
+```
+
+### When each shape is the right candidate
+
+| Reach for | When |
+|:---|:---|
+| `"linear"` | The question is whether risk changes with dose at all, and a single number per unit is what the guideline needs. |
+| `"rcs"` | The exposure is observational and the shape is unknown. Flexible, and a straight line beyond the outer knots keeps the tails sane. |
+| `"fp"` | A curve that is steep near zero and flattens. Fractional polynomials reach shapes a spline needs many knots for. |
+| `"hyperbolic_emax"` | A drug with a receptor behind it, where the curve should saturate and a target dose is the point. |
+| `"emax"` | The same, where the data can also say how sharply it turns. Three parameters from five trials is asking a lot. |
+| `"quadratic"`, `"cubic"` | Rarely first choice. A polynomial's tails are driven by its middle, which is how spurious bends at high dose get published. |
+
+::: {.callout-important}
+**The table does not choose for you**
+
+Reading @fig-compare-shapes and keeping the lowest row is model selection on
+the outcome, and Sappani and colleagues [-@sappani2025] measured how common
+that already is: in 146 dose-response reviews the non-linearity test appeared
+in more than eight of ten, a goodness of fit in one in ten, a model
+comparison in one in eight. Shapes are being compared informally and reported
+selectively.
+
+So the protocol says which criterion decides, before the data is seen, and
+the paper reports the whole table.
+:::
+
+## Target doses
+
+A curve answers what happens at every dose. A guideline has to name one. The
+quantity that joins them is the **target dose**: the smallest dose reaching a
+stated fraction of the largest effect the curve achieves.
+
+Write the fitted curve as $f(d)$, the effect at dose $d$ against the
+reference. Inside the observed range $[d_{\min}, d_{\max}]$ let
+
+$$
+E_{\max} = \max_{d} |f(d)|, \qquad
+\mathrm{ED}_{\max} = \arg\max_{d} |f(d)|
+$$
+
+Then $\mathrm{ED}_\gamma$ is the smallest dose at which $f$ reaches
+$\gamma E_{\max}$. With $\gamma = 0.5$ that is the ED50, with
+$\gamma = 0.8$ the ED80.
+
+Three cautions come with it, and easyDR enforces all three.
+
+**It is read inside the observed range.** Outside it the curve is the model
+talking to itself.
+
+**The maximum may be an edge rather than a turning point.** A curve still
+climbing at the top of the range has no maximum, and reporting that edge as
+ED max would dress a range limit up as a finding.
+
+**It has no standard error.** $\mathrm{ED}_\gamma$ is a non-linear
+functional of the coefficients, and for a spline read off a grid there is no
+derivative for the delta method. The interval comes from a parametric
+bootstrap: every study's contrasts are drawn again from the fitted model, the
+whole fit is redone, and for a profiled shape the profile runs again, so the
+uncertainty in where the curve bends is carried rather than conditioned away.
+
+```{r}
+easydr.object.emax <- easydr(aripiprazole, sm = "MD",
+                             shape = "hyperbolic_emax",
+                             dose.unit = "mg/day")
+
+easydr_target_dose(easydr.object.emax, B = 200, seed = 1)
+```
+
+We see the ED50 and ED80 with intervals, and ED max flagged, because this
+curve is still rising at 30 mg/day. The note under the table says what that
+means: the trials do not show where the benefit stops, only that it has
+largely arrived by the doses they tested.
+
+::: {.callout-tip}
+**Reporting a target dose**
+
+> _The dose reaching half the maximum fitted effect inside the observed range
+> was 1.9 mg/day (95% CI 0.2 to 2.3) and the dose reaching 80% was 6.3 mg/day
+> (0.8 to 7.5), from 200 parametric bootstrap draws with the ED50 of the Emax
+> curve re-profiled on each. The fitted effect was still increasing at the
+> highest dose studied, so the maximum is a limit of the observed range
+> rather than an estimated plateau._
+
+The last sentence is the one that stops a target dose being read as a ceiling.
 :::
 
 ## Exploring heterogeneity
