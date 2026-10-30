@@ -10,6 +10,7 @@ easydr_knot_sensitivity(
   nknots = 3L,
   plot = TRUE,
   main = NULL,
+  result = TRUE,
   filetype = c("png", "pdf", "tiff"),
   path = NULL,
   file.name = NULL,
@@ -28,6 +29,9 @@ from.}
 \item{plot}{\code{TRUE} draws the overlay.}
 
 \item{main}{a title, or \code{FALSE} for none.}
+
+\item{result}{\code{TRUE} puts the table of knot sets under the figure. \code{FALSE}
+leaves the curves on their own, which is what a slide wants.}
 
 \item{filetype, path, file.name, width, height}{where to save the figure, as
 in \code{\link[=easydr_curve]{easydr_curve()}}.}
