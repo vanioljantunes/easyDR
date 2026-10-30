@@ -10,6 +10,7 @@ easydr_compare_shapes(
   plot = TRUE,
   main = NULL,
   digits = 3,
+  result = TRUE,
   filetype = c("png", "pdf", "tiff"),
   path = NULL,
   file.name = NULL,
@@ -27,6 +28,9 @@ easydr_compare_shapes(
 \item{main}{a title, or \code{FALSE} for none.}
 
 \item{digits}{digits for the reported effects.}
+
+\item{result}{\code{TRUE} puts the comparison table under the figure. \code{FALSE}
+leaves the panel on its own, which is what a slide wants.}
 
 \item{filetype, path, file.name, width, height}{where to save the figure, as
 in \code{\link[=easydr_curve]{easydr_curve()}}.}

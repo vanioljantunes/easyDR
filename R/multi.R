@@ -335,22 +335,32 @@ dr_curve_multi <- function(x, mult.curves = FALSE, curve.panels = NULL,
   } else {
     NULL
   }
-  fs <- dr_footer_stack(foot, tg)
+  # No table means the footer is the text alone. Handing a NULL table to the
+  # stacker fails inside gtable.
+  fs <- if (is.null(tg)) NULL else dr_footer_stack(foot, tg)
 
   # Width grows with the columns and height with the rows, and the table and
   # title take their own measured space on top of that.
   spec <- dr_file_spec(file.name, filetype, path, width, height,
                        what = "easydr_curve(mult.curves = TRUE)")
   title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
-  foot_in  <- dr_height_in(fs$height)
+  foot_in  <- if (is.null(fs)) {
+    (1.35 * 9 * length(foot) + 8) / 72
+  } else {
+    dr_height_in(fs$height)
+  }
   w_in     <- max(3.6 * grid_spec$ncol, dr_grob_width_in(tg) + 0.5)
   size <- dr_fig_size(w_in, 2.9 * grid_spec$nrow + title_in + foot_in + 0.2,
                       max.w = 18, max.h = 24)
   con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
   on.exit(dr_end_file(con), add = TRUE)
 
-  dr_draw_stack(body, NULL, title = main, footer = fs$grob,
-                footer_h = fs$height, title_hjust = 0.5)
+  if (is.null(fs)) {
+    dr_draw_stack(body, NULL, title = main, footer = foot, title_hjust = 0.5)
+  } else {
+    dr_draw_stack(body, NULL, title = main, footer = fs$grob,
+                  footer_h = fs$height, title_hjust = 0.5)
+  }
   invisible(list(shapes = panels, table = dr_multi_table(x, digits),
                  layout = grid_spec))
 }

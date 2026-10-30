@@ -75,14 +75,26 @@ dr_overlay_draw <- function(p, tg, main, foot, spec) {
   # lines off the bottom, and one not wrapped at all runs off the right.
   foot <- strwrap(paste(foot, collapse = " "),
                   width = max(40L, floor(w_in / 0.068)))
-  fs <- dr_footer_stack(foot, tg)
+  # With result = FALSE there is no table, so the footer is the text alone
+  # and dr_draw_stack measures it the way every other figure's footer is
+  # measured. Handing a NULL table to the stacker fails inside gtable.
+  fs <- if (is.null(tg)) NULL else dr_footer_stack(foot, tg)
+  foot_in <- if (is.null(fs)) {
+    (1.35 * 9 * length(foot) + 8) / 72
+  } else {
+    dr_height_in(fs$height)
+  }
   size <- dr_fig_size(w_in,
                       min(max(0.46 * w_in, 3.2), 4.6) + title_in +
-                        dr_height_in(fs$height) + 0.2)
+                        foot_in + 0.2)
   con <- dr_begin_file(spec, size[["width"]], size[["height"]])
   on.exit(dr_end_file(con), add = TRUE)
-  dr_draw_stack(p, NULL, title = main, footer = fs$grob,
-                footer_h = fs$height, title_hjust = 0.5)
+  if (is.null(fs)) {
+    dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5)
+  } else {
+    dr_draw_stack(p, NULL, title = main, footer = fs$grob,
+                  footer_h = fs$height, title_hjust = 0.5)
+  }
 }
 
 #' Fit the candidate shapes and compare them
@@ -106,6 +118,8 @@ dr_overlay_draw <- function(p, tg, main, foot, spec) {
 #' @param plot `TRUE` draws the overlay.
 #' @param main a title, or `FALSE` for none.
 #' @param digits digits for the reported effects.
+#' @param result `TRUE` puts the comparison table under the figure. `FALSE`
+#'   leaves the panel on its own, which is what a slide wants.
 #' @param filetype,path,file.name,width,height where to save the figure, as
 #'   in [easydr_curve()].
 #'
@@ -125,6 +139,7 @@ easydr_compare_shapes <- function(x,
                                   shapes = c("linear", "quadratic", "rcs",
                                              "fp", "hyperbolic_emax"),
                                   plot = TRUE, main = NULL, digits = 3,
+                                  result = TRUE,
                                   filetype = c("png", "pdf", "tiff"),
                                   path = NULL, file.name = NULL,
                                   width = NULL, height = NULL) {
@@ -155,7 +170,7 @@ easydr_compare_shapes <- function(x,
     if (identical(main, FALSE)) main <- NULL
     p  <- dr_overlay_panel(fits, names(fits), x$ratio, x$sm_label, unit,
                            legend.title = "Shape")
-    tg <- dr_stats_grob(tab)
+    tg <- if (isTRUE(result)) dr_stats_grob(tab) else NULL
     foot <- paste0("Ranked by AIC, computed by maximum likelihood so that ",
                    "shapes which are not nested can be compared. ",
                    "Reference ", x$reference$curve, " ", unit, ".")
@@ -210,6 +225,8 @@ print.easydr_comparison <- function(x, ...) {
 #' @param nknots how many knots in each combination.
 #' @param plot `TRUE` draws the overlay.
 #' @param main a title, or `FALSE` for none.
+#' @param result `TRUE` puts the table of knot sets under the figure. `FALSE`
+#'   leaves the curves on their own, which is what a slide wants.
 #' @param filetype,path,file.name,width,height where to save the figure, as
 #'   in [easydr_curve()].
 #'
@@ -229,6 +246,7 @@ easydr_knot_sensitivity <- function(x,
                                     percentiles = c(0.1, 0.25, 0.5, 0.75,
                                                     0.9),
                                     nknots = 3L, plot = TRUE, main = NULL,
+                                    result = TRUE,
                                     filetype = c("png", "pdf", "tiff"),
                                     path = NULL, file.name = NULL,
                                     width = NULL, height = NULL) {
@@ -286,7 +304,7 @@ easydr_knot_sensitivity <- function(x,
     if (identical(main, FALSE)) main <- NULL
     p  <- dr_overlay_panel(fits, labs, x$ratio, x$sm_label, unit,
                            legend.title = "Knots")
-    tg <- dr_stats_grob(tab)
+    tg <- if (isTRUE(result)) dr_stats_grob(tab) else NULL
     foot <- paste0(length(fits), " of the ", length(sets), " ", nknots,
                    "-knot combinations of the ",
                    paste0(format(100 * percentiles), collapse = ", "),
