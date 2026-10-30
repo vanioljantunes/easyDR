@@ -1,7 +1,7 @@
 # Multi-shape curves, and alignment with Crippa and Orsini (2016)
 
-Progress: 41/47 (87%)
-Started: 2026-10-29 16:10 BRT   Updated: 2026-10-29 22:40 BRT
+Progress: 45/47 (96%)
+Started: 2026-10-29 16:10 BRT   Updated: 2026-10-30 00:30 BRT
 
 ## Goal
 
@@ -80,22 +80,22 @@ inspected by eye, README and both chapters are updated, committed and pushed.
 
 ### E. Tests
 
-- [ ] 22. Emax family: fit, profile, bootstrap, refusals (w=3)
+- [x] 22. Emax family: fit, profile, bootstrap, refusals (w=3)
 - [x] 23. Target dose: known closed-form cases, bootstrap behaviour,
       refusals (w=3)
-- [ ] 24. Constitution and grammar tests updated for the new exports (w=2)
+- [x] 24. Constitution and grammar tests updated for the new exports (w=2)
 
 ### F. The book
 
-- [ ] 25. Chapter 4: covariance reconstruction for MD and SMD, formulas and
+- [x] 25. Chapter 4: covariance reconstruction for MD and SMD, formulas and
       code (w=2)
-- [ ] 26. Chapter 4: target dose, the definition and the bootstrap (w=2)
-- [ ] 27. Chapter 4: the Emax family in the model comparison panel
-- [ ] 28. Chapter 5: Table 5.1 gains the target-dose and goodness-of-fit
+- [x] 26. Chapter 4: target dose, the definition and the bootstrap (w=2)
+- [x] 27. Chapter 4: the Emax family in the model comparison panel
+- [x] 28. Chapter 5: Table 5.1 gains the target-dose and goodness-of-fit
       items (w=2)
-- [ ] 29. Chapter 5, section 5.3: bounded and ordinal scales, with the PANSS
+- [x] 29. Chapter 5, section 5.3: bounded and ordinal scales, with the PANSS
       rescaling example
-- [ ] 30. Chapter 5, section 5.7: knot-location sensitivity across the 10th,
+- [x] 30. Chapter 5, section 5.7: knot-location sensitivity across the 10th,
       25th, 50th, 75th and 90th percentiles
 - [ ] 31. README, full suite, render, figures inspected, commit, push (w=2)
 

@@ -19,7 +19,8 @@ Its source is in [`book/`](book) as Quarto files.
 | **[4 . Leave one out](#4-leave-one-out)** | Whether one study is carrying the result |
 | **[5 . Publication bias](#5-publication-bias)** | The funnel plot, and Egger's test for small-study effects |
 | **[6 . The table, and saving what you made](#6-the-table-and-saving-what-you-made)** | `easydr_table()` for the effect at the doses you name, and the `file.name` argument every figure now takes |
-| **[7 . Validation](#7-validation)** | Reproduce a published analysis, and check your install against it |
+| **[7 . Choosing a shape, and target doses](#7-choosing-a-shape-and-target-doses)** | `easydr_compare_shapes()`, `easydr_knot_sensitivity()` and `easydr_target_dose()`, after Crippa's own scripts |
+| **[8 . Validation](#8-validation)** | Reproduce a published analysis, and check your install against it |
 
 <sub>[References](#references) . [License](#license)</sub>
 
@@ -64,7 +65,10 @@ from your table.
 | `easydr_forest()` | What did each study contribute? | `x`, `at`, `order`, `subgroup`, `columns`, `main`, `xlim` |
 | `easydr_loo()` | Is one study carrying it? | `object`, `at`, `plot`, `quiet` |
 | `easydr_funnel()` | Are the small studies different? | `x`, `at`, `labels`, `levels`, `shade` |
-| `easydr_table()` | What is the effect at 10, 25, 50? | `x`, `doses`, `main`, `digits`, `filetype`, `path`, `file.name` |
+| `easydr_table()` | What is the effect at 10, 25, 50? | `x`, `doses`, `main`, `digits`, `gof`, `target`, `filetype`, `path`, `file.name` |
+| `easydr_compare_shapes()` | Which shape does the data support? | `x`, `shapes`, `plot`, `main` |
+| `easydr_knot_sensitivity()` | What was the knot placement worth? | `x`, `percentiles`, `nknots`, `plot` |
+| `easydr_target_dose()` | Which dose should a guideline name? | `x`, `gamma`, `B`, `level`, `seed` |
 
 `shape` takes a vector. `easydr(shape = c("linear", "rcs"))` fits each of them
 on the same table and returns one object holding all of them, which prints as
@@ -86,7 +90,8 @@ spelling out.
   are read, how the within-study covariance is reconstructed, and whether the
   effect is drawn on a log axis.
 * **`shape`**. The curve being fitted: `"linear"`, `"log"`, `"quadratic"`,
-  `"cubic"`, `"rcs"` or `"fp"`. There is no default, and easyDR will not
+  `"cubic"`, `"rcs"`, `"fp"`, `"emax"` or `"hyperbolic_emax"`. There is no
+  default, and easyDR will not
   guess. The shape is a claim about the biology, and it belongs in your
   protocol with a reason beside it. Note that `"cubic"` is the third-degree
   polynomial in dose, and `"rcs"` is the restricted cubic spline: they share a
@@ -233,6 +238,20 @@ are all six, fitted to the same eight cohorts, on the same axes.
 | `"cubic"` | dose, dose squared and dose cubed | 3 |
 | `"rcs"` | a restricted cubic spline, `knots` places them | 2 or more |
 | `"fp"` | a fractional polynomial, `powers` chooses one or two | 1 or 2 |
+| `"hyperbolic_emax"` | `Emax * d / (d + ED50)`, steepness held at 1 | 2 |
+| `"emax"` | `Emax * d^h / (d^h + ED50^h)`, steepness free | 3 |
+
+The Emax family is not linear in its parameters, which is what the engine
+fits. For a fixed ED50 the curve is linear in `d / (d + ED50)`, so easyDR
+profiles ED50: it fits once per candidate on a log-spaced grid and keeps the
+best, the same way a fractional polynomial power is chosen. Name `ed50`
+yourself and the search is skipped.
+
+That profiling is paid for in two places, both deliberately. AIC and BIC
+charge for every parameter the profile spent, so the family is not compared at
+a discount. And a confidence interval that treated the profiled ED50 as known
+would be too narrow, so `easydr_target_dose()` re-profiles on every bootstrap
+draw.
 
 ![The six shapes fitted to the same studies: linear, log, quadratic, cubic, restricted cubic spline and fractional polynomial](man/figures/fig-shapes-fitted.png)
 
@@ -565,7 +584,107 @@ easydr_curve(easydr.object, file.name = "figure-3", width = 7, height = 5)
 
 ---
 
-## 7. Validation
+## 7. Choosing a shape, and target doses
+
+### Which shape does the data support?
+
+The candidate shapes are not nested inside one another, so no Wald test holds
+between them. The comparison is by information criterion, and
+`easydr_compare_shapes()` runs it: every candidate fitted on the same table,
+ranked by AIC, overlaid on one panel.
+
+```r
+# Paste the whole block into R.
+library(easyDR)
+data(aripiprazole)
+
+easydr.object <- easydr(aripiprazole, sm = "MD", shape = "linear",
+                        dose.unit = "mg/day")
+
+easydr_compare_shapes(easydr.object)
+#> Candidate shapes, ranked by AIC (mean difference)
+#>
+#>  Shape           Terms p nonlinearity Deviance R-squared AIC   BIC
+#>  quadratic       2     < 0.001         7.79    0.865     -23.7 -22.2
+#>  linear          1     -              21.40    0.629      -3.1  -3.8
+#>  rcs             2     < 0.001         8.39    0.854      13.3  14.8
+#>  hyperbolic_emax 1     -               6.03    0.895      29.6  29.7
+#>  fp              2     0.952           6.24    0.892      38.8  40.3
+```
+
+Two things make those numbers comparable, and both are easy to get wrong.
+They are computed by **maximum likelihood**, because a REML likelihood is
+taken on contrasts that depend on the design matrix and two shapes would be
+likelihoods of different quantities. And they **charge for the parameters an
+Emax profile searched over**, which the engine does not know about.
+
+Deviance and AIC can still disagree, as they do above: the hyperbolic Emax
+follows the doses most closely and pays the most for it. Deviance scores the
+curve against a saturated model, AIC also pays for the between-study
+variance. Say in the protocol which one decides.
+
+This follows Crippa's [`fp_splines_example`](https://alecri.github.io/downloads/codes/fp_splines_example.txt).
+
+### What was the knot placement worth?
+
+Three knots at the 10th, 50th and 90th percentiles is a defensible default and
+still a choice. `easydr_knot_sensitivity()` tries every three-knot combination
+of the 10th, 25th, 50th, 75th and 90th percentiles, after Crippa's
+[`knots_location`](https://alecri.github.io/downloads/codes/knots_location.txt).
+
+```r
+# Paste the whole block into R.
+data(alcohol_cvd)
+easydr.object <- easydr(alcohol_cvd, sm = "RR", shape = "rcs",
+                        dose.unit = "g/day")
+
+easydr_knot_sensitivity(easydr.object)
+```
+
+Ten curves. Where they lie together the shape is the data; where they fan
+apart the reader is looking at the knots. On these studies they agree below
+about 30 g/day and run from a risk ratio of 1.5 to above 5 at the top of the
+range, which belongs in the supplement and in the limitations.
+
+### Which dose should a guideline name?
+
+`easydr_target_dose()` reports the smallest dose reaching a stated fraction of
+the largest effect the curve achieves inside the observed range.
+
+```r
+# Paste the whole block into R.
+data(aripiprazole)
+easydr.object <- easydr(aripiprazole, sm = "MD", shape = "hyperbolic_emax",
+                        dose.unit = "mg/day")
+
+easydr_target_dose(easydr.object, B = 200, seed = 1)
+#> Target doses (mg/day)
+#> Largest fitted effect: 9.94 mean difference at 30 mg/day
+#> Read inside the observed range, 0 to 30 mg/day
+#>
+#>  Quantity Dose  95% lower 95% upper
+#>  ED50      1.88  0.20      2.32
+#>  ED80      6.34  0.77      7.54
+#>  ED max   30.00 30.00     30.00
+```
+
+A target dose has no standard error, so the interval is a parametric
+bootstrap: every study's contrasts are drawn again from the fitted model, the
+whole fit is redone, and for a profiled shape the profile runs again.
+
+Three refusals are built in. The dose is read inside the observed range only.
+A maximum sitting at the end of that range is reported as a range limit, not
+a plateau, as above. And an interval that does not contain its own estimate
+says so, because that means the estimate sits near the edge of what the data
+supports.
+
+`easydr_table(x, gof = TRUE, target = TRUE)` attaches the goodness of fit and
+these doses to the table of effects, so a manuscript quotes them from one
+object.
+
+---
+
+## 8. Validation
 
 Everything above is a picture of what easyDR does. This section is not. Run the
 script, and you should get the values printed below, on your own machine.
