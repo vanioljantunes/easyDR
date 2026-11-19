@@ -32,6 +32,7 @@ dr_entry <- function(kind, data, call, roles_args, sm, method.tau, proc,
   dr_check_level(level)
   method <- dr_method_tau(method.tau, common, random)
 
+  data  <- dr_from_logrr(data, roles_args)
   roles <- dr_roles(data, roles_args, kind = kind)
   prep  <- dr_prepare(data, roles, sm)
   shp   <- dr_shape(shape, prep$frame$dose, knots = knots, powers = powers,

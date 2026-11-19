@@ -2,19 +2,21 @@
 # handed to the engine. Nothing here is exported and the engine is never called
 # from this file.
 
-# Standard column names by role. Auto-detection looks for these and nothing else.
+# Standard column names by role, tried in order. Auto-detection looks for these
+# and nothing else. The second spelling is the one dosresmeta users write: a
+# `type` column holding cc, ci or ir, and plain `event`, `n`, `mean`, `sd`.
 easydr_names <- list(
   studlab = "studlab",
   dose    = "dose",
   ref     = "ref",
-  design  = "design",
-  event.e = "event.e",
-  n.e     = "n.e",
+  design  = c("design", "type"),
+  event.e = c("event.e", "event"),
+  n.e     = c("n.e", "n"),
   TE      = "TE",
   lower   = "lower",
   upper   = "upper",
-  mean.e  = "mean.e",
-  sd.e    = "sd.e"
+  mean.e  = c("mean.e", "mean"),
+  sd.e    = c("sd.e", "sd")
 )
 
 # Engine design codes, keyed by the words a reviewer actually writes.
@@ -42,15 +44,40 @@ dr_role <- function(data, supplied, role, required = FALSE) {
     return(supplied)
   }
   standard <- easydr_names[[role]]
-  if (!is.null(standard) && standard %in% names(data)) return(standard)
+  hit <- standard[standard %in% names(data)]
+  if (length(hit) > 0L) return(hit[1L])
   if (required) {
     # Rule V12: say what was looked for and what is present.
     stop("easydr: cannot find a column for `", role, "`. Looked for ",
-         dQuote(standard), ". Columns present: ",
+         paste(dQuote(standard), collapse = " or "), ". Columns present: ",
          paste(names(data), collapse = ", "), ". Name it explicitly, for ",
          "example ", role, " = ", dQuote("my_column"), ".", call. = FALSE)
   }
   NULL
+}
+
+#' Read a reported effect given the dosresmeta way, as logrr and se
+#'
+#' dosresmeta stores each category's adjusted effect as a log ratio with its
+#' standard error, and leaves the reference row at logrr = 0 with no se. When a
+#' table arrives that way, and no ratio or limits were named, the ratio and its
+#' 95% limits are rebuilt from them, so the effect path below sees exactly the
+#' variance the table carried.
+#'
+#' @keywords internal
+#' @noRd
+dr_from_logrr <- function(data, args = list()) {
+  if (!is.data.frame(data)) return(data)
+  named <- !is.null(args$TE) || !is.null(args$lower) || !is.null(args$upper)
+  if (named || any(c("TE", "lower", "upper") %in% names(data))) return(data)
+  if (!all(c("logrr", "se") %in% names(data))) return(data)
+  y  <- as.numeric(data[["logrr"]])
+  se <- as.numeric(data[["se"]])
+  z  <- stats::qnorm(0.975)
+  data[["TE"]]    <- exp(y)
+  data[["lower"]] <- exp(y - z * se)
+  data[["upper"]] <- exp(y + z * se)
+  data
 }
 
 #' Resolve every column role for one entry point
