@@ -306,10 +306,15 @@ dr_curve_multi <- function(x, mult.curves = FALSE, curve.panels = NULL,
   plots <- lapply(panels, function(s) {
     built <- dr_curve_panel(fits[[s]], main = FALSE,
                             xlim = lims$xlim, ylim = lims$ylim, ...)
+    lin <- dr_linearity_note(fits[[s]], lead = "")
+    lin <- sub("^Linearity test: ", "", lin)
+    lin <- sub("^not applicable.*$", "linearity test not applicable", lin)
+    if (!grepl("^linearity", lin)) lin <- paste0("Linearity: ", lin)
     built$plot +
-      ggplot2::ggtitle(s) +
+      ggplot2::ggtitle(s, subtitle = lin) +
       ggplot2::theme(plot.title = ggplot2::element_text(
-        size = 10, face = "bold", hjust = 0.5))
+        size = 10, face = "bold", hjust = 0.5),
+        plot.subtitle = ggplot2::element_text(size = 8, hjust = 0.5))
   })
 
   body <- if (is.null(grid_spec$layout)) {

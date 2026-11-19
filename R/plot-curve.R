@@ -404,8 +404,30 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                      ".  The dark line and the band are the overall fit.",
                    if (any(tab$extrapolated))
                      ".  Crosses mark doses beyond the observed range."),
+            dr_linearity_note(x, lead = ""),
             legend)
 
   list(plot = p, foot = foot, tab = tab, use_sub = use_sub,
        main = main)
+}
+
+
+#' The linearity test, as one clause of a figure caption
+#'
+#' Every curve with a non-linear term carries the Wald test of those terms
+#' against the straight line, so a reader of the figure alone sees whether
+#' the bend is supported. A linear shape has nothing to test and says so.
+#'
+#' @keywords internal
+#' @noRd
+dr_linearity_note <- function(x, lead = ".  ") {
+  nl <- x$nonlinearity
+  if (identical(x$shape$name, "linear")) {
+    return(paste0(lead, "Linearity test: not applicable to a linear shape"))
+  }
+  if (is.null(nl) || !isTRUE(nl$estimable)) {
+    return(paste0(lead, "Linearity test: not applicable, the shape has no non-linear term"))
+  }
+  paste0(lead, "Linearity test: X2 = ", formatC(nl$statistic, format = "f", digits = 2),
+         " (df = ", nl$df, "), p = ", format.pval(nl$p, digits = 3, eps = 0.001))
 }
