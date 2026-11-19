@@ -426,7 +426,7 @@ dr_linearity_note <- function(x, lead = ".  ") {
     return(paste0(lead, "Linearity test: not applicable to a linear shape"))
   }
   if (is.null(nl) || !isTRUE(nl$estimable)) {
-    return(paste0(lead, "Linearity test: not applicable, the shape has no non-linear term"))
+    return(paste0(lead, "Linearity test: not available for this shape"))
   }
   paste0(lead, "Linearity test: X2 = ", formatC(nl$statistic, format = "f", digits = 2),
          " (df = ", nl$df, "), p = ", format.pval(nl$p, digits = 3, eps = 0.001))
