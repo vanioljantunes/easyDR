@@ -101,7 +101,7 @@ dr_loo_plot <- function(out, object, main = NULL, xlab = NULL, ylab = NULL,
 
   cell <- data.frame(
     ` `         = c(ifelse(is.na(tab$key), "", tab$key), ""),
-    Omitting    = c(tab$label, "None: the full fit"),
+    Omitting    = c(tab$label, "Overall"),
     est         = c(fmt(tab$estimate), fmt(out$full$est)),
     `95% CI`    = c(ifelse(is.na(tab$lb), "-",
                            paste0(fmt(tab$lb), " to ", fmt(tab$ub))),
