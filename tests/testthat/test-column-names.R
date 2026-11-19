@@ -47,3 +47,15 @@ test_that("logrr and se are read as the reported effect, dosresmeta style", {
   b <- suppressWarnings(easydr(te, sm = "OR", shape = "linear"))
   expect_equal(coef(a$fit), coef(b$fit), tolerance = 1e-10)
 })
+
+test_that("a subgroup on cc / ci codes is labelled with the words", {
+  e <- new.env()
+  utils::data("alcohol_cvd", package = "dosresmeta", envir = e)
+  d <- e$alcohol_cvd
+  names(d)[names(d) == "author"] <- "studlab"
+  names(d)[names(d) == "cases"] <- "event"
+  d$studlab <- paste(d$studlab, d$id)
+  d$ref <- d$dose == 0
+  r <- suppressWarnings(easydr(d, sm = "OR", shape = "linear", subgroup = "type"))
+  expect_setequal(r$subgroup$levels, c("case-control", "cumulative incidence"))
+})
