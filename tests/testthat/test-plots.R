@@ -311,6 +311,7 @@ test_that("a p value carries its own operator, so none reads p = < 0.001", {
   expect_equal(easyDR:::dr_p_lab(0.687), "p = 0.687")
   expect_equal(easyDR:::dr_p_lab(1e-8), "p < 0.001")
   expect_no_match(easyDR:::dr_p_lab(1e-8), "= <")
+  expect_no_match(easyDR:::dr_linearity_note(bin_fit("rcs")), "= <")
 })
 
 test_that("the curve's corner box is the fit's own result", {
