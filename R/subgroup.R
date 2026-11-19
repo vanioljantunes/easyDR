@@ -35,6 +35,14 @@ dr_subgroup_fits <- function(object, var) {
   # a column that is not in the data.
   tab <- dr_mod_study_table(inh$data, inh$studlab, var, what = "subgroup")
   value <- as.character(tab[[var]])
+  # A design column written the dosresmeta way holds cc, ci or ir. Those
+  # codes are fine in a sheet and unreadable in a legend, so a subgroup on
+  # such a column is labelled with the words.
+  codes <- c(cc = "case-control", ci = "cumulative incidence",
+             ir = "incidence rate")
+  if (length(value) > 0L && all(tolower(trimws(value)) %in% names(codes))) {
+    value <- unname(codes[tolower(trimws(value))])
+  }
   levels_in_order <- unique(value[order(value)])
 
   fits <- vector("list", length(levels_in_order))
