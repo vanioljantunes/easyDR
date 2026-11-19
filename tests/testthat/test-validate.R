@@ -113,10 +113,11 @@ test_that("V12 lists the names it looked for and the names present", {
 
 test_that("V13 stops when easydr would compute a measure the counts cannot give", {
   # The rule applies where easydr computes the effect itself. From
-  # case-control counts only an odds ratio is available, and from counts over
-  # totals only a risk ratio.
+  # case-control counts only an odds ratio is available, and person-time
+  # counts give a rate ratio, not an odds ratio. Cohort counts give both an
+  # odds ratio and a risk ratio (see test-column-names.R).
   counts <- crc_table("counts")
-  expect_error(easydrbin(counts, sm = "OR"), "case-control")
+  expect_error(easydrbin(counts, sm = "OR"), "person-time")
 
   cc <- crc_table("counts")
   cc$design <- "case-control"

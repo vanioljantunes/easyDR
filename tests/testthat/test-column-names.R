@@ -59,3 +59,14 @@ test_that("a subgroup on cc / ci codes is labelled with the words", {
   r <- suppressWarnings(easydr(d, sm = "OR", shape = "linear", subgroup = "type"))
   expect_setequal(r$subgroup$levels, c("case-control", "cumulative incidence"))
 })
+
+test_that("an odds ratio is pooled from cohort counts as well as case-control counts", {
+  e <- new.env()
+  utils::data("alcohol_cvd", package = "dosresmeta", envir = e)
+  d <- e$alcohol_cvd[, c("author", "id", "type", "dose", "cases", "n")]
+  names(d) <- c("studlab", "id", "type", "dose", "event", "n")
+  d$studlab <- paste(d$studlab, d$id)
+  r <- suppressWarnings(easydr(d, sm = "OR", shape = "linear"))
+  expect_s3_class(r, "easydr_result")
+  expect_true(all(c("cc", "ci") %in% r$provenance$designs))
+})

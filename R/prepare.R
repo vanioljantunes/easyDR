@@ -170,11 +170,13 @@ dr_check_sm_design <- function(sm, design, study, intake = "counts") {
   if (!identical(intake, "counts")) {
     return(invisible(TRUE))
   }
-  if (identical(sm, "OR") && !identical(design, "cc")) {
-    stop("easydr: sm = ", dQuote("OR"), " but study ", study, " has a ", design,
-         " design and easydr is computing the effect from its counts. An odds ",
-         "ratio belongs to a case-control study. Set the design column, or ",
-         "choose sm = ", dQuote("RR"), ".", call. = FALSE)
+  # An odds ratio comes out of any two-by-two table of cases and non-cases,
+  # so a cohort's counts give one as validly as a case-control study's. The
+  # covariance for it is then the case-control one (dr_cov_design()).
+  if (identical(sm, "OR") && identical(design, "ir")) {
+    stop("easydr: sm = ", dQuote("OR"), " but study ", study, " is ",
+         "incidence-rate data, whose denominator is person-time rather than ",
+         "people. Use sm = ", dQuote("IRR"), ".", call. = FALSE)
   }
   if (identical(sm, "RR") && identical(design, "cc")) {
     stop("easydr: sm = ", dQuote("RR"), " but study ", study, " has a ",
@@ -183,6 +185,21 @@ dr_check_sm_design <- function(sm, design, study, intake = "counts") {
          ", or supply the reported effect with its limits.", call. = FALSE)
   }
   invisible(TRUE)
+}
+
+#' The design the covariance approximation should assume
+#'
+#' Odds ratios computed from a cohort's counts compare cases with non-cases,
+#' the same two-by-two layout as a case-control study, so the case-control
+#' approximation is the right one for them. Everything else keeps its design.
+#'
+#' @keywords internal
+#' @noRd
+dr_cov_design <- function(sm, design, intake) {
+  if (identical(intake, "counts") && identical(sm, "OR") && identical(design, "ci")) {
+    return("cc")
+  }
+  design
 }
 
 #' Infer which row of a study is its reference category
@@ -291,7 +308,8 @@ dr_prepare <- function(data, roles, sm) {
     }
     prov$designs <- c(prov$designs, stats::setNames(design, s))
 
-    piece <- dr_study_frame(data, roles, rows, iref, s, sm, design, prov)
+    piece <- dr_study_frame(data, roles, rows, iref, s, sm,
+                            dr_cov_design(sm, design, roles$intake), prov)
     prov  <- piece$prov
     pieces[[i]] <- piece$frame
   }
