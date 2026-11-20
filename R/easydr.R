@@ -130,6 +130,13 @@
 #'   following Royston and Altman.
 #' @param at Doses to report predicted effects at. `NULL` uses a five-point
 #'   grid across the observed dose range.
+#' @param result.at the effect every table and plot of this fit reports:
+#'   `"per.unit"` (the default), the effect of one unit of dose, which is the
+#'   slope of a straight line and one unit above the reference against the
+#'   reference for any other shape; or a number, the effect at that dose
+#'   against the reference. [easydr_curve()], [easydr_compare_shapes()],
+#'   [easydr_knot_sensitivity()] and [easydr_funnel()] follow it.
+#'   [easydr_forest()] does not: a forest compares studies per unit of dose.
 #' @param grid Doses for the curve table on the result, which [easydr_curve()]
 #'   draws. `NULL` uses 20 points across the observed range.
 #' @param dose.unit A label such as `"g/day"`, printed beside the slope and the
@@ -210,6 +217,7 @@ easydr <- function(data,
                    ed50 = NULL,
                    steepness = NULL,
                    at = NULL,
+                   result.at = "per.unit",
                    grid = NULL,
                    dose.unit = NULL,
                    level = 0.95,
@@ -321,6 +329,7 @@ easydr <- function(data,
     n = if (counts_used) "n" else NULL,
     min_levels = min.levels)
   out$curve_label <- dr_curve_label(out)
+  out$result_at <- dr_check_result_at(result.at)
 
   # An Emax curve is fitted to answer "which dose", so its target doses are
   # part of the result rather than a second call: ED50, ED80 and the dose of

@@ -229,7 +229,8 @@ test_that("the table under the panels reports one quantity per shape", {
   tab <- easyDR:::dr_panel_table(m$fits, m$shapes)
   expect_equal(names(tab), c(" ", m$shapes))
   expect_equal(nrow(tab), 6L)
-  # Every column is the same quantity at the same dose, or the columns would
-  # not be comparable.
-  expect_match(tab[[1L]][1], "at")
+  # Every column is the same quantity, one unit of dose above the reference,
+  # or the columns would not be comparable. For a straight line that is the
+  # slope itself.
+  expect_match(tab[[1L]][1], "Per 1 |vs")
 })

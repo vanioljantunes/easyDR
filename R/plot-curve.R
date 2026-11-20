@@ -63,10 +63,9 @@
 #' @param target `TRUE` puts the target doses (ED50, ED80, ED max) in a box in
 #'   the corner of the panel, for an Emax fit, which computes them. Ignored
 #'   for other shapes.
-#' @param result.at what the table reports: `"per.unit"` (the default), the
-#'   effect of one unit of dose as in the forest plot, which is the slope of a
-#'   straight line and one unit above the reference against the reference for
-#'   any other shape; or a number, the effect at that dose.
+#' @param result.at what the table reports. `NULL` (the default) uses the
+#'   `result.at` given to [easydr()], which is per unit of dose unless set
+#'   there; `"per.unit"` or a number overrides it for this plot.
 #' @param table `"horizontal"` (the default) puts the quantities across the
 #'   top of the summary table, `"vertical"` puts them down its first column.
 #' @param subgroup `TRUE` draws one curve per subgroup level, `FALSE` draws the
@@ -124,7 +123,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          xlim = NULL, ylim = NULL, round = NULL,
                          prediction = FALSE, points = TRUE, studies = FALSE,
                          studlabel = FALSE, reference = TRUE,
-                         rug = TRUE, result = TRUE, result.at = "per.unit",
+                         rug = TRUE, result = TRUE, result.at = NULL,
                          table = "horizontal", target = TRUE,
                          wald = TRUE, deviance = FALSE, r2 = FALSE,
                          r2adj = FALSE, aic = FALSE, bic = FALSE,
@@ -139,6 +138,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # Several shapes go to the panel drawer, which builds one of these plots
   # per shape and lays them out. A single fit asked for panels is a mistake
   # worth naming rather than quietly drawing one panel.
+  result.at <- dr_result_at(x, result.at)
   if (inherits(x, "easydr_multi") || isTRUE(mult.curves)) {
     return(dr_curve_multi(
       x, mult.curves = mult.curves, curve.panels = curve.panels,

@@ -19,7 +19,7 @@ easydr_curve(
   reference = TRUE,
   rug = TRUE,
   result = TRUE,
-  result.at = "per.unit",
+  result.at = NULL,
   table = "horizontal",
   target = TRUE,
   wald = TRUE,
@@ -87,10 +87,9 @@ and the number of studies. The figure then carries its own numbers. With
 subgroups drawn, the table gains one column per level and ends with the
 overall fit.}
 
-\item{result.at}{what the table reports: \code{"per.unit"} (the default), the
-effect of one unit of dose as in the forest plot, which is the slope of a
-straight line and one unit above the reference against the reference for
-any other shape; or a number, the effect at that dose.}
+\item{result.at}{what the table reports. \code{NULL} (the default) uses the
+\code{result.at} given to \code{\link[=easydr]{easydr()}}, which is per unit of dose unless set
+there; \code{"per.unit"} or a number overrides it for this plot.}
 
 \item{table}{\code{"horizontal"} (the default) puts the quantities across the
 top of the summary table, \code{"vertical"} puts them down its first column.}

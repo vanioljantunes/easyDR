@@ -317,7 +317,7 @@ easydr_knot_sensitivity <- function(x,
   labs <- labs[ok]
   names(fits) <- labs
 
-  at  <- x$predicted$dose[!x$predicted$is_ref][1L]
+  at  <- dr_result_at(x)
   tab <- do.call(rbind, lapply(seq_along(fits), function(i) {
     f   <- fits[[i]]
     col <- dr_result_column(f, at, 3)

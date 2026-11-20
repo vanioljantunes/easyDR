@@ -6,7 +6,7 @@
 \usage{
 easydr_funnel(
   x,
-  at = "per.unit",
+  at = NULL,
   main = NULL,
   xlab = NULL,
   ylab = NULL,
@@ -14,6 +14,7 @@ easydr_funnel(
   shade = c("white", "grey85", "grey70"),
   labels = FALSE,
   digits = 4,
+  table = "horizontal",
   filetype = c("png", "pdf", "tiff"),
   path = NULL,
   file.name = NULL,
@@ -24,7 +25,8 @@ easydr_funnel(
 \arguments{
 \item{x}{a fitted result from \code{\link[=easydr]{easydr()}}.}
 
-\item{at}{a dose at which to compare studies. See \code{\link[=easydr_forest]{easydr_forest()}}.}
+\item{at}{what each study reports. \code{NULL} (the default) uses the
+\code{result.at} given to \code{\link[=easydr]{easydr()}}; \code{"per.unit"} or a number overrides it.}
 
 \item{main}{plot title. \code{NULL} writes one; \code{FALSE} draws none.}
 
@@ -38,6 +40,10 @@ outermost first.}
 \item{labels}{\code{TRUE} writes the study labels beside the points.}
 
 \item{digits}{digits for the table under the plot.}
+
+\item{table}{\code{"horizontal"} (the default) puts the statistics across the
+top of the table under the funnel, \code{"vertical"} puts them down its first
+column. Either way the table is headed "Summary".}
 
 \item{filetype}{the format a saved figure is written in: \code{"png"} (the
 default), \code{"pdf"} or \code{"tiff"}. Only used when \code{file.name} is given.}
