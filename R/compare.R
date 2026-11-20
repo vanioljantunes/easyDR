@@ -130,7 +130,7 @@ dr_overlay_draw <- function(p, tg, main, foot, spec) {
 #'   the p value for non-linearity, `deviance` the deviance with its p value,
 #'   `r2` the R-squared, `r2adj` the adjusted R-squared, `aic` the AIC itself,
 #'   `delta.aic` its distance from the best shape, and `bic` the BIC. By
-#'   default the figure shows the Wald test, the R-squared and the Delta AIC.
+#'   default the figure shows the Wald test, the deviance and the Delta AIC.
 #'   The shapes are ranked by AIC whichever are shown, and the returned
 #'   `table` always holds every column.
 #' @param filetype,path,file.name,width,height where to save the figure, as
@@ -153,7 +153,7 @@ easydr_compare_shapes <- function(x,
                                              "fp", "hyperbolic_emax"),
                                   plot = TRUE, main = NULL, digits = 3,
                                   result = TRUE,
-                                  wald = TRUE, deviance = FALSE, r2 = TRUE,
+                                  wald = TRUE, deviance = TRUE, r2 = FALSE,
                                   r2adj = FALSE, aic = FALSE,
                                   delta.aic = TRUE, bic = FALSE,
                                   filetype = c("png", "pdf", "tiff"),
@@ -357,7 +357,7 @@ print.easydr_knots <- function(x, ...) {
 #'
 #' @keywords internal
 #' @noRd
-dr_test_columns <- function(tab, wald = TRUE, deviance = FALSE, r2 = TRUE,
+dr_test_columns <- function(tab, wald = TRUE, deviance = TRUE, r2 = FALSE,
                             r2adj = FALSE, aic = FALSE, delta.aic = TRUE,
                             bic = FALSE) {
   drop <- c(if (!isTRUE(wald)) "p nonlinearity",

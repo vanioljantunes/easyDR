@@ -138,10 +138,11 @@ test_that("each test column can be switched on or off", {
                     `R-squared adj` = 0.06, AIC = 28.8, `Delta AIC` = 0.9,
                     BIC = 33.5, check.names = FALSE)
   expect_named(dr_test_columns(tab),
-               c("Shape", "Studies", "p nonlinearity", "R-squared", "Delta AIC"))
-  all_on <- dr_test_columns(tab, deviance = T, r2adj = T, aic = T, bic = T)
+               c("Shape", "Studies", "p nonlinearity", "Deviance", "p deviance",
+                 "Delta AIC"))
+  all_on <- dr_test_columns(tab, r2 = T, r2adj = T, aic = T, bic = T)
   expect_named(all_on, names(tab))
-  expect_named(dr_test_columns(tab, wald = F, r2 = F, delta.aic = F),
+  expect_named(dr_test_columns(tab, wald = F, deviance = F, delta.aic = F),
                c("Shape", "Studies"))
   expect_equal(dr_shape_title(c("rcs", "fp", "hyperbolic_emax", "other")),
                c("Restricted cubic spline", "Fractional polynomial",
