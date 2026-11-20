@@ -157,3 +157,13 @@ test_that("the curve's footer carries one line per test switched on", {
   expect_match(n[1], "^Deviance: D = ")
   expect_match(n[2], "R-squared = .*adjusted R-squared = ")
 })
+
+test_that("knot sensitivity takes explicit knot sets", {
+  f <- easydr(alcohol_cvd, sm = "RR", shape = "rcs", dose.unit = "g/day")
+  ks <- easydr_knot_sensitivity(f, sets = list(c(5, 20, 50), c(10, 25, 60)),
+                                plot = FALSE)
+  expect_equal(nrow(ks$table), 2L)
+  expect_equal(ks$table$Knots, c("5, 20, 50", "10, 25, 60"))
+  expect_error(easydr_knot_sensitivity(f, sets = list(c(5, 20, 50))),
+               "at least two")
+})

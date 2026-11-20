@@ -240,6 +240,9 @@ print.easydr_comparison <- function(x, ...) {
 #' @param percentiles the percentiles of the dose distribution to draw knots
 #'   from.
 #' @param nknots how many knots in each combination.
+#' @param sets a list of knot vectors, in dose units, to use instead of the
+#'   percentile combinations, such as the sets a published paper drew. When
+#'   given, `percentiles` and `nknots` are ignored.
 #' @param plot `TRUE` draws the overlay.
 #' @param main a title, or `FALSE` for none.
 #' @param result `TRUE` puts the table of knot sets under the figure. `FALSE`
@@ -262,12 +265,23 @@ print.easydr_comparison <- function(x, ...) {
 easydr_knot_sensitivity <- function(x,
                                     percentiles = c(0.1, 0.25, 0.5, 0.75,
                                                     0.9),
-                                    nknots = 3L, plot = TRUE, main = NULL,
-                                    result = TRUE,
+                                    nknots = 3L, sets = NULL, plot = TRUE,
+                                    main = NULL, result = TRUE,
                                     filetype = c("png", "pdf", "tiff"),
                                     path = NULL, file.name = NULL,
                                     width = NULL, height = NULL) {
   dr_require_single(x, "easydr_knot_sensitivity()")
+  given <- !is.null(sets)
+  if (given) {
+    if (!is.list(sets) || length(sets) < 2L ||
+        !all(vapply(sets, function(k) is.numeric(k) && length(k) >= 3L,
+                    logical(1)))) {
+      stop("easydr: `sets` is a list of at least two knot vectors, each ",
+           "with three or more doses, such as ",
+           "list(c(0, 10, 30), c(0.5, 10, 30)).", call. = FALSE)
+    }
+    sets <- lapply(sets, function(k) sort(as.numeric(k)))
+  } else {
   if (!is.numeric(percentiles) || any(percentiles <= 0) ||
       any(percentiles >= 1) || length(percentiles) < nknots) {
     stop("easydr: `percentiles` are positions in the dose distribution ",
@@ -288,6 +302,7 @@ easydr_knot_sensitivity <- function(x,
          " knots, so there is nothing to compare it against. Name more ",
          "percentiles, such as the default c(0.1, 0.25, 0.5, 0.75, 0.9), ",
          "which gives ten sets of three.", call. = FALSE)
+  }
   }
   labs <- vapply(sets, function(k) paste(k, collapse = ", "), character(1))
 
@@ -324,10 +339,15 @@ easydr_knot_sensitivity <- function(x,
     # The table is the point of this figure, so it is set larger than the
     # summary tables under a single curve.
     tg <- if (isTRUE(result)) dr_stats_grob(tab, base_size = 12) else NULL
-    foot <- paste0(length(fits), " of the ", length(sets), " ", nknots,
-                   "-knot combinations of the ",
-                   paste0(format(100 * percentiles), collapse = ", "),
-                   "th percentiles. Curves that lie together say the result ",
+    what <- if (given) {
+      paste0(length(fits), " of the ", length(sets), " knot sets given. ")
+    } else {
+      paste0(length(fits), " of the ", length(sets), " ", nknots,
+             "-knot combinations of the ",
+             paste0(format(100 * percentiles), collapse = ", "),
+             "th percentiles. ")
+    }
+    foot <- paste0(what, "Curves that lie together say the result ",
                    "is the data; curves that fan apart say it is the knots.")
     spec <- dr_file_spec(file.name, filetype, path, width, height,
                          what = "easydr_knot_sensitivity()")
