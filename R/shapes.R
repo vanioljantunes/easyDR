@@ -197,7 +197,11 @@ dr_shape_rcs <- function(dose, knots) {
 #' @keywords internal
 #' @noRd
 dr_shape_fp <- function(dose, powers) {
-  p <- if (is.null(powers)) c(-1, 0) else as.numeric(powers)
+  # No powers given: the pair is chosen from the data, as Royston and Altman
+  # do, by fitting every second-order pair from the standard set and keeping
+  # the best. (-1, 0) only stands in until that search has run.
+  search <- is.null(powers)
+  p <- if (search) c(-1, 0) else as.numeric(powers)
   # One power is a first-order fractional polynomial, which Royston and Altman
   # treat as the first candidate, and two is a second-order one. Three or more
   # is a model this package does not fit, and a silent truncation to the first
@@ -219,7 +223,7 @@ dr_shape_fp <- function(dose, powers) {
   scale <- 10^round(log10(max(dose + shift, na.rm = TRUE)))
   if (!is.finite(scale) || scale <= 0) scale <- 1
 
-  list(name = "fp", terms = length(p), min_levels = length(p) + 1L,
+  out <- list(name = "fp", terms = length(p), min_levels = length(p) + 1L,
        knots = NULL, powers = p,
        slope_label = if (length(p) == 1L) {
          paste0("Per 1 unit increase in ",
@@ -257,6 +261,16 @@ dr_shape_fp <- function(dose, powers) {
          colnames(m) <- paste0("fp", seq_len(ncol(m)))
          m
        })
+  if (search) {
+    set <- c(-2, -1, -0.5, 0, 0.5, 1, 2, 3)
+    pairs <- expand.grid(p1 = set, p2 = set, KEEP.OUT.ATTRS = FALSE)
+    out$candidates <- pairs[pairs$p1 <= pairs$p2, , drop = FALSE]
+    out$respecify  <- function(row) dr_shape_fp(dose, c(row$p1, row$p2))
+    out$profile    <- TRUE
+    # Both powers were chosen from the data, so AIC and BIC charge for them.
+    out$profiled_params <- 2L
+  }
+  out
 }
 
 #' Rules V14, V15 and V17: can this shape be estimated from this data
@@ -472,8 +486,10 @@ dr_profile_shape <- function(shape, frame, sm, intake, proc, method,
   }
   if (is.null(best)) {
     stop("easydr: no ", shape$name, " candidate could be fitted to this ",
-         "table. The Emax family needs doses above zero and enough levels ",
-         "to estimate where the curve bends.", call. = FALSE)
+         "table.", if (shape$name %in% c("emax", "hyperbolic_emax"))
+           paste0(" The Emax family needs doses above zero and enough levels ",
+                  "to estimate where the curve bends."),
+         call. = FALSE)
   }
   best$profiled_over   <- nrow(cand)
   # The resolved shape is a fresh one built by respecify(), so the count of
@@ -484,9 +500,9 @@ dr_profile_shape <- function(shape, frame, sm, intake, proc, method,
   # it has run out of room. The value is still returned, because it is the
   # best of what was tried, but it is flagged so that nothing downstream
   # reports it as an estimate of where the curve bends.
-  edge <- range(cand$ed50)
-  if (isTRUE(all.equal(best$ed50, edge[1L])) ||
-      isTRUE(all.equal(best$ed50, edge[2L]))) {
+  edge <- if (is.null(cand$ed50)) NULL else range(cand$ed50)
+  if (!is.null(edge) && (isTRUE(all.equal(best$ed50, edge[1L])) ||
+      isTRUE(all.equal(best$ed50, edge[2L])))) {
     best$ed50_at_boundary <- TRUE
     best$label <- paste0(best$label, " (at the edge of the search range)")
   }

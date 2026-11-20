@@ -54,6 +54,12 @@
 #'   and the number of studies. The figure then carries its own numbers. With
 #'   subgroups drawn, the table gains one column per level and ends with the
 #'   overall fit.
+#' @param wald,deviance,r2,r2adj,aic,bic `TRUE` (`T`) or `FALSE` (`F`): add
+#'   or leave out a line under the panel for that test. `wald` is the
+#'   linearity test (on by default), `deviance` the deviance against a
+#'   saturated model with its p value, `r2` the R-squared, `r2adj` the
+#'   adjusted R-squared, `aic` and `bic` the information criteria of this fit,
+#'   from its one-stage maximum likelihood refit.
 #' @param target `TRUE` puts the target doses (ED50, ED80, ED max) in a box in
 #'   the corner of the panel, for an Emax fit, which computes them. Ignored
 #'   for other shapes.
@@ -117,6 +123,8 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          studlabel = FALSE, reference = TRUE,
                          rug = TRUE, result = TRUE, result.at = NULL,
                          target = TRUE,
+                         wald = TRUE, deviance = FALSE, r2 = FALSE,
+                         r2adj = FALSE, aic = FALSE, bic = FALSE,
                          subgroup = NULL, digits = 3, col = "#1F2A44",
                          fill.ci = "grey75", fill.pi = "grey90",
                          legend = NULL,
@@ -146,7 +154,9 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     round = round, prediction = prediction, points = points,
     studies = studies, studlabel = studlabel, reference = reference,
     rug = rug, subgroup = subgroup, col = col, fill.ci = fill.ci,
-    fill.pi = fill.pi, legend = legend, target = target)
+    fill.pi = fill.pi, legend = legend, target = target,
+    tests = list(wald = wald, deviance = deviance, r2 = r2, r2adj = r2adj,
+                 aic = aic, bic = bic))
   p       <- built$plot
   foot    <- built$foot
   tab     <- built$tab
@@ -207,7 +217,8 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                            studlabel = FALSE, reference = TRUE, rug = TRUE,
                            subgroup = NULL, col = "#1F2A44",
                            fill.ci = "grey75", fill.pi = "grey90",
-                           legend = NULL, target = TRUE) {
+                           legend = NULL, target = TRUE,
+                           tests = list(wald = TRUE)) {
   use_sub <- dr_use_subgroups(x, subgroup, "easydr_curve()")
   tab  <- x$curve
   unit <- if (is.null(x$dose_unit)) "dose" else x$dose_unit
@@ -408,7 +419,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                      ".  The dark line and the band are the overall fit.",
                    if (any(tab$extrapolated))
                      ".  Crosses mark doses beyond the observed range."),
-            dr_linearity_note(x, lead = ""),
+            do.call(dr_test_notes, c(list(x), tests)),
             legend)
 
   # The target doses sit in the corner the curve leaves empty: bottom right

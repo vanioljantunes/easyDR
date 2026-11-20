@@ -21,6 +21,12 @@ easydr_curve(
   result = TRUE,
   result.at = NULL,
   target = TRUE,
+  wald = TRUE,
+  deviance = FALSE,
+  r2 = FALSE,
+  r2adj = FALSE,
+  aic = FALSE,
+  bic = FALSE,
   subgroup = NULL,
   digits = 3,
   col = "#1F2A44",
@@ -87,6 +93,13 @@ line, which has one slope.}
 \item{target}{\code{TRUE} puts the target doses (ED50, ED80, ED max) in a box in
 the corner of the panel, for an Emax fit, which computes them. Ignored
 for other shapes.}
+
+\item{wald, deviance, r2, r2adj, aic, bic}{\code{TRUE} (\code{T}) or \code{FALSE} (\code{F}): add
+or leave out a line under the panel for that test. \code{wald} is the
+linearity test (on by default), \code{deviance} the deviance against a
+saturated model with its p value, \code{r2} the R-squared, \code{r2adj} the
+adjusted R-squared, \code{aic} and \code{bic} the information criteria of this fit,
+from its one-stage maximum likelihood refit.}
 
 \item{subgroup}{\code{TRUE} draws one curve per subgroup level, \code{FALSE} draws the
 overall fit alone. The default, \code{NULL}, draws the levels when the fit

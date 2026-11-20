@@ -110,6 +110,10 @@ dr_fit <- function(frame, sm, intake, proc, method, covariance, method.smd,
   args <- list(formula = form, id = dat$id, data = dat,
                covariance = cov_code, method = method, proc = proc)
   if (!is.null(mod)) args$mod <- mod
+  # The one-stage optimiser stops at 100 iterations by default, short of
+  # convergence for a two-term shape on the bundled alcohol data (quadratic AIC
+  # 30.47 unconverged against 30.13 converged), and the comparison reads it.
+  if (identical(proc, "1stage")) args$control <- list(maxiter = 2000)
 
   if (identical(intake, "continuous")) {
     # The engine derives the covariance of the mean differences from the

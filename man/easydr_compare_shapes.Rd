@@ -11,6 +11,13 @@ easydr_compare_shapes(
   main = NULL,
   digits = 3,
   result = TRUE,
+  wald = TRUE,
+  deviance = FALSE,
+  r2 = TRUE,
+  r2adj = FALSE,
+  aic = FALSE,
+  delta.aic = TRUE,
+  bic = FALSE,
   filetype = c("png", "pdf", "tiff"),
   path = NULL,
   file.name = NULL,
@@ -31,6 +38,15 @@ easydr_compare_shapes(
 
 \item{result}{\code{TRUE} puts the comparison table under the figure. \code{FALSE}
 leaves the panel on its own, which is what a slide wants.}
+
+\item{wald, deviance, r2, r2adj, aic, delta.aic, bic}{\code{TRUE} (\code{T}) or \code{FALSE}
+(\code{F}): show or hide that column in the table under the figure. \code{wald} is
+the p value for non-linearity, \code{deviance} the deviance with its p value,
+\code{r2} the R-squared, \code{r2adj} the adjusted R-squared, \code{aic} the AIC itself,
+\code{delta.aic} its distance from the best shape, and \code{bic} the BIC. By
+default the figure shows the Wald test, the R-squared and the Delta AIC.
+The shapes are ranked by AIC whichever are shown, and the returned
+\code{table} always holds every column.}
 
 \item{filetype, path, file.name, width, height}{where to save the figure, as
 in \code{\link[=easydr_curve]{easydr_curve()}}.}
