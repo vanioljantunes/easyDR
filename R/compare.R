@@ -170,7 +170,9 @@ easydr_compare_shapes <- function(x,
     if (identical(main, FALSE)) main <- NULL
     p  <- dr_overlay_panel(fits, names(fits), x$ratio, x$sm_label, unit,
                            legend.title = "Shape")
-    tg <- if (isTRUE(result)) dr_stats_grob(tab) else NULL
+    # The table is the point of this figure, so it is set larger than the
+    # summary tables under a single curve.
+    tg <- if (isTRUE(result)) dr_stats_grob(tab, base_size = 12) else NULL
     foot <- paste0("Ranked by AIC. Reference ", x$reference$curve, " ",
                    unit, ".")
     spec <- dr_file_spec(file.name, filetype, path, width, height,
@@ -298,7 +300,9 @@ easydr_knot_sensitivity <- function(x,
     if (identical(main, FALSE)) main <- NULL
     p  <- dr_overlay_panel(fits, labs, x$ratio, x$sm_label, unit,
                            legend.title = "Knots")
-    tg <- if (isTRUE(result)) dr_stats_grob(tab) else NULL
+    # The table is the point of this figure, so it is set larger than the
+    # summary tables under a single curve.
+    tg <- if (isTRUE(result)) dr_stats_grob(tab, base_size = 12) else NULL
     foot <- paste0(length(fits), " of the ", length(sets), " ", nknots,
                    "-knot combinations of the ",
                    paste0(format(100 * percentiles), collapse = ", "),
