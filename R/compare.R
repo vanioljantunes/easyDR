@@ -68,6 +68,11 @@ dr_overlay_panel <- function(fits, labels, ratio, sm_label, unit,
 #' @keywords internal
 #' @noRd
 dr_overlay_draw <- function(p, tg, main, foot, spec) {
+  # A width asked for is kept unless the table under the panel needs more:
+  # a table cut at both edges shows nothing.
+  if (!is.null(spec) && !is.null(spec$width) && !is.null(tg)) {
+    spec$width <- max(spec$width, dr_grob_width_in(tg) + 0.4)
+  }
   title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
   w_in <- max(7.6, dr_grob_width_in(tg) + 0.5)
   # Wrapped to the width the figure will actually have, and only then
