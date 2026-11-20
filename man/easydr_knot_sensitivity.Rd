@@ -8,6 +8,7 @@ easydr_knot_sensitivity(
   x,
   percentiles = c(0.1, 0.25, 0.5, 0.75, 0.9),
   nknots = 3L,
+  sets = NULL,
   plot = TRUE,
   main = NULL,
   result = TRUE,
@@ -25,6 +26,10 @@ easydr_knot_sensitivity(
 from.}
 
 \item{nknots}{how many knots in each combination.}
+
+\item{sets}{a list of knot vectors, in dose units, to use instead of the
+percentile combinations, such as the sets a published paper drew. When
+given, \code{percentiles} and \code{nknots} are ignored.}
 
 \item{plot}{\code{TRUE} draws the overlay.}
 
