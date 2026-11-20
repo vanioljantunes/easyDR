@@ -43,7 +43,13 @@ dr_subgroup_fits <- function(object, var) {
   if (length(value) > 0L && all(tolower(trimws(value)) %in% names(codes))) {
     value <- unname(codes[tolower(trimws(value))])
   }
-  levels_in_order <- unique(value[order(value)])
+  # A factor sets the order the levels are drawn in, as a published figure
+  # may list them; anything else is sorted.
+  levels_in_order <- if (is.factor(tab[[var]])) {
+    intersect(levels(tab[[var]]), value)
+  } else {
+    unique(value[order(value)])
+  }
 
   fits <- vector("list", length(levels_in_order))
   names(fits) <- levels_in_order
