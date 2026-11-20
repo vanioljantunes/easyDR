@@ -318,6 +318,14 @@ easydr <- function(data,
     min_levels = min.levels)
   out$curve_label <- dr_curve_label(out)
 
+  # An Emax curve is fitted to answer "which dose", so its target doses are
+  # part of the result rather than a second call: ED50, ED80 and the dose of
+  # the largest effect, read inside the observed range. Point estimates only;
+  # easydr_target_dose() bootstraps intervals around the same numbers.
+  if (out$shape$name %in% c("emax", "hyperbolic_emax")) {
+    out$target <- tryCatch(ed_gamma(out, c(0.5, 0.8)), error = function(e) NULL)
+  }
+
   # The subgroup levels are fitted here rather than at drawing time, so the
   # fit a reader prints and the fit a figure draws are the same objects. The
   # refits inherit through dr_refit(), and they are not themselves given a

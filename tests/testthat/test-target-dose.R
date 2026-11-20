@@ -115,3 +115,15 @@ test_that("easydr_table carries target doses when asked", {
   # The effects themselves are untouched by asking for the extras.
   expect_equal(tab[[2L]], easydr_table(f, doses = c(5, 10))[[2L]])
 })
+
+test_that("an Emax fit carries its target doses, and other shapes do not", {
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off(), add = TRUE)
+  data(aripiprazole, envir = environment())
+  fit <- easydr(aripiprazole, sm = "MD", shape = "emax", dose.unit = "mg/day")
+  expect_false(is.null(fit$target))
+  expect_equal(fit$target$ed, ed_gamma(fit, c(0.5, 0.8))$ed)
+  expect_output(print(fit), "Target doses (mg/day): ED50", fixed = TRUE)
+  expect_silent(easydr_curve(fit, result = FALSE))
+  lin <- easydr(aripiprazole, sm = "MD", shape = "linear", dose.unit = "mg/day")
+  expect_null(lin$target)
+})

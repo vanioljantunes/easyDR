@@ -131,7 +131,10 @@ dr_multi_table <- function(x, digits = 3) {
       `p nonlinearity` = if (isTRUE(nl$estimable)) dr_p(nl$p) else "-",
       Deviance = if (is.null(f$gof$deviance)) NA_real_ else
         round(f$gof$deviance, 2),
+      `p deviance` = if (is.null(f$gof$p)) "-" else dr_p(f$gof$p),
       `R-squared` = if (is.null(f$gof$r2)) NA_real_ else round(f$gof$r2, 3),
+      `R-squared adj` = if (is.null(f$gof$r2adj)) NA_real_ else
+        round(f$gof$r2adj, 3),
       AIC = round(dr_ic(f, "AIC", ml), 1),
       BIC = round(dr_ic(f, "BIC", ml), 1),
       check.names = FALSE, stringsAsFactors = FALSE
@@ -139,6 +142,11 @@ dr_multi_table <- function(x, digits = 3) {
   })
   out <- do.call(rbind, rows)
   rownames(out) <- NULL
+  # The distance from the best shape, which is how AIC is read: 0 is the
+  # best, up to 2 is equivalent support, 4 to 7 or more is considerably less.
+  out <- cbind(out[, seq_len(which(names(out) == "AIC")), drop = FALSE],
+               `Delta AIC` = round(out$AIC - min(out$AIC, na.rm = TRUE), 1),
+               out[, "BIC", drop = FALSE])
   out
 }
 

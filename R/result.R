@@ -249,6 +249,12 @@ print.easydr_result <- function(x, digits = 3, ...) {
   if (!is.null(x$curve_label) && !is.na(x$curve_label)) {
     cat("Curve shape: ", x$curve_label, "\n", sep = "")
   }
+  if (!is.null(x$target)) {
+    cat("Target doses (", unit, "): ",
+        paste0(names(x$target$ed), " ", formatC(x$target$ed, format = "f", digits = 2),
+               collapse = ", "),
+        ", ED max ", formatC(x$target$ed_max, format = "f", digits = 2), "\n", sep = "")
+  }
   # Named here because the numbers above are the overall fit, and a reader who
   # asked for subgroups should not have to infer that from their absence.
   if (!is.null(x$subgroup)) {
