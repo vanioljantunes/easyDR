@@ -28,6 +28,7 @@ easydr(
   ed50 = NULL,
   steepness = NULL,
   at = NULL,
+  result.at = "per.unit",
   grid = NULL,
   dose.unit = NULL,
   level = 0.95,
@@ -108,6 +109,14 @@ following Royston and Altman.}
 
 \item{at}{Doses to report predicted effects at. \code{NULL} uses a five-point
 grid across the observed dose range.}
+
+\item{result.at}{the effect every table and plot of this fit reports:
+\code{"per.unit"} (the default), the effect of one unit of dose, which is the
+slope of a straight line and one unit above the reference against the
+reference for any other shape; or a number, the effect at that dose
+against the reference. \code{\link[=easydr_curve]{easydr_curve()}}, \code{\link[=easydr_compare_shapes]{easydr_compare_shapes()}},
+\code{\link[=easydr_knot_sensitivity]{easydr_knot_sensitivity()}} and \code{\link[=easydr_funnel]{easydr_funnel()}} follow it.
+\code{\link[=easydr_forest]{easydr_forest()}} does not: a forest compares studies per unit of dose.}
 
 \item{grid}{Doses for the curve table on the result, which \code{\link[=easydr_curve]{easydr_curve()}}
 draws. \code{NULL} uses 20 points across the observed range.}

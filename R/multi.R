@@ -264,10 +264,7 @@ dr_panel_limits <- function(fits, ratio) {
 #' @noRd
 dr_panel_table <- function(fits, shapes, at = NULL, digits = 3) {
   first <- fits[[1L]]
-  if (is.null(at)) {
-    cand <- first$predicted$dose[!first$predicted$is_ref]
-    at <- if (length(cand) > 0L) cand[1L] else max(first$frame$dose)
-  }
+  at <- dr_result_at(first, at)
   quant <- c(dr_pooled_at(first, at)$label,
              paste0(format(100 * first$provenance$level), "% CI"),
              "p value", "I2", "Q (df, p)", "Studies")

@@ -25,8 +25,12 @@
 #' comparison is the predicted effect at one dose, named on the axis.
 #'
 #' @param x a fitted result from [easydr()].
-#' @param at a dose at which to compare studies. See [easydr_forest()].
+#' @param at what each study reports. `NULL` (the default) uses the
+#'   `result.at` given to [easydr()]; `"per.unit"` or a number overrides it.
 #' @param main plot title. `NULL` writes one; `FALSE` draws none.
+#' @param table `"horizontal"` (the default) puts the statistics across the
+#'   top of the table under the funnel, `"vertical"` puts them down its first
+#'   column. Either way the table is headed "Summary".
 #' @param xlab,ylab axis labels. `NULL` writes them from the fit.
 #' @param levels the pseudo confidence regions to shade, as percentages,
 #'   outermost first.
@@ -65,10 +69,10 @@
 #' @param width,height the size of the saved figure in inches. `NULL` lets
 #'   easyDR measure the figure and choose a size that fits it.
 #' @export
-easydr_funnel <- function(x, at = "per.unit", main = NULL, xlab = NULL, ylab = NULL,
+easydr_funnel <- function(x, at = NULL, main = NULL, xlab = NULL, ylab = NULL,
                           levels = c(99, 95, 90),
                           shade = c("white", "grey85", "grey70"),
-                          labels = FALSE, digits = 4,
+                          labels = FALSE, digits = 4, table = "horizontal",
                           filetype = c("png", "pdf", "tiff"),
                           path = NULL, file.name = NULL,
                           width = NULL, height = NULL) {
@@ -188,7 +192,7 @@ easydr_funnel <- function(x, at = "per.unit", main = NULL, xlab = NULL, ylab = N
   # thing under it. Two stacked bands beneath one figure is one too many:
   # whichever grob measures short lets the other one land on top of it.
   p  <- p + ggplot2::labs(subtitle = paste(note, collapse = "\n"))
-  tg <- dr_stats_grob(stats_df)
+  tg <- dr_summary_grob(stats_df, table)
 
   # A funnel is read as a shape, so its panel stays close to square. The
   # subtitle carries the caveats and is drawn inside the panel, so it is

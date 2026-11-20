@@ -26,7 +26,7 @@
 #'
 #' @keywords internal
 #' @noRd
-dr_study_effects <- function(x, at = "per.unit", what = "this plot",
+dr_study_effects <- function(x, at = NULL, what = "this plot",
                              increment = 1) {
   dr_check_increment(increment)
   if (!inherits(x, "easydr_result")) {
@@ -52,7 +52,7 @@ dr_study_effects <- function(x, at = "per.unit", what = "this plot",
   # Per unit of dose by default, as in the summary under a curve: the slope
   # of a straight line, or one unit above the reference against the reference
   # for any other shape. A number compares studies at that dose instead.
-  if (is.null(at)) at <- "per.unit"
+  at <- dr_result_at(x, at)
   if (identical(at, "per.unit") && identical(x$shape$name, "linear")) {
     cvec    <- matrix(increment, nrow = 1L, ncol = 1L)
     label   <- dr_label(x$sm, x$dose_unit, increment)
@@ -132,9 +132,9 @@ dr_study_effects <- function(x, at = "per.unit", what = "this plot",
 #'
 #' @keywords internal
 #' @noRd
-dr_pooled_at <- function(x, at = "per.unit", increment = 1) {
+dr_pooled_at <- function(x, at = NULL, increment = 1) {
   dr_check_increment(increment)
-  if (is.null(at)) at <- "per.unit"
+  at <- dr_result_at(x, at)
   xref <- x$reference$curve
   unit <- if (is.null(x$dose_unit)) "dose unit" else x$dose_unit
   if (identical(at, "per.unit")) {
@@ -765,4 +765,30 @@ dr_check_increment <- function(increment) {
          "for an effect per 100 units of dose.", call. = FALSE)
   }
   invisible(increment)
+}
+
+#' Check a result.at value
+#' @keywords internal
+#' @noRd
+dr_check_result_at <- function(result.at) {
+  if (identical(result.at, "per.unit")) return(result.at)
+  if (!is.numeric(result.at) || length(result.at) != 1L ||
+      !is.finite(result.at)) {
+    stop("easydr: `result.at` is \"per.unit\" or one dose, such as ",
+         "result.at = 2.", call. = FALSE)
+  }
+  result.at
+}
+
+#' The effect a table or plot reports
+#'
+#' What the caller asked for, else what the fit was told in easydr(), else
+#' per unit of dose.
+#'
+#' @keywords internal
+#' @noRd
+dr_result_at <- function(x, at = NULL) {
+  if (!is.null(at)) return(at)
+  if (is.list(x) && !is.null(x$result_at)) return(x$result_at)
+  "per.unit"
 }
