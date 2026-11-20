@@ -26,7 +26,9 @@
 #'
 #' @keywords internal
 #' @noRd
-dr_study_effects <- function(x, at = "per.unit", what = "this plot") {
+dr_study_effects <- function(x, at = "per.unit", what = "this plot",
+                             increment = 1) {
+  dr_check_increment(increment)
   if (!inherits(x, "easydr_result")) {
     stop("easydr: ", what, " takes a fitted result from easydr().",
          call. = FALSE)
@@ -52,12 +54,12 @@ dr_study_effects <- function(x, at = "per.unit", what = "this plot") {
   # for any other shape. A number compares studies at that dose instead.
   if (is.null(at)) at <- "per.unit"
   if (identical(at, "per.unit") && identical(x$shape$name, "linear")) {
-    cvec    <- matrix(1, nrow = 1L, ncol = 1L)
-    label   <- dr_label(x$sm, x$dose_unit)
+    cvec    <- matrix(increment, nrow = 1L, ncol = 1L)
+    label   <- dr_label(x$sm, x$dose_unit, increment)
     at_used <- NA_real_
   } else {
     if (identical(at, "per.unit")) {
-      at_used <- xref + 1
+      at_used <- xref + increment
       label   <- paste0(x$sm, " ", format(at_used), " vs ", format(xref), " ", unit)
     } else {
       if (!is.numeric(at) || length(at) != 1L || !is.finite(at)) {
@@ -130,17 +132,18 @@ dr_study_effects <- function(x, at = "per.unit", what = "this plot") {
 #'
 #' @keywords internal
 #' @noRd
-dr_pooled_at <- function(x, at = "per.unit") {
+dr_pooled_at <- function(x, at = "per.unit", increment = 1) {
+  dr_check_increment(increment)
   if (is.null(at)) at <- "per.unit"
   xref <- x$reference$curve
   unit <- if (is.null(x$dose_unit)) "dose unit" else x$dose_unit
   if (identical(at, "per.unit")) {
     if (identical(x$shape$name, "linear")) {
-      cvec    <- matrix(1, nrow = 1L, ncol = 1L)
-      label   <- dr_label(x$sm, x$dose_unit)
+      cvec    <- matrix(increment, nrow = 1L, ncol = 1L)
+      label   <- dr_label(x$sm, x$dose_unit, increment)
       at_used <- NA_real_
     } else {
-      at_used <- xref + 1
+      at_used <- xref + increment
       cvec    <- dr_contrast(x$shape, at_used, xref)
       label   <- paste0(x$sm, " ", format(at_used), " vs ", format(xref), " ", unit)
     }
@@ -746,4 +749,20 @@ dr_table_title <- function(g, text, base_size = 9) {
     grid::rectGrob(gp = grid::gpar(fill = "grey90", col = "grey60", lwd = 0.6)),
     grid::textGrob(text, gp = grid::gpar(fontface = "bold", fontsize = base_size)))
   gtable::gtable_add_grob(g, cell, t = 1, l = 1, r = ncol(g), name = "summary-title")
+}
+
+#' The step a per-unit effect is reported for
+#'
+#' Papers often report per 100 g/day or per 10 units rather than per one. The
+#' slope is scaled, so the study weights and the test results do not move.
+#'
+#' @keywords internal
+#' @noRd
+dr_check_increment <- function(increment) {
+  if (!is.numeric(increment) || length(increment) != 1L ||
+      !is.finite(increment) || increment <= 0) {
+    stop("easydr: `increment` is one positive number, such as increment = 100 ",
+         "for an effect per 100 units of dose.", call. = FALSE)
+  }
+  invisible(increment)
 }

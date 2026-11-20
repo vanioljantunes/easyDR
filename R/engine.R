@@ -29,7 +29,12 @@ dr_covariance <- function(intake, sm, covariance) {
 #' Human name for a covariance approximation
 #' @keywords internal
 #' @noRd
-dr_covariance_label <- function(x) {
+dr_covariance_label <- function(x, n_indep = 0L) {
+  if (n_indep > 0L) {
+    return(paste0(dr_covariance_label(x), ", with independent contrasts for the ",
+                  n_indep, if (n_indep == 1L) " study" else " studies",
+                  " without counts"))
+  }
   switch(x,
          gl          = "Greenland and Longnecker",
          h           = "Hamling count reconstruction",
@@ -50,9 +55,9 @@ dr_covariance_label <- function(x) {
 #'
 #' @keywords internal
 #' @noRd
-dr_label <- function(sm, dose_unit) {
+dr_label <- function(sm, dose_unit, increment = 1) {
   unit <- if (is.null(dose_unit)) "dose unit" else dose_unit
-  paste0("Per 1 ", unit, " increase")
+  paste0("Per ", format(increment), " ", unit, " increase")
 }
 
 #' Scale name for a summary measure
@@ -114,6 +119,11 @@ dr_fit <- function(frame, sm, intake, proc, method, covariance, method.smd,
   # convergence for a two-term shape on the bundled alcohol data (quadratic AIC
   # 30.47 unconverged against 30.13 converged), and the comparison reads it.
   if (identical(proc, "1stage")) args$control <- list(maxiter = 2000)
+  # When the moment estimator truncates tau-squared at zero, mixmeta still
+  # leaves sqrt(.Machine$double.eps) on Psi. On a slope per gram, whose
+  # variance is of the same order, that floor widens the interval. A zero is a
+  # zero: Crippa 2018 prints 1.01 (0.97, 1.06) for the cohort red meat studies.
+  if (identical(method, "mm")) args$control <- c(args$control, list(set.negeigen = 0))
 
   if (identical(intake, "continuous")) {
     # The engine derives the covariance of the mean differences from the
@@ -128,9 +138,33 @@ dr_fit <- function(frame, sm, intake, proc, method, covariance, method.smd,
            "and their denominators. Supply event.e and n.e, or let easydr ",
            "choose the approximation.", call. = FALSE)
     }
-    args$type  <- frame$type
-    args$cases <- frame$cases
-    args$n     <- frame$n
+    # A study without counts cannot carry the approximation, so it keeps
+    # independent contrasts while the others keep theirs, which is how Crippa
+    # and colleagues pooled the red meat and bladder cancer studies.
+    no_counts <- vapply(split(is.na(frame$cases) | is.na(frame$n),
+                              factor(frame$id, unique(frame$id))),
+                        any, logical(1))
+    if (any(no_counts)) {
+      args$Slist <- lapply(unique(frame$id), function(i) {
+        k <- frame$id == i
+        v <- frame$v[k]
+        if (no_counts[[as.character(i)]]) {
+          # The reference row carries v = NA; only the contrasts enter.
+          keep <- !is.na(v) & v != 0
+          diag(v[keep], nrow = sum(keep))
+        } else {
+          dosresmeta::covar.logrr(cases = frame$cases[k], n = frame$n[k],
+                                  y = frame$y[k], v = v, type = frame$type[k],
+                                  covariance = cov_code)
+        }
+      })
+      args$covariance <- "user"
+      indep_studies <- names(no_counts)[no_counts]
+    } else {
+      args$type  <- frame$type
+      args$cases <- frame$cases
+      args$n     <- frame$n
+    }
   } else {
     args$v <- dat$v
   }
@@ -141,6 +175,9 @@ dr_fit <- function(frame, sm, intake, proc, method, covariance, method.smd,
          conditionMessage(attr(fit, "condition")), call. = FALSE)
   }
   attr(fit, "easydr_covariance") <- cov_code
+  if (exists("indep_studies", inherits = FALSE)) {
+    attr(fit, "easydr_indep_studies") <- indep_studies
+  }
   fit
 }
 
