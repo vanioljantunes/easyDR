@@ -7,6 +7,7 @@
 easydr_forest(
   x,
   at = "per.unit",
+  increment = 1,
   main = NULL,
   xlab = NULL,
   xlim = NULL,
@@ -31,6 +32,10 @@ easydr_forest(
 of one unit of dose, which is the study's slope for a straight line and
 one unit above the reference against the reference for any other shape;
 or a number, the effect at that dose against the reference.}
+
+\item{increment}{the step the per-unit effect is reported for, 1 by
+default. \code{increment = 100} reports each study and the pooled estimate per
+100 units of dose, as many papers do; ignored when \code{at} is a number.}
 
 \item{main}{plot title, drawn left-aligned above the figure. \code{NULL} writes
 one from the fit; \code{FALSE} draws none.}

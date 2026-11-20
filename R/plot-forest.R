@@ -26,6 +26,9 @@
 #'   of one unit of dose, which is the study's slope for a straight line and
 #'   one unit above the reference against the reference for any other shape;
 #'   or a number, the effect at that dose against the reference.
+#' @param increment the step the per-unit effect is reported for, 1 by
+#'   default. `increment = 100` reports each study and the pooled estimate per
+#'   100 units of dose, as many papers do; ignored when `at` is a number.
 #' @param main plot title, drawn left-aligned above the figure. `NULL` writes
 #'   one from the fit; `FALSE` draws none.
 #' @param xlab label under the effect axis. `NULL` writes one from `sm`.
@@ -79,7 +82,7 @@
 #' @param width,height the size of the saved figure in inches. `NULL` lets
 #'   easyDR measure the figure and choose a size that fits it.
 #' @export
-easydr_forest <- function(x, at = "per.unit", main = NULL, xlab = NULL, xlim = NULL,
+easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab = NULL, xlim = NULL,
                           order = c("data", "effect", "weight", "study"),
                           subgroup = NULL, digits = 3, legend = NULL,
                           columns = TRUE, row.height = 0.26,
@@ -92,7 +95,7 @@ easydr_forest <- function(x, at = "per.unit", main = NULL, xlab = NULL, xlim = N
   # dr_study_effects() is what refuses a caller who passed something that is
   # not a fit, so it runs first: reading x$subgroup off a character vector
   # fails with a message about the `$` operator instead.
-  e   <- dr_study_effects(x, at, what = "a forest plot")
+  e   <- dr_study_effects(x, at, what = "a forest plot", increment = increment)
   use_sub <- dr_use_subgroups(x, subgroup, "easydr_forest()")
   tab <- e$table
   tab <- switch(order,
@@ -149,7 +152,7 @@ easydr_forest <- function(x, at = "per.unit", main = NULL, xlab = NULL, xlim = N
         plan <- rbind(plan, mk("note", "",
                                note = paste0("  not fitted: ", reason)))
       } else {
-        pl <- dr_pooled_at(f, at)
+        pl <- dr_pooled_at(f, at, increment)
         plan <- rbind(
           plan,
           mk("subtotal", "  Subtotal", "bold", pl$est, pl$lb, pl$ub,
