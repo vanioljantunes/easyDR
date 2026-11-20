@@ -6,7 +6,7 @@
 \usage{
 easydr_funnel(
   x,
-  at = NULL,
+  at = "per.unit",
   main = NULL,
   xlab = NULL,
   ylab = NULL,

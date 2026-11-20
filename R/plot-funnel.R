@@ -65,7 +65,7 @@
 #' @param width,height the size of the saved figure in inches. `NULL` lets
 #'   easyDR measure the figure and choose a size that fits it.
 #' @export
-easydr_funnel <- function(x, at = NULL, main = NULL, xlab = NULL, ylab = NULL,
+easydr_funnel <- function(x, at = "per.unit", main = NULL, xlab = NULL, ylab = NULL,
                           levels = c(99, 95, 90),
                           shade = c("white", "grey85", "grey70"),
                           labels = FALSE, digits = 4,
