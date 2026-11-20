@@ -63,9 +63,12 @@
 #' @param target `TRUE` puts the target doses (ED50, ED80, ED max) in a box in
 #'   the corner of the panel, for an Emax fit, which computes them. Ignored
 #'   for other shapes.
-#' @param result.at the dose that table reports, for a shape with more than one
-#'   term. `NULL` uses the first dose the fit reports. Ignored for a straight
-#'   line, which has one slope.
+#' @param result.at what the table reports: `"per.unit"` (the default), the
+#'   effect of one unit of dose as in the forest plot, which is the slope of a
+#'   straight line and one unit above the reference against the reference for
+#'   any other shape; or a number, the effect at that dose.
+#' @param table `"horizontal"` (the default) puts the quantities across the
+#'   top of the summary table, `"vertical"` puts them down its first column.
 #' @param subgroup `TRUE` draws one curve per subgroup level, `FALSE` draws the
 #'   overall fit alone. The default, `NULL`, draws the levels when the fit
 #'   carries them. Each level is told apart by colour and by line type, and its
@@ -121,8 +124,8 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          xlim = NULL, ylim = NULL, round = NULL,
                          prediction = FALSE, points = TRUE, studies = FALSE,
                          studlabel = FALSE, reference = TRUE,
-                         rug = TRUE, result = TRUE, result.at = NULL,
-                         target = TRUE,
+                         rug = TRUE, result = TRUE, result.at = "per.unit",
+                         table = "horizontal", target = TRUE,
                          wald = TRUE, deviance = FALSE, r2 = FALSE,
                          r2adj = FALSE, aic = FALSE, bic = FALSE,
                          subgroup = NULL, digits = 3, col = "#1F2A44",
@@ -168,7 +171,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # curve on a fit that rises into its own corner, and it could hold only one
   # column, which left nowhere for a subgroup to go.
   if (isTRUE(result)) {
-    tg <- dr_stats_grob(dr_summary_table(x, result.at, digits, use_sub))
+    tg <- dr_summary_grob(dr_summary_table(x, result.at, digits, use_sub), table)
     fs <- dr_footer_stack(foot, tg)
   } else {
     tg <- NULL

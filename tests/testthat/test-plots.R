@@ -328,13 +328,15 @@ test_that("the curve's corner box is the fit's own result", {
 
 test_that("a curve has no single slope, so the box names its dose", {
   local_null_device()
-  rcs <- bin_fit("rcs", at = c(10, 25, 50))
+  rcs <- bin_fit("rcs", at = c(1, 10, 25, 50))
+  # Per unit by default: one unit above the reference against the reference.
   box <- easyDR:::dr_pooled_at(rcs)
-  expect_equal(box$at, 10)
-  expect_match(box$label, "^IRR at 10 g/day$")
-  # And it agrees with what the fit predicts there.
-  row <- rcs$predicted[rcs$predicted$dose == 10, ]
+  expect_equal(box$at, 1)
+  expect_match(box$label, "^IRR 1 vs 0 g/day$")
+  row <- rcs$predicted[rcs$predicted$dose == 1, ]
   expect_equal(exp(box$est), row$est, tolerance = 1e-8)
+  expect_equal(easyDR:::dr_pooled_at(rcs, "per.unit")$est, box$est)
+  expect_error(easyDR:::dr_pooled_at(rcs, "middle"), "per.unit")
 
   # result.at moves it, and nothing else.
   at50 <- easyDR:::dr_pooled_at(rcs, 50)
@@ -523,4 +525,28 @@ test_that("each level is told apart by colour, line type and shape", {
   # The overall fit marks its doses with circles, so no level may be a circle
   # until every other shape is used.
   expect_false(21L %in% sty$shape[1:3])
+})
+
+test_that("knots given as proportions are percentiles of the doses", {
+  d <- alcohol_cvd$dose
+  f <- easydr(alcohol_cvd, shape = "rcs", knots = c(0.25, 0.5, 0.75),
+              dose.unit = "g/day")
+  expect_equal(f$shape$knots, as.numeric(quantile(d, c(0.25, 0.5, 0.75))))
+  g <- easydr(alcohol_cvd, shape = "rcs", knots = c(5, 20, 45), dose.unit = "g/day")
+  expect_equal(g$shape$knots, c(5, 20, 45))
+})
+
+test_that("the summary table lies either way, under one Summary header", {
+  local_null_device()
+  f <- easydr(alcohol_cvd, shape = "rcs", dose.unit = "g/day")
+  tab <- easyDR:::dr_summary_table(f)
+  h <- easyDR:::dr_summary_grob(tab, "horizontal")
+  v <- easyDR:::dr_summary_grob(tab, "vertical")
+  expect_equal(nrow(h), 3L)                  # Summary, headers, values
+  expect_equal(ncol(h), nrow(tab))
+  expect_equal(nrow(v), nrow(tab) + 1L)      # Summary, then one row each
+  expect_equal(ncol(v), 2L)
+  expect_true("summary-title" %in% h$layout$name)
+  expect_error(easyDR:::dr_summary_grob(tab, "diagonal"))
+  expect_silent(easydr_curve(f, table = "vertical"))
 })
