@@ -147,6 +147,11 @@ dr_shape_rcs <- function(dose, knots) {
     }
     as.numeric(stats::quantile(positive, seq(0.05, 0.95, length.out = n),
                                names = FALSE))
+  } else if (all(knots > 0 & knots < 1)) {
+    # Proportions are percentiles of every dose in the table, the reference
+    # rows included, which is how Orsini and Crippa place them and how
+    # easydr_knot_sensitivity() reads its percentiles.
+    as.numeric(stats::quantile(dose, knots, names = FALSE))
   } else {
     as.numeric(knots)
   }

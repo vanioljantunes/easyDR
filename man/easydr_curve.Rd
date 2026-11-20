@@ -19,7 +19,8 @@ easydr_curve(
   reference = TRUE,
   rug = TRUE,
   result = TRUE,
-  result.at = NULL,
+  result.at = "per.unit",
+  table = "horizontal",
   target = TRUE,
   wald = TRUE,
   deviance = FALSE,
@@ -86,9 +87,13 @@ and the number of studies. The figure then carries its own numbers. With
 subgroups drawn, the table gains one column per level and ends with the
 overall fit.}
 
-\item{result.at}{the dose that table reports, for a shape with more than one
-term. \code{NULL} uses the first dose the fit reports. Ignored for a straight
-line, which has one slope.}
+\item{result.at}{what the table reports: \code{"per.unit"} (the default), the
+effect of one unit of dose as in the forest plot, which is the slope of a
+straight line and one unit above the reference against the reference for
+any other shape; or a number, the effect at that dose.}
+
+\item{table}{\code{"horizontal"} (the default) puts the quantities across the
+top of the summary table, \code{"vertical"} puts them down its first column.}
 
 \item{target}{\code{TRUE} puts the target doses (ED50, ED80, ED max) in a box in
 the corner of the panel, for an Emax fit, which computes them. Ignored

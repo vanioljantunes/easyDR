@@ -93,9 +93,12 @@ or \code{"indep"}. \code{NULL}, the default, chooses from what the table supplie
 
 \item{method.smd}{For \code{sm = "SMD"}: \code{"cohens"}, \code{"hedges"} or \code{"glass"}.}
 
-\item{knots}{For \code{shape = "rcs"}: knot positions, or a single number giving
-how many to place. The default is 3 knots at the 10th, 50th and 90th
-percentiles of the non-zero doses, and whatever is used is printed.}
+\item{knots}{For \code{shape = "rcs"}: percentiles, knot positions, or a single
+number giving how many to place. Values all between 0 and 1, such as
+\code{knots = c(0.25, 0.50, 0.75)}, are read as percentiles of the doses and
+easyDR computes the positions; anything else is taken as the positions
+themselves. The default is 3 knots at the 10th, 50th and 90th percentiles
+of the non-zero doses, and whatever is used is printed.}
 
 \item{powers}{For \code{shape = "fp"}: one power for a first-order fractional
 polynomial, such as \code{powers = -0.5}, or a pair for a second-order one.

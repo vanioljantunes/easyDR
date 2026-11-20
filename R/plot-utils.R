@@ -121,27 +121,34 @@ dr_study_effects <- function(x, at = NULL, what = "this plot") {
 #' never produces. The curve has to be able to report its own result whatever
 #' the pooling stage was, so this reads `coef()` and `vcov()` and nothing else.
 #'
-#' A one-term shape with no dose named reports its slope. Anything else reports
-#' the predicted effect at a dose, and says which dose that was.
+#' The default, `"per.unit"`, is the effect of one unit of dose, as in the
+#' forest plot: the slope itself for a straight line, and one unit above the
+#' reference against the reference for any other shape, because a curve has
+#' no single slope. A number reports the predicted effect at that dose against
+#' the reference, and the label says which dose it was.
 #'
 #' @keywords internal
 #' @noRd
-dr_pooled_at <- function(x, at = NULL) {
-  one_term <- x$shape$terms == 1L
+dr_pooled_at <- function(x, at = "per.unit") {
+  if (is.null(at)) at <- "per.unit"
   xref <- x$reference$curve
   unit <- if (is.null(x$dose_unit)) "dose unit" else x$dose_unit
-
-  if (one_term && is.null(at)) {
-    cvec    <- matrix(1, nrow = 1L, ncol = 1L)
-    label   <- dr_label(x$sm, x$dose_unit)
-    at_used <- NA_real_
-  } else {
-    if (is.null(at)) {
-      cand    <- x$predicted$dose[!x$predicted$is_ref]
-      at_used <- if (length(cand) > 0L) cand[1L] else max(x$frame$dose)
+  if (identical(at, "per.unit")) {
+    if (identical(x$shape$name, "linear")) {
+      cvec    <- matrix(1, nrow = 1L, ncol = 1L)
+      label   <- dr_label(x$sm, x$dose_unit)
+      at_used <- NA_real_
     } else {
-      at_used <- at
+      at_used <- xref + 1
+      cvec    <- dr_contrast(x$shape, at_used, xref)
+      label   <- paste0(x$sm, " ", format(at_used), " vs ", format(xref), " ", unit)
     }
+  } else {
+    if (!is.numeric(at) || length(at) != 1L || !is.finite(at)) {
+      stop("easydr: `result.at` is \"per.unit\" or one dose, such as ",
+           "result.at = 2.", call. = FALSE)
+    }
+    at_used <- at
     cvec  <- dr_contrast(x$shape, at_used, xref)
     label <- paste0(x$sm, " at ", at_used, " ", unit)
   }
@@ -692,4 +699,50 @@ dr_end_file <- function(con) {
           format(round(con$width, 2)), " x ", format(round(con$height, 2)),
           " inches)")
   invisible(con$spec$file)
+}
+
+#' The summary table under a curve, laid out as asked
+#'
+#' `"horizontal"` puts the quantities across the top as column headers and a
+#' fit on each row; `"vertical"` puts them down the first column. A single fit
+#' has no level to name, so instead of a column called "Overall" the table is
+#' headed by one merged cell, "Summary".
+#'
+#' @keywords internal
+#' @noRd
+dr_summary_grob <- function(tab, table = "horizontal", base_size = 9) {
+  table <- match.arg(table, c("horizontal", "vertical"))
+  single <- ncol(tab) == 2L
+  if (identical(table, "horizontal")) {
+    m <- as.data.frame(t(as.matrix(tab[, -1L, drop = FALSE])),
+                       stringsAsFactors = FALSE)
+    names(m) <- tab[[1L]]
+    if (!single) m <- cbind(data.frame(` ` = names(tab)[-1L], check.names = FALSE,
+                                       stringsAsFactors = FALSE), m)
+    rownames(m) <- NULL
+    g <- dr_stats_grob(m, base_size)
+  } else if (single) {
+    tt <- gridExtra::ttheme_minimal(
+      base_size = base_size,
+      core = list(fg_params = list(hjust = 0.5, x = 0.5),
+                  bg_params = list(fill = c("white", "grey97"),
+                                   col = "grey60", lwd = 0.6)))
+    g <- gridExtra::tableGrob(tab, rows = NULL, cols = NULL, theme = tt)
+  } else {
+    g <- dr_stats_grob(tab, base_size)
+  }
+  if (single) g <- dr_table_title(g, "Summary", base_size)
+  g
+}
+
+#' One header cell across the whole width of a table grob
+#' @keywords internal
+#' @noRd
+dr_table_title <- function(g, text, base_size = 9) {
+  h <- grid::unit(base_size * 2, "points")
+  g <- gtable::gtable_add_rows(g, h, pos = 0)
+  cell <- grid::grobTree(
+    grid::rectGrob(gp = grid::gpar(fill = "grey90", col = "grey60", lwd = 0.6)),
+    grid::textGrob(text, gp = grid::gpar(fontface = "bold", fontsize = base_size)))
+  gtable::gtable_add_grob(g, cell, t = 1, l = 1, r = ncol(g), name = "summary-title")
 }
