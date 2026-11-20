@@ -54,6 +54,9 @@
 #'   and the number of studies. The figure then carries its own numbers. With
 #'   subgroups drawn, the table gains one column per level and ends with the
 #'   overall fit.
+#' @param target `TRUE` puts the target doses (ED50, ED80, ED max) in a box in
+#'   the corner of the panel, for an Emax fit, which computes them. Ignored
+#'   for other shapes.
 #' @param result.at the dose that table reports, for a shape with more than one
 #'   term. `NULL` uses the first dose the fit reports. Ignored for a straight
 #'   line, which has one slope.
@@ -113,6 +116,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          prediction = FALSE, points = TRUE, studies = FALSE,
                          studlabel = FALSE, reference = TRUE,
                          rug = TRUE, result = TRUE, result.at = NULL,
+                         target = TRUE,
                          subgroup = NULL, digits = 3, col = "#1F2A44",
                          fill.ci = "grey75", fill.pi = "grey90",
                          legend = NULL,
@@ -142,7 +146,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     round = round, prediction = prediction, points = points,
     studies = studies, studlabel = studlabel, reference = reference,
     rug = rug, subgroup = subgroup, col = col, fill.ci = fill.ci,
-    fill.pi = fill.pi, legend = legend)
+    fill.pi = fill.pi, legend = legend, target = target)
   p       <- built$plot
   foot    <- built$foot
   tab     <- built$tab
@@ -203,7 +207,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                            studlabel = FALSE, reference = TRUE, rug = TRUE,
                            subgroup = NULL, col = "#1F2A44",
                            fill.ci = "grey75", fill.pi = "grey90",
-                           legend = NULL) {
+                           legend = NULL, target = TRUE) {
   use_sub <- dr_use_subgroups(x, subgroup, "easydr_curve()")
   tab  <- x$curve
   unit <- if (is.null(x$dose_unit)) "dose" else x$dose_unit
@@ -406,6 +410,23 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                      ".  Crosses mark doses beyond the observed range."),
             dr_linearity_note(x, lead = ""),
             legend)
+
+  # The target doses sit in the corner the curve leaves empty: bottom right
+  # when it rises, top right when it falls.
+  if (isTRUE(target) && !is.null(x$target) && !isTRUE(use_sub)) {
+    tg <- x$target
+    lab <- paste0(c(names(tg$ed), "ED max"), "  ",
+                  formatC(c(tg$ed, tg$ed_max), format = "f", digits = 1),
+                  " ", unit, collapse = "\n")
+    ref <- if (isTRUE(x$ratio)) 1 else 0
+    rising <- utils::tail(tab$est, 1) >= ref
+    p <- p + ggplot2::annotate(
+      "label", x = Inf, y = if (rising) -Inf else Inf, label = lab,
+      hjust = 1.04, vjust = if (rising) -0.12 else 1.12,
+      size = 3.3, family = "mono", fill = "white", colour = "#1F2A44",
+      label.r = grid::unit(0, "pt"),
+      label.padding = grid::unit(5, "pt"))
+  }
 
   list(plot = p, foot = foot, tab = tab, use_sub = use_sub,
        main = main)

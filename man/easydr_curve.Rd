@@ -20,6 +20,7 @@ easydr_curve(
   rug = TRUE,
   result = TRUE,
   result.at = NULL,
+  target = TRUE,
   subgroup = NULL,
   digits = 3,
   col = "#1F2A44",
@@ -82,6 +83,10 @@ overall fit.}
 \item{result.at}{the dose that table reports, for a shape with more than one
 term. \code{NULL} uses the first dose the fit reports. Ignored for a straight
 line, which has one slope.}
+
+\item{target}{\code{TRUE} puts the target doses (ED50, ED80, ED max) in a box in
+the corner of the panel, for an Emax fit, which computes them. Ignored
+for other shapes.}
 
 \item{subgroup}{\code{TRUE} draws one curve per subgroup level, \code{FALSE} draws the
 overall fit alone. The default, \code{NULL}, draws the levels when the fit
