@@ -171,9 +171,8 @@ easydr_compare_shapes <- function(x,
     p  <- dr_overlay_panel(fits, names(fits), x$ratio, x$sm_label, unit,
                            legend.title = "Shape")
     tg <- if (isTRUE(result)) dr_stats_grob(tab) else NULL
-    foot <- paste0("Ranked by AIC, computed by maximum likelihood so that ",
-                   "shapes which are not nested can be compared. ",
-                   "Reference ", x$reference$curve, " ", unit, ".")
+    foot <- paste0("Ranked by AIC. Reference ", x$reference$curve, " ",
+                   unit, ".")
     spec <- dr_file_spec(file.name, filetype, path, width, height,
                          what = "easydr_compare_shapes()")
     dr_overlay_draw(p, tg, main, foot, spec)
@@ -197,11 +196,6 @@ print.easydr_comparison <- function(x, ...) {
     cat("\nCould not be fitted to this table: ",
         paste(x$failed, collapse = ", "), "\n", sep = "")
   }
-  cat("\nAIC and BIC are on a maximum likelihood fit, because a REML",
-      "\nlikelihood depends on the design and would not compare two",
-      "\nshapes. Picking the winner after seeing this table is a",
-      "\nresearcher degree of freedom: say in the protocol which",
-      "\ncriterion decides, and report the rest as a sensitivity.\n")
   invisible(x)
 }
 
@@ -329,8 +323,5 @@ easydr_knot_sensitivity <- function(x,
 print.easydr_knots <- function(x, ...) {
   cat("Knot placement sensitivity (", x$sm_label, ")\n\n", sep = "")
   print(x$table, row.names = FALSE, right = FALSE)
-  cat("\nThe spread across these rows is what the knot choice was worth.",
-      "\nIt belongs in the supplement of the paper, whichever way it came",
-      "\nout.\n")
   invisible(x)
 }
