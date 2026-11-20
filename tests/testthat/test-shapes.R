@@ -155,8 +155,14 @@ test_that("a fractional polynomial takes one power or two", {
 
   two <- easydr(alcohol_cancer, sm = "RR", shape = "fp", dose.unit = "g/day")
   expect_equal(two$shape$terms, 2L)
-  expect_equal(two$shape$powers, c(-1, 0))
-  expect_match(two$shape$label, "powers -1, 0")
+  # Left unset, the two powers are searched over the usual set by likelihood.
+  set <- c(-2, -1, -0.5, 0, 0.5, 1, 2, 3)
+  expect_length(two$shape$powers, 2)
+  expect_true(all(two$shape$powers %in% set))
+  expect_lte(two$shape$powers[1], two$shape$powers[2])
+  fixed <- easydr(alcohol_cancer, sm = "RR", shape = "fp", powers = c(-1, 0),
+                  dose.unit = "g/day")
+  expect_gte(as.numeric(logLik(two$fit)), as.numeric(logLik(fixed$fit)) - 1e-6)
 
   # Three is a model this package does not fit, and must not be truncated.
   expect_error(

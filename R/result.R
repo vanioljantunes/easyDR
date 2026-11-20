@@ -341,6 +341,12 @@ print.easydr_result <- function(x, digits = 3, ...) {
       x$counts$dose_max, " ", unit, "\n", sep = "")
 
   if (!is.null(x$viability)) cat(dr_viability_line(x$viability), "\n", sep = "")
+  dropped <- x$provenance$dropped
+  if (!is.null(dropped)) {
+    cat("Left out of this shape (fewer than ", dropped$needs,
+        " non-reference doses): ", paste(dropped$studies, collapse = ", "),
+        "\n", sep = "")
+  }
 
   defaults <- dr_defaults_applied(x)
   if (length(defaults) > 0L) {

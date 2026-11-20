@@ -159,7 +159,7 @@ test_that("the comparison table carries what a protocol compares on", {
   m <- multi_fit()
   tab <- easyDR:::dr_multi_table(m)
   expect_equal(tab$Shape, m$shapes)
-  expect_true(all(c("Terms", "Deviance", "AIC", "BIC") %in% names(tab)))
+  expect_true(all(c("Studies", "Deviance", "AIC", "BIC") %in% names(tab)))
   # AIC and BIC are what make non-nested shapes comparable, so they must be
   # real numbers rather than the NA a failed extraction would leave.
   expect_true(all(is.finite(tab$AIC)))

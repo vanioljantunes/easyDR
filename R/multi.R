@@ -60,17 +60,27 @@ dr_require_single <- function(x, what) {
 #' different quantities and the difference between them means nothing. The
 #' comparison therefore refits under ML.
 #'
+#' It also refits in one stage. A two-stage likelihood is the likelihood of the
+#' study-specific coefficients, which are different quantities for every shape
+#' and change with the units of dose: on the alcohol data, dividing the dose by
+#' ten moves the linear AIC from -30.8 to -3.2 while the quadratic moves from
+#' -79.5 to 3.4, reversing the ranking. The one-stage likelihood is the
+#' likelihood of the reported log relative risks themselves, the same data for
+#' every shape, so its AIC compares shapes as Crippa and colleagues (2019) do.
+#'
 #' The shape is handed back already resolved, so a profiled Emax is not
 #' profiled a second time and the refit is the same curve.
 #'
 #' @keywords internal
 #' @noRd
 dr_refit_ml <- function(f) {
-  if (identical(f$provenance$method, "ml")) return(f)
+  if (identical(f$provenance$method, "ml") &&
+      identical(f$provenance$proc, "1stage")) return(f)
   inh <- try(dr_inherited(f), silent = TRUE)
   if (inherits(inh, "try-error")) return(NULL)
   args <- inh$args
   args$method.tau <- "ML"
+  args$proc <- "1stage"
   args$shape <- f$shape
   out <- try(suppressWarnings(
     do.call(inh$entry, c(list(data = inh$data), args))), silent = TRUE)
@@ -110,8 +120,9 @@ dr_try_num <- function(expr) {
 
 #' One row per shape: what each model costs and what it buys
 #'
-#' The columns are the ones a protocol compares shapes on. Terms is how many
-#' coefficients the shape spends. Departure from linearity is the Wald test on
+#' The columns are the ones a protocol compares shapes on. Studies is how
+#' many studies the shape was fitted in: a two-stage shape leaves out a study
+#' with fewer non-reference doses than it has terms. Departure from linearity is the Wald test on
 #' the non-linear terms, which a one-term shape has nothing to report for.
 #' Deviance is the fit against the saturated model. AIC and BIC are the fit
 #' with the terms charged for, which is what lets shapes that are not nested
@@ -127,7 +138,7 @@ dr_multi_table <- function(x, digits = 3) {
     ml <- dr_refit_ml(f)
     data.frame(
       Shape = s,
-      Terms = f$shape$terms,
+      Studies = f$counts$studies,
       `p nonlinearity` = if (isTRUE(nl$estimable)) dr_p(nl$p) else "-",
       Deviance = if (is.null(f$gof$deviance)) NA_real_ else
         round(f$gof$deviance, 2),
@@ -333,7 +344,7 @@ dr_curve_multi <- function(x, mult.curves = FALSE, curve.panels = NULL,
   }
 
   if (is.null(main)) {
-    main <- paste0(x$sm_label, " by shape, same studies")
+    main <- paste0(x$sm_label, " by shape")
   }
   if (identical(main, FALSE)) main <- NULL
 

@@ -99,3 +99,60 @@ test_that("both workflows write a figure when asked", {
   expect_true(file.exists(file.path(dir, "cmp.png")))
   expect_true(file.exists(file.path(dir, "kn.png")))
 })
+
+test_that("AIC compares shapes on one-stage likelihoods, whatever the dose unit", {
+  # A two-stage likelihood is of each shape's own study coefficients, so it
+  # moves with the dose unit and reverses rankings. The one-stage refit is of
+  # the reported log relative risks, so rescaling the dose leaves it alone.
+  shapes <- c("linear", "quadratic", "rcs")
+  f1 <- easydr(alcohol_cvd, shape = "rcs", dose.unit = "g/day")
+  d10 <- alcohol_cvd
+  d10$dose <- d10$dose / 10
+  f2 <- easydr(d10, shape = "rcs", dose.unit = "10 g/day")
+  a1 <- easydr_compare_shapes(f1, shapes = shapes, plot = FALSE)$table
+  a2 <- easydr_compare_shapes(f2, shapes = shapes, plot = FALSE)$table
+  expect_equal(a1$AIC[match(shapes, a1$Shape)],
+               a2$AIC[match(shapes, a2$Shape)], tolerance = 0.2)
+  # Crippa and colleagues' one-stage linear fit of these data: AIC 32.67.
+  expect_equal(a1$AIC[a1$Shape == "linear"], 32.7, tolerance = 0.05)
+})
+
+test_that("a two-stage shape leaves out studies with too few doses", {
+  d <- alcohol_cvd
+  d <- d[!(d$studlab == "Bianchi" & d$dose > 10), ]
+  expect_message(q <- easydr(d, shape = "quadratic", dose.unit = "g/day"),
+                 "left out 1 study")
+  expect_equal(q$counts$studies, 5L)
+  expect_identical(q$provenance$dropped$studies, "Bianchi")
+  expect_output(print(q), "Left out of this shape")
+  l <- easydr(d, shape = "linear", dose.unit = "g/day")
+  expect_equal(l$counts$studies, 6L)
+  cs <- suppressMessages(easydr_compare_shapes(
+    l, shapes = c("linear", "quadratic"), plot = FALSE))$table
+  expect_equal(cs$Studies[match(c("linear", "quadratic"), cs$Shape)], c(6L, 5L))
+})
+
+test_that("each test column can be switched on or off", {
+  tab <- data.frame(Shape = "rcs", Studies = 6L, `p nonlinearity` = "0.06",
+                    Deviance = 39.4, `p deviance` = "0.002", `R-squared` = 0.16,
+                    `R-squared adj` = 0.06, AIC = 28.8, `Delta AIC` = 0.9,
+                    BIC = 33.5, check.names = FALSE)
+  expect_named(dr_test_columns(tab),
+               c("Shape", "Studies", "p nonlinearity", "R-squared", "Delta AIC"))
+  all_on <- dr_test_columns(tab, deviance = T, r2adj = T, aic = T, bic = T)
+  expect_named(all_on, names(tab))
+  expect_named(dr_test_columns(tab, wald = F, r2 = F, delta.aic = F),
+               c("Shape", "Studies"))
+  expect_equal(dr_shape_title(c("rcs", "fp", "hyperbolic_emax", "other")),
+               c("Restricted cubic spline", "Fractional polynomial",
+                 "Hyperbolic Emax", "other"))
+})
+
+test_that("the curve's footer carries one line per test switched on", {
+  f <- easydr(alcohol_cvd, shape = "rcs", dose.unit = "g/day")
+  expect_length(dr_test_notes(f), 1L)
+  n <- dr_test_notes(f, wald = FALSE, deviance = TRUE, r2 = TRUE, r2adj = TRUE)
+  expect_length(n, 2L)
+  expect_match(n[1], "^Deviance: D = ")
+  expect_match(n[2], "R-squared = .*adjusted R-squared = ")
+})

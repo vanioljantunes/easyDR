@@ -122,7 +122,8 @@
 #'   percentiles of the non-zero doses, and whatever is used is printed.
 #' @param powers For `shape = "fp"`: one power for a first-order fractional
 #'   polynomial, such as `powers = -0.5`, or a pair for a second-order one.
-#'   The default is the pair `c(-1, 0)`. A power of 0 is read as the logarithm,
+#'   Left `NULL`, the pair is chosen by likelihood from -2, -1, -0.5, 0, 0.5,
+#'   1, 2 and 3, as Royston and Altman suggest. A power of 0 is read as the logarithm,
 #'   following Royston and Altman.
 #' @param at Doses to report predicted effects at. `NULL` uses a five-point
 #'   grid across the observed dose range.

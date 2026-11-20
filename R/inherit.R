@@ -38,6 +38,7 @@ dr_entry <- function(kind, data, call, roles_args, sm, method.tau, proc,
   shp   <- dr_shape(shape, prep$frame$dose, knots = knots, powers = powers,
                     ed50 = ed50, steepness = steepness,
                     studies = prep$frame$studlab)
+  prep  <- dr_drop_thin(prep, shp, proc)
   # A shape with a parameter that is not linear in the model, which is the
   # Emax family, is resolved by fitting over a grid and keeping the best.
   # Every other shape passes straight through.
@@ -55,6 +56,40 @@ dr_entry <- function(kind, data, call, roles_args, sm, method.tau, proc,
             args = dr_entry_args(roles, sm, method.tau, proc, covariance, shp,
                                  dose.unit, level, common, random,
                                  method.smd = method.smd))
+}
+
+#' Leave out the studies a two-stage shape cannot be fitted in
+#'
+#' A two-stage fit estimates the curve inside each study first, so a study
+#' needs at least as many non-reference doses as the shape has terms. A study
+#' with two non-reference doses informs a linear trend but not a spline with
+#' two terms. Rather than refuse the whole analysis, the study is left out of
+#' that shape only and the result says so. The shape itself (knots, powers) is
+#' placed on every study's doses first, so all shapes keep the same basis.
+#' A one-stage fit estimates every study inside one model and keeps them all.
+#'
+#' @keywords internal
+#' @noRd
+dr_drop_thin <- function(prep, shape, proc) {
+  if (!identical(proc, "2stage") || shape$terms <= 1L) return(prep)
+  f <- prep$frame
+  nonref <- table(factor(f$studlab[!f$is_ref], levels = unique(f$studlab)))
+  thin <- names(nonref)[nonref < shape$terms]
+  if (length(thin) == 0L) return(prep)
+  keep <- setdiff(unique(f$studlab), thin)
+  if (length(keep) <= shape$terms) {
+    stop("easydr: ", shape$label, " needs ", shape$terms, " non-reference ",
+         "doses per study in a two-stage fit, and only ", length(keep),
+         " stud", if (length(keep) == 1L) "y has" else "ies have", " them. ",
+         "Choose a simpler shape, or use proc = \"1stage\".", call. = FALSE)
+  }
+  message("easydr: ", shape$name, " left out ", length(thin), " stud",
+          if (length(thin) == 1L) "y" else "ies", " with fewer than ",
+          shape$terms, " non-reference doses: ", paste(thin, collapse = ", "))
+  prep$frame <- f[f$studlab %in% keep, , drop = FALSE]
+  prep$studies <- prep$studies[prep$studies %in% keep]
+  prep$provenance$dropped <- list(studies = thin, needs = shape$terms)
+  prep
 }
 
 #' Collect the arguments a refit has to reuse

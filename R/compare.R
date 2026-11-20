@@ -125,6 +125,14 @@ dr_overlay_draw <- function(p, tg, main, foot, spec) {
 #' @param digits digits for the reported effects.
 #' @param result `TRUE` puts the comparison table under the figure. `FALSE`
 #'   leaves the panel on its own, which is what a slide wants.
+#' @param wald,deviance,r2,r2adj,aic,delta.aic,bic `TRUE` (`T`) or `FALSE`
+#'   (`F`): show or hide that column in the table under the figure. `wald` is
+#'   the p value for non-linearity, `deviance` the deviance with its p value,
+#'   `r2` the R-squared, `r2adj` the adjusted R-squared, `aic` the AIC itself,
+#'   `delta.aic` its distance from the best shape, and `bic` the BIC. By
+#'   default the figure shows the Wald test, the R-squared and the Delta AIC.
+#'   The shapes are ranked by AIC whichever are shown, and the returned
+#'   `table` always holds every column.
 #' @param filetype,path,file.name,width,height where to save the figure, as
 #'   in [easydr_curve()].
 #'
@@ -145,6 +153,9 @@ easydr_compare_shapes <- function(x,
                                              "fp", "hyperbolic_emax"),
                                   plot = TRUE, main = NULL, digits = 3,
                                   result = TRUE,
+                                  wald = TRUE, deviance = FALSE, r2 = TRUE,
+                                  r2adj = FALSE, aic = FALSE,
+                                  delta.aic = TRUE, bic = FALSE,
                                   filetype = c("png", "pdf", "tiff"),
                                   path = NULL, file.name = NULL,
                                   width = NULL, height = NULL) {
@@ -171,13 +182,16 @@ easydr_compare_shapes <- function(x,
 
   if (isTRUE(plot)) {
     unit <- if (is.null(x$dose_unit)) "dose" else x$dose_unit
-    if (is.null(main)) main <- "Candidate shapes on the same studies"
+    if (is.null(main)) main <- "Candidate shapes"
     if (identical(main, FALSE)) main <- NULL
-    p  <- dr_overlay_panel(fits, names(fits), x$ratio, x$sm_label, unit,
-                           legend.title = "Shape")
+    p  <- dr_overlay_panel(fits, dr_shape_title(names(fits)), x$ratio,
+                           x$sm_label, unit, legend.title = "Shape")
     # The table is the point of this figure, so it is set larger than the
     # summary tables under a single curve.
-    tg <- if (isTRUE(result)) dr_stats_grob(tab, base_size = 12) else NULL
+    shown <- dr_test_columns(tab, wald, deviance, r2, r2adj, aic, delta.aic,
+                             bic)
+    shown$Shape <- dr_shape_title(shown$Shape)
+    tg <- if (isTRUE(result)) dr_stats_grob(shown, base_size = 12) else NULL
     foot <- paste0("Ranked by AIC. Reference ", x$reference$curve, " ",
                    unit, ".")
     spec <- dr_file_spec(file.name, filetype, path, width, height,
@@ -198,7 +212,9 @@ easydr_compare_shapes <- function(x,
 #' @export
 print.easydr_comparison <- function(x, ...) {
   cat("Candidate shapes, ranked by AIC (", x$sm_label, ")\n\n", sep = "")
-  print(x$table, row.names = FALSE, right = FALSE)
+  tab <- x$table
+  tab$Shape <- dr_shape_title(tab$Shape)
+  print(tab, row.names = FALSE, right = FALSE)
   if (length(x$failed)) {
     cat("\nCould not be fitted to this table: ",
         paste(x$failed, collapse = ", "), "\n", sep = "")
@@ -333,4 +349,79 @@ print.easydr_knots <- function(x, ...) {
   cat("Knot placement sensitivity (", x$sm_label, ")\n\n", sep = "")
   print(x$table, row.names = FALSE, right = FALSE)
   invisible(x)
+}
+
+#' Keep only the test columns asked for
+#'
+#' The comparison table holds every test; a figure shows the ones switched on.
+#'
+#' @keywords internal
+#' @noRd
+dr_test_columns <- function(tab, wald = TRUE, deviance = FALSE, r2 = TRUE,
+                            r2adj = FALSE, aic = FALSE, delta.aic = TRUE,
+                            bic = FALSE) {
+  drop <- c(if (!isTRUE(wald)) "p nonlinearity",
+            if (!isTRUE(deviance)) c("Deviance", "p deviance"),
+            if (!isTRUE(r2)) "R-squared",
+            if (!isTRUE(r2adj)) "R-squared adj",
+            if (!isTRUE(aic)) "AIC",
+            if (!isTRUE(delta.aic)) "Delta AIC",
+            if (!isTRUE(bic)) "BIC")
+  tab[, setdiff(names(tab), drop), drop = FALSE]
+}
+
+#' The name a reader knows a shape by
+#'
+#' The `shape` argument takes short codes; a table or legend a reader sees
+#' spells them out.
+#'
+#' @keywords internal
+#' @noRd
+dr_shape_title <- function(x) {
+  titles <- c(linear = "Linear", quadratic = "Quadratic", cubic = "Cubic",
+              log = "Logarithmic", rcs = "Restricted cubic spline",
+              fp = "Fractional polynomial", emax = "Emax",
+              hyperbolic_emax = "Hyperbolic Emax")
+  out <- unname(titles[x])
+  ifelse(is.na(out), x, out)
+}
+
+#' The test lines under a single curve
+#'
+#' One line per test switched on, each from the fit's own numbers: the Wald
+#' test from dosresmeta's non-linearity test, the deviance and R-squared from
+#' dosresmeta::gof(), and the information criteria from the maximum
+#' likelihood refit the comparison uses.
+#'
+#' @keywords internal
+#' @noRd
+dr_test_notes <- function(x, wald = TRUE, deviance = FALSE, r2 = FALSE,
+                          r2adj = FALSE, aic = FALSE, bic = FALSE) {
+  out <- character(0)
+  if (isTRUE(wald)) out <- c(out, dr_linearity_note(x, lead = ""))
+  g <- x$gof
+  has_gof <- !is.null(g) && !identical(g$available, FALSE)
+  if (isTRUE(deviance)) {
+    out <- c(out, if (has_gof && !is.null(g$deviance)) {
+      paste0("Deviance: D = ", formatC(g$deviance, format = "f", digits = 2),
+             " (df = ", g$df, "), ", dr_p_lab(g$p))
+    } else "Deviance: not available for this fit")
+  }
+  if (isTRUE(r2) || isTRUE(r2adj)) {
+    r <- c(if (isTRUE(r2) && has_gof && !is.null(g$r2))
+             paste0("R-squared = ", formatC(g$r2, format = "f", digits = 3)),
+           if (isTRUE(r2adj) && has_gof && !is.null(g$r2adj))
+             paste0("adjusted R-squared = ",
+                    formatC(g$r2adj, format = "f", digits = 3)))
+    out <- c(out, if (length(r)) paste(r, collapse = ", ") else
+      "R-squared: not available for this fit")
+  }
+  if (isTRUE(aic) || isTRUE(bic)) {
+    ml <- try(dr_refit_ml(x), silent = TRUE)
+    if (inherits(ml, "try-error")) ml <- NULL
+    ic <- c(if (isTRUE(aic)) paste0("AIC = ", formatC(dr_ic(x, "AIC", ml), format = "f", digits = 1)),
+            if (isTRUE(bic)) paste0("BIC = ", formatC(dr_ic(x, "BIC", ml), format = "f", digits = 1)))
+    out <- c(out, paste(ic, collapse = ", "))
+  }
+  out
 }
