@@ -6,7 +6,7 @@
 \usage{
 easydr_forest(
   x,
-  at = NULL,
+  at = "per.unit",
   main = NULL,
   xlab = NULL,
   xlim = NULL,
@@ -27,9 +27,10 @@ easydr_forest(
 \arguments{
 \item{x}{a fitted result from \code{\link[=easydr]{easydr()}}.}
 
-\item{at}{a dose at which to compare studies, instead of their trends.
-Needed in effect for curves, where no single trend exists; the default is
-the first dose the fit already reports.}
+\item{at}{what each study reports: \code{"per.unit"} (the default), the effect
+of one unit of dose, which is the study's slope for a straight line and
+one unit above the reference against the reference for any other shape;
+or a number, the effect at that dose against the reference.}
 
 \item{main}{plot title, drawn left-aligned above the figure. \code{NULL} writes
 one from the fit; \code{FALSE} draws none.}

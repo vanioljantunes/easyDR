@@ -22,9 +22,10 @@
 #' stops.
 #'
 #' @param x a fitted result from [easydr()].
-#' @param at a dose at which to compare studies, instead of their trends.
-#'   Needed in effect for curves, where no single trend exists; the default is
-#'   the first dose the fit already reports.
+#' @param at what each study reports: `"per.unit"` (the default), the effect
+#'   of one unit of dose, which is the study's slope for a straight line and
+#'   one unit above the reference against the reference for any other shape;
+#'   or a number, the effect at that dose against the reference.
 #' @param main plot title, drawn left-aligned above the figure. `NULL` writes
 #'   one from the fit; `FALSE` draws none.
 #' @param xlab label under the effect axis. `NULL` writes one from `sm`.
@@ -78,7 +79,7 @@
 #' @param width,height the size of the saved figure in inches. `NULL` lets
 #'   easyDR measure the figure and choose a size that fits it.
 #' @export
-easydr_forest <- function(x, at = NULL, main = NULL, xlab = NULL, xlim = NULL,
+easydr_forest <- function(x, at = "per.unit", main = NULL, xlab = NULL, xlim = NULL,
                           order = c("data", "effect", "weight", "study"),
                           subgroup = NULL, digits = 3, legend = NULL,
                           columns = TRUE, row.height = 0.26,

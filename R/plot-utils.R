@@ -26,7 +26,7 @@
 #'
 #' @keywords internal
 #' @noRd
-dr_study_effects <- function(x, at = NULL, what = "this plot") {
+dr_study_effects <- function(x, at = "per.unit", what = "this plot") {
   if (!inherits(x, "easydr_result")) {
     stop("easydr: ", what, " takes a fitted result from easydr().",
          call. = FALSE)
@@ -47,26 +47,27 @@ dr_study_effects <- function(x, at = NULL, what = "this plot") {
   xref <- x$reference$curve
   unit <- if (is.null(x$dose_unit)) "dose unit" else x$dose_unit
 
-  one_term <- x$shape$terms == 1L
-  if (one_term && is.null(at)) {
+  # Per unit of dose by default, as in the summary under a curve: the slope
+  # of a straight line, or one unit above the reference against the reference
+  # for any other shape. A number compares studies at that dose instead.
+  if (is.null(at)) at <- "per.unit"
+  if (identical(at, "per.unit") && identical(x$shape$name, "linear")) {
     cvec    <- matrix(1, nrow = 1L, ncol = 1L)
     label   <- dr_label(x$sm, x$dose_unit)
     at_used <- NA_real_
   } else {
-    if (is.null(at)) {
-      # The first dose the fit already reports, so the plot and the printed
-      # table are talking about the same thing.
-      cand    <- x$predicted$dose[!x$predicted$is_ref]
-      at_used <- if (length(cand) > 0L) cand[1L] else max(frame$dose)
+    if (identical(at, "per.unit")) {
+      at_used <- xref + 1
+      label   <- paste0(x$sm, " ", format(at_used), " vs ", format(xref), " ", unit)
     } else {
       if (!is.numeric(at) || length(at) != 1L || !is.finite(at)) {
-        stop("easydr: `at` must be a single dose, such as at = 10.",
+        stop("easydr: `at` is \"per.unit\" or a single dose, such as at = 10.",
              call. = FALSE)
       }
       at_used <- at
+      label   <- paste0(x$sm, " at ", at_used, " ", unit, " against ", xref)
     }
-    cvec  <- dr_contrast(x$shape, at_used, xref)
-    label <- paste0(x$sm, " at ", at_used, " ", unit, " against ", xref)
+    cvec <- dr_contrast(x$shape, at_used, xref)
   }
 
   Psi <- x$Psi
@@ -112,7 +113,7 @@ dr_study_effects <- function(x, at = NULL, what = "this plot") {
   list(table = tab, pooled = pooled, label = label, at = at_used,
        ratio = x$ratio, sm = x$sm, unit = unit, level = x$provenance$level,
        heterogeneity = x$heterogeneity,
-       one_term = one_term && is.na(at_used))
+       one_term = is.na(at_used))
 }
 
 #' The pooled effect for one contrast, from the fitted model alone
