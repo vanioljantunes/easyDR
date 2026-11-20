@@ -40,13 +40,15 @@ dr_subgroup_fits <- function(object, var) {
   # such a column is labelled with the words.
   codes <- c(cc = "case-control", ci = "cumulative incidence",
              ir = "incidence rate")
+  lv <- if (is.factor(tab[[var]])) levels(tab[[var]]) else NULL
   if (length(value) > 0L && all(tolower(trimws(value)) %in% names(codes))) {
     value <- unname(codes[tolower(trimws(value))])
+    if (!is.null(lv)) lv <- unname(codes[tolower(trimws(lv))])
   }
   # A factor sets the order the levels are drawn in, as a published figure
   # may list them; anything else is sorted.
-  levels_in_order <- if (is.factor(tab[[var]])) {
-    intersect(levels(tab[[var]]), value)
+  levels_in_order <- if (!is.null(lv)) {
+    intersect(lv, value)
   } else {
     unique(value[order(value)])
   }
