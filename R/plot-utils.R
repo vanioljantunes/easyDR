@@ -863,7 +863,7 @@ dr_wrap_text <- function(lines, width_cm, size = 9) {
 #' @noRd
 dr_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
                                deviance = TRUE, side_info = FALSE,
-                               subgroup = FALSE) {
+                               subgroup = FALSE, r2adj = FALSE) {
   col  <- dr_result_column(x, at, digits)
   lab  <- dr_pooled_at(x, at)$label
   pv   <- function(p) {
@@ -892,6 +892,16 @@ dr_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
                           !is.null(g$p) && is.finite(g$p)) {
       paste0("deviance ", pv(g$p), ";")
     } else "deviance test not available;")
+  }
+  # Adjusted R-squared (Discacciati, 2017) reads with the deviance: how much
+  # of the variation in the reported effects the curve explains, charged for
+  # its number of terms so shapes of different size compare.
+  if (isTRUE(r2adj)) {
+    g <- x$gof
+    rest <- c(rest, if (!is.null(g) && !identical(g$available, FALSE) &&
+                          !is.null(g$r2adj) && is.finite(g$r2adj)) {
+      paste0("adjusted R\u00b2 = ", formatC(g$r2adj, format = "f", digits = 2), ";")
+    } else "adjusted R\u00b2 not available;")
   }
   # A curve drawn by subgroup carries the test for subgroup differences
   # (Berlin, 1993), the comparison its several lines invite.

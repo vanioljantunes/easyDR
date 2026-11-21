@@ -30,7 +30,7 @@ easydr_curve(
   wald = TRUE,
   deviance = TRUE,
   r2 = FALSE,
-  r2adj = FALSE,
+  r2adj = TRUE,
   aic = FALSE,
   bic = FALSE,
   subgroup = NULL,
@@ -115,8 +115,9 @@ shapes without knots.}
 title, wrapped to the width of the panel: the effect per increment of
 dose (in bold red) with its confidence interval and p value, the
 reference dose, the number of studies and dose comparisons, the
-heterogeneity with the Q test p value, and the linearity and deviance
-tests as p values (see \code{wald} and \code{deviance}). With subgroups drawn it
+heterogeneity with the Q test p value, the linearity and deviance
+tests as p values, and the adjusted R-squared (see \code{wald}, \code{deviance}
+and \code{r2adj}). With subgroups drawn it
 reports the overall fit.}
 
 \item{results.table}{the doses to report in the table under the figure,
@@ -146,7 +147,8 @@ for other shapes.}
 \item{wald, deviance, r2, r2adj, aic, bic}{\code{TRUE} (\code{T}) or \code{FALSE} (\code{F}): add
 or leave out a line under the panel for that test. \code{wald} is the
 linearity test (on by default), \code{deviance} the deviance against a
-saturated model with its p value, \code{r2} the R-squared, \code{r2adj} the
+saturated model with its p value (on by default), \code{r2} the R-squared,
+\code{r2adj} (on by default, in the subtitle beside the deviance) the
 adjusted R-squared, \code{aic} and \code{bic} the information criteria of this fit,
 from its one-stage maximum likelihood refit.}
 

@@ -75,8 +75,9 @@
 #'   title, wrapped to the width of the panel: the effect per increment of
 #'   dose (in bold red) with its confidence interval and p value, the
 #'   reference dose, the number of studies and dose comparisons, the
-#'   heterogeneity with the Q test p value, and the linearity and deviance
-#'   tests as p values (see `wald` and `deviance`). With subgroups drawn it
+#'   heterogeneity with the Q test p value, the linearity and deviance
+#'   tests as p values, and the adjusted R-squared (see `wald`, `deviance`
+#'   and `r2adj`). With subgroups drawn it
 #'   reports the overall fit.
 #' @param results.table the doses to report in the table under the figure,
 #'   each against the reference, such as `results.table = c(2, 4, 6)`. They
@@ -91,7 +92,8 @@
 #' @param wald,deviance,r2,r2adj,aic,bic `TRUE` (`T`) or `FALSE` (`F`): add
 #'   or leave out a line under the panel for that test. `wald` is the
 #'   linearity test (on by default), `deviance` the deviance against a
-#'   saturated model with its p value, `r2` the R-squared, `r2adj` the
+#'   saturated model with its p value (on by default), `r2` the R-squared,
+#'   `r2adj` (on by default, in the subtitle beside the deviance) the
 #'   adjusted R-squared, `aic` and `bic` the information criteria of this fit,
 #'   from its one-stage maximum likelihood refit.
 #' @param target `TRUE` puts the target doses (ED50, ED80, ED max) in a box in
@@ -163,7 +165,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          result = TRUE, result.at = NULL,
                          table = "horizontal", target = TRUE,
                          wald = TRUE, deviance = TRUE, r2 = FALSE,
-                         r2adj = FALSE, aic = FALSE, bic = FALSE,
+                         r2adj = TRUE, aic = FALSE, bic = FALSE,
                          subgroup = NULL, digits = 3, col = "#1F2A44",
                          fill.ci = "grey75", fill.pi = "grey90",
                          legend = NULL,
@@ -278,7 +280,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     }
     dr_subtitle_grob(dr_subtitle_wrap(
       dr_subtitle_tokens(x, result.at, digits, wald = wald,
-                         deviance = deviance, subgroup = use_sub), panel_cm))
+                         deviance = deviance, subgroup = use_sub, r2adj = r2adj), panel_cm))
   } else {
     NULL
   }
@@ -644,7 +646,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   }
   # Under the figure only what explains its marks; the result and the tests
   # are in the subtitle.
-  extra <- tests[setdiff(names(tests), c("wald", "deviance"))]
+  extra <- tests[setdiff(names(tests), c("wald", "deviance", "r2adj"))]
   # Band and points read as one legend, so they share a row.
   foot <- c(paste0("Band: ", bands, ".",
                    if (isTRUE(studies))

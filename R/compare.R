@@ -127,10 +127,13 @@ dr_overlay_draw <- function(p, tg, main, foot, spec) {
 #'   leaves the panel on its own, which is what a slide wants.
 #' @param wald,deviance,r2,r2adj,aic,delta.aic,bic `TRUE` (`T`) or `FALSE`
 #'   (`F`): show or hide that column in the table under the figure. `wald` is
-#'   the p value for non-linearity, `deviance` the deviance with its p value,
+#'   the p value for non-linearity, `deviance` the deviance test p value,
 #'   `r2` the R-squared, `r2adj` the adjusted R-squared, `aic` the AIC itself,
 #'   `delta.aic` its distance from the best shape, and `bic` the BIC. By
-#'   default the figure shows the Wald test, the deviance and the Delta AIC.
+#'   default the figure shows the Wald test, the deviance p value, the
+#'   adjusted R-squared and the Delta AIC.
+#' @param deviance.value `TRUE` adds the deviance itself beside its p value.
+#'   `FALSE`, the default, shows the p value only.
 #'   The shapes are ranked by AIC whichever are shown, and the returned
 #'   `table` always holds every column.
 #' @param filetype,path,file.name,width,height where to save the figure, as
@@ -153,8 +156,9 @@ easydr_compare_shapes <- function(x,
                                              "fp", "hyperbolic_emax"),
                                   plot = TRUE, main = NULL, digits = 3,
                                   result = TRUE,
-                                  wald = TRUE, deviance = TRUE, r2 = FALSE,
-                                  r2adj = FALSE, aic = FALSE,
+                                  wald = TRUE, deviance = TRUE,
+                                  deviance.value = FALSE, r2 = FALSE,
+                                  r2adj = TRUE, aic = FALSE,
                                   delta.aic = TRUE, bic = FALSE,
                                   filetype = c("png", "pdf", "tiff"),
                                   path = NULL, file.name = NULL,
@@ -189,7 +193,7 @@ easydr_compare_shapes <- function(x,
     # The table is the point of this figure, so it is set larger than the
     # summary tables under a single curve.
     shown <- dr_test_columns(tab, wald, deviance, r2, r2adj, aic, delta.aic,
-                             bic)
+                             bic, deviance.value)
     shown$Shape <- dr_shape_title(shown$Shape)
     tg <- if (isTRUE(result)) dr_stats_grob(shown, base_size = 12) else NULL
     foot <- paste0("Ranked by AIC. Reference ", x$reference$curve, " ",
@@ -379,9 +383,10 @@ print.easydr_knots <- function(x, ...) {
 #' @noRd
 dr_test_columns <- function(tab, wald = TRUE, deviance = TRUE, r2 = FALSE,
                             r2adj = FALSE, aic = FALSE, delta.aic = TRUE,
-                            bic = FALSE) {
+                            bic = FALSE, deviance.value = TRUE) {
   drop <- c(if (!isTRUE(wald)) "p nonlinearity",
             if (!isTRUE(deviance)) c("Deviance", "p deviance"),
+            if (!isTRUE(deviance.value)) "Deviance",
             if (!isTRUE(r2)) "R-squared",
             if (!isTRUE(r2adj)) "R-squared adj",
             if (!isTRUE(aic)) "AIC",

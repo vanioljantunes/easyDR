@@ -13,8 +13,9 @@ easydr_compare_shapes(
   result = TRUE,
   wald = TRUE,
   deviance = TRUE,
+  deviance.value = FALSE,
   r2 = FALSE,
-  r2adj = FALSE,
+  r2adj = TRUE,
   aic = FALSE,
   delta.aic = TRUE,
   bic = FALSE,
@@ -41,10 +42,14 @@ leaves the panel on its own, which is what a slide wants.}
 
 \item{wald, deviance, r2, r2adj, aic, delta.aic, bic}{\code{TRUE} (\code{T}) or \code{FALSE}
 (\code{F}): show or hide that column in the table under the figure. \code{wald} is
-the p value for non-linearity, \code{deviance} the deviance with its p value,
+the p value for non-linearity, \code{deviance} the deviance test p value,
 \code{r2} the R-squared, \code{r2adj} the adjusted R-squared, \code{aic} the AIC itself,
 \code{delta.aic} its distance from the best shape, and \code{bic} the BIC. By
-default the figure shows the Wald test, the deviance and the Delta AIC.
+default the figure shows the Wald test, the deviance p value, the
+adjusted R-squared and the Delta AIC.}
+
+\item{deviance.value}{\code{TRUE} adds the deviance itself beside its p value.
+\code{FALSE}, the default, shows the p value only.
 The shapes are ranked by AIC whichever are shown, and the returned
 \code{table} always holds every column.}
 
