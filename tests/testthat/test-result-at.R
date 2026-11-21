@@ -36,3 +36,13 @@ test_that("the funnel table lies across and is headed Summary", {
   expect_true("summary-title" %in% g$layout$name)
   expect_s3_class(out$grob, "grob")
 })
+
+test_that("leave-one-out follows easydr(result.at)", {
+  f <- easydr(alcohol_cvd, sm = "RR", shape = "rcs", dose.unit = "g/day")
+  lo <- easydr_loo(f, plot = FALSE, quiet = TRUE)
+  expect_match(lo$label, "1 vs 0")
+  f2 <- easydr(alcohol_cvd, sm = "RR", shape = "rcs", dose.unit = "g/day",
+               result.at = 20)
+  lo2 <- easydr_loo(f2, plot = FALSE, quiet = TRUE)
+  expect_match(lo2$label, "at 20")
+})

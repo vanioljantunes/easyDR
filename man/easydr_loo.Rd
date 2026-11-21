@@ -23,10 +23,9 @@ easydr_loo(
 \arguments{
 \item{object}{a fitted result from \code{\link[=easydr]{easydr()}}.}
 
-\item{at}{for a shape with more than one term, the dose at which predicted
-effects are compared, since a curve has no single slope. Defaults to the
-first dose the fit already reports. Ignored for a one-term shape, which
-compares slopes.}
+\item{at}{what each refit is compared on. \code{NULL} (the default) uses the
+\code{result.at} given to \code{\link[=easydr]{easydr()}}, per unit of dose unless set there;
+\code{"per.unit"} or a dose overrides it.}
 
 \item{quiet}{\code{FALSE}, the default, prints one line per refit.}
 

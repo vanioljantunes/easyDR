@@ -109,11 +109,7 @@ dr_loo_plot <- function(out, object, main = NULL, xlab = NULL, ylab = NULL,
     Shift       = c(shift, "-"),
     `I-squared` = c(pct(tab$i2), full_i2),
     check.names = FALSE, stringsAsFactors = FALSE)
-  names(cell)[3L] <- if (identical(out$quantity, "slope")) {
-    paste0(out$sm, " per 1 ", unit)
-  } else {
-    paste0(out$sm, " at ", out$dose, " ", unit)
-  }
+  names(cell)[3L] <- out$label
 
   tg <- dr_stats_grob(cell)
   # Embolden the final row, the one nothing was left out of.

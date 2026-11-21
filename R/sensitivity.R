@@ -14,22 +14,10 @@
 #' @noRd
 dr_sens_quantity <- function(fit, at) {
   back <- if (fit$ratio) exp else identity
-  if (!is.null(fit$slope)) {
-    return(list(kind = "slope", dose = NA_real_,
-                raw = fit$slope$estimate,
-                est = back(fit$slope$estimate),
-                lb  = back(fit$slope$lb),
-                ub  = back(fit$slope$ub)))
-  }
-  row <- fit$predicted[!fit$predicted$is_ref & fit$predicted$dose == at, ,
-                       drop = FALSE]
-  if (nrow(row) == 0L) {
-    stop("easydr: the comparison dose ", at, " is not among the predicted ",
-         "doses of this refit.", call. = FALSE)
-  }
-  list(kind = "predicted", dose = at,
-       raw = if (fit$ratio) log(row$est[1]) else row$est[1],
-       est = row$est[1], lb = row$ci.lb[1], ub = row$ci.ub[1])
+  p    <- dr_pooled_at(fit, at)
+  list(kind = if (is.na(p$at)) "slope" else "predicted", dose = p$at,
+       label = p$label, raw = p$est,
+       est = back(p$est), lb = back(p$lb), ub = back(p$ub))
 }
 
 #' Pick the comparison dose for a curve
@@ -41,11 +29,7 @@ dr_sens_quantity <- function(fit, at) {
 #' @keywords internal
 #' @noRd
 dr_sens_dose <- function(fit, at) {
-  if (!is.null(fit$slope)) return(NA_real_)
-  if (!is.null(at)) return(as.numeric(at)[1])
-  own <- fit$predicted$dose[!fit$predicted$is_ref]
-  if (length(own) > 0L) return(own[1])
-  stats::median(fit$curve$dose[!fit$curve$is_ref])
+  dr_result_at(fit, at)
 }
 
 #' Refit the inherited model once per subset and tabulate the movement
@@ -70,8 +54,7 @@ dr_sens_loop <- function(inh, subsets, labels, full, at, quiet, kind) {
       cat(sprintf("  [%d/%d] %s\n", i, n, labels[i]))
       utils::flush.console()
     }
-    extra <- if (is.na(dose)) NULL else list(at = dose)
-    res <- tryCatch(dr_refit(inh, keep, extra), error = function(e) e)
+    res <- tryCatch(dr_refit(inh, keep, NULL), error = function(e) e)
     if (inherits(res, "error")) {
       rows[[i]] <- dr_sens_row(labels[i], length(keep), NULL, base,
                                conditionMessage(res))
@@ -94,7 +77,8 @@ dr_sens_loop <- function(inh, subsets, labels, full, at, quiet, kind) {
       kind       = kind,
       table      = table,
       quantity   = base$kind,
-      dose       = dose,
+      dose       = base$dose,
+      label      = base$label,
       full       = base,
       ordered_on = if (identical(kind, "loo")) {
         "the absolute shift in the comparison quantity"
@@ -175,10 +159,9 @@ dr_sens_row <- function(label, studies, got, base, reason) {
 #' reason, never quietly fitted with a simpler shape.
 #'
 #' @param object a fitted result from [easydr()].
-#' @param at for a shape with more than one term, the dose at which predicted
-#'   effects are compared, since a curve has no single slope. Defaults to the
-#'   first dose the fit already reports. Ignored for a one-term shape, which
-#'   compares slopes.
+#' @param at what each refit is compared on. `NULL` (the default) uses the
+#'   `result.at` given to [easydr()], per unit of dose unless set there;
+#'   `"per.unit"` or a dose overrides it.
 #' @param quiet `FALSE`, the default, prints one line per refit.
 #' @param plot `TRUE`, the default, draws the dose-response once per omitted
 #'   study over the pooled one, letters each curve, and puts the table
@@ -282,8 +265,10 @@ print.easydr_sensitivity <- function(x, digits = 4, ...) {
 
   quantity <- if (identical(x$quantity, "slope")) {
     paste0("the slope, ", x$sm, " per 1 ", unit)
-  } else {
+  } else if (is.finite(x$dose) && !grepl(" vs ", x$label)) {
     paste0("the predicted ", x$sm, " at ", x$dose, " ", unit)
+  } else {
+    x$label
   }
   if (loo) {
     cat("Ordered by the absolute shift in ", quantity, ". Full fit: ",
@@ -340,9 +325,11 @@ dr_sens_defaults <- function(x) {
   unit <- if (is.null(x$dose_unit)) "dose unit" else x$dose_unit
   out <- if (identical(x$quantity, "slope")) {
     "comparison quantity: the slope, because this shape has one term"
-  } else {
+  } else if (is.finite(x$dose) && !grepl(" vs ", x$label)) {
     paste0("comparison quantity: the predicted effect at ", x$dose, " ", unit,
            ", because a curve has no single slope")
+  } else {
+    paste0("comparison quantity: ", x$label, ", the result.at of the fit")
   }
   scale <- if (x$ratio) "the log scale" else "the reported scale"
   if (identical(x$kind, "loo")) {
