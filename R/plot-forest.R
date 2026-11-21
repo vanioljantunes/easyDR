@@ -171,7 +171,9 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
   plan$y   <- rev(seq_len(n))
   header_y <- n + 1
   het_y    <- 0
-  ylim     <- c(het_y - 0.5, header_y + 0.5)
+  # The deviance test of the overall fit sits one row under its I2 line.
+  dev_y    <- -1
+  ylim     <- c(dev_y - 0.5, header_y + 0.5)
   is_study <- plan$kind == "study"
   zebra    <- dr_zebra(plan$y[is_study])
 
@@ -202,7 +204,8 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
   notes <- c(
     lapply(which(plan$kind == "note"),
            function(i) list(y = plan$y[i], label = plan$note[i])),
-    list(list(y = het_y, label = het_text)))
+    list(list(y = het_y, label = het_text)),
+    list(list(y = dev_y, label = dr_forest_deviance(x$gof))))
 
   p_labels <- dr_text_panel(
     lab_cols, lab_right, ypos = plan$y, face = plan$face,
@@ -250,9 +253,19 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
   p_effect <- ggplot2::ggplot(pts, ggplot2::aes(x = .data$est,
                                                 y = .data$ypos)) +
     zebra +
-    ggplot2::geom_vline(xintercept = e$pooled$est, linetype = "dashed",
-                        colour = "grey40", linewidth = 0.4) +
-    ggplot2::geom_vline(xintercept = 0, colour = "grey25", linewidth = 0.4) +
+    # Both lines stop at the bottom of the header row, so they never run up
+    # through the column labels.
+    ggplot2::annotate("segment", x = e$pooled$est, xend = e$pooled$est,
+                      y = ylim[1L], yend = header_y - 0.5, linetype = "dashed",
+                      colour = "grey40", linewidth = 0.4) +
+    ggplot2::annotate("segment", x = 0, xend = 0, y = ylim[1L],
+                      yend = header_y - 0.5, colour = "grey25",
+                      linewidth = 0.4) +
+    # The curve the per-study effects were read from, over the effect column
+    # where meta's smlab sits.
+    ggplot2::annotate("text", x = (lo + hi) / 2, y = header_y,
+                      label = dr_shape_title(x$shape$name),
+                      fontface = "bold", size = 3.2) +
     ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$lb, xmax = .data$ub),
                            width = 0.26, orientation = "y", linewidth = 0.45) +
     ggplot2::geom_point(ggplot2::aes(size = .data$size), shape = 15L) +
@@ -330,4 +343,15 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
                  width = total_w,
                  height = (ylim[2] - ylim[1]) * row.height + 0.40 +
                    title_in + foot_in))
+}
+
+#' The deviance line under the overall row of a forest
+#' @keywords internal
+#' @noRd
+dr_forest_deviance <- function(g) {
+  if (is.null(g) || identical(g$available, FALSE) || is.null(g$deviance) ||
+      !is.finite(g$deviance)) {
+    return("Deviance: not available for this fit")
+  }
+  sprintf("Deviance (deviance = %.2f; %s)", g$deviance, dr_p_lab(g$p))
 }

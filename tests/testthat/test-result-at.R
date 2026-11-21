@@ -63,3 +63,10 @@ test_that("overall.per.unit scales a line by the increment and pairs two doses",
   b10 <- easyDR:::dr_pooled_at(fp, c(10, 0))$est
   expect_equal(a$est, b30 - b10)
 })
+
+test_that("the forest names its curve and reports the deviance test", {
+  expect_equal(easyDR:::dr_forest_deviance(list(available = TRUE, deviance = 24.13, p = 0.17)),
+               "Deviance (deviance = 24.13; p = 0.170)")
+  expect_match(easyDR:::dr_forest_deviance(list(available = FALSE)), "not available")
+  expect_equal(easyDR:::dr_shape_title("rcs"), "Restricted cubic spline")
+})
