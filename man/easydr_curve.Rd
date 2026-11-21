@@ -87,8 +87,9 @@ triangle), with a "Study reference dose" key beside the panel listing
 each value. A study's effects are measured against its own reference, so
 a point is read against that dose, not the curve's. \code{FALSE} draws every
 point as a circle. It is ignored when subgroup curves are drawn, which use
-shape for the levels, and with more than six reference doses, which run
-out of shapes.}
+shape for the levels, with more than six reference doses, which run out
+of shapes, and when every study shares one reference dose, where a key
+would say nothing.}
 
 \item{studlab}{\code{FALSE}, the default, leaves the study names off. \code{TRUE}
 writes each study's name once, beside its highest-dose point, so a reader

@@ -53,8 +53,9 @@
 #'   each value. A study's effects are measured against its own reference, so
 #'   a point is read against that dose, not the curve's. `FALSE` draws every
 #'   point as a circle. It is ignored when subgroup curves are drawn, which use
-#'   shape for the levels, and with more than six reference doses, which run
-#'   out of shapes.
+#'   shape for the levels, with more than six reference doses, which run out
+#'   of shapes, and when every study shares one reference dose, where a key
+#'   would say nothing.
 #' @param studlab `FALSE`, the default, leaves the study names off. `TRUE`
 #'   writes each study's name once, beside its highest-dose point, so a reader
 #'   can tell which study a run of points belongs to. It needs
@@ -453,8 +454,10 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   ref_shapes <- c(21L, 22L, 24L, 8L, 23L, 25L)
   key_title <- "Study reference dose"
   ref_levels <- if (is.null(obs)) numeric(0) else sort(unique(obs$ref_dose))
+  # One reference dose for every study tells the reader nothing a key could
+  # add, so the key appears only when the references differ.
   shape_key  <- isTRUE(ref.shape) && !is.null(obs) && !use_sub &&
-    length(ref_levels) <= length(ref_shapes)
+    length(ref_levels) > 1L && length(ref_levels) <= length(ref_shapes)
   if (isTRUE(ref.shape) && !is.null(obs) && !use_sub &&
       length(ref_levels) > length(ref_shapes)) {
     warning("easydr: the studies use ", length(ref_levels), " reference ",
