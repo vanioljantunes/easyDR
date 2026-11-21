@@ -68,7 +68,7 @@ test_that("a curve is compared at a named dose and never given a slope", {
   expect_true(all(l$table$status == "fitted"))
 
   out <- paste(capture.output(print(l)), collapse = "\n")
-  expect_match(out, "RR 25 vs 0")
+  expect_match(out, "predicted RR at 25 g/day")
   expect_false(grepl("the slope, because this shape has one term", out))
 })
 

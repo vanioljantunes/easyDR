@@ -803,12 +803,14 @@ dr_effect_contrast <- function(x, spec) {
       return(list(cvec = matrix(k, nrow = 1L, ncol = 1L),
                   label = dr_label(x$sm, x$dose_unit, k), at = NA_real_))
     }
-    num <- xref + k
-    den <- xref
-  } else {
-    num <- spec$value[1L]
-    den <- spec$value[2L]
+    # A curve has no single slope, so its per-increment effect is the
+    # reference plus the increment against the reference. It is labelled as
+    # an increment all the same, so every plot of a fit reads alike.
+    return(list(cvec = dr_contrast(x$shape, xref + k, xref),
+                label = dr_label(x$sm, x$dose_unit, k), at = xref + k))
   }
+  num <- spec$value[1L]
+  den <- spec$value[2L]
   list(cvec = dr_contrast(x$shape, num, den),
        label = paste0(x$sm, " ", format(num), " vs ", format(den), " ", unit),
        at = num)
