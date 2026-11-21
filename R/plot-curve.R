@@ -71,9 +71,17 @@
 #' @param grid `FALSE`, the default, draws the panel without grid lines.
 #'   `TRUE` adds the major grid.
 #' @param subtitle `TRUE`, the default, writes the headline result under the
-#'   title: the effect (in bold red) with its confidence interval and p value,
-#'   the number of studies and dose comparisons, and the heterogeneity. With
-#'   subgroups drawn it reports the overall fit.
+#'   title, wrapped to the width of the panel: the effect per increment of
+#'   dose (in bold red) with its confidence interval and p value, the
+#'   reference dose, the number of studies and dose comparisons, the
+#'   heterogeneity with the Q test p value, and the linearity and deviance
+#'   tests as p values (see `wald` and `deviance`). With subgroups drawn it
+#'   reports the overall fit.
+#' @param results.table the doses to report in the table under the figure,
+#'   each against the reference, such as `results.table = c(2, 4, 6)`. They
+#'   are also marked on the curve and labelled on the dose axis. A dose above
+#'   the highest one observed extends the curve, dashed, with a fainter band.
+#'   `NULL`, the default, uses the doses `at` named in [easydr()].
 #' @param result `TRUE`, the default, puts a summary table under the figure:
 #'   the effect with its confidence interval, its p value, the heterogeneity
 #'   and the number of studies. The figure then carries its own numbers. With
@@ -150,10 +158,10 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          prediction = FALSE, points = TRUE, studies = TRUE,
                          ref.shape = TRUE, studlab = FALSE, reference = TRUE,
                          rug = NULL, knot.lines = TRUE, grid = FALSE,
-                         subtitle = TRUE,
+                         subtitle = TRUE, results.table = NULL,
                          result = TRUE, result.at = NULL,
                          table = "horizontal", target = TRUE,
-                         wald = TRUE, deviance = FALSE, r2 = FALSE,
+                         wald = TRUE, deviance = TRUE, r2 = FALSE,
                          r2adj = FALSE, aic = FALSE, bic = FALSE,
                          subgroup = NULL, digits = 3, col = "#1F2A44",
                          fill.ci = "grey75", fill.pi = "grey90",
@@ -184,12 +192,23 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
       width = width, height = height))
   }
   dr_require_single(x, "easydr_curve()")
+  xref <- x$reference$curve
+  rt <- if (is.null(results.table)) {
+    x$predicted$dose[!x$predicted$is_ref]
+  } else {
+    if (!is.numeric(results.table) || anyNA(results.table)) {
+      stop("easydr: `results.table` takes the doses to report, such as ",
+           "results.table = c(2, 4, 6).", call. = FALSE)
+    }
+    sort(unique(as.numeric(results.table)))
+  }
+  rt <- rt[rt != xref]
 
   built   <- dr_curve_panel(
     x, main = main, xlab = xlab, ylab = ylab, xlim = xlim, ylim = ylim,
     round = round, prediction = prediction, points = points,
     studies = studies, ref.shape = ref.shape, studlab = studlab,
-    reference = reference,
+    reference = reference, mark.doses = rt,
     rug = rug, knot.lines = knot.lines, grid = grid,
     subgroup = subgroup, col = col, fill.ci = fill.ci,
     fill.pi = fill.pi, legend = legend, target = target,
@@ -208,8 +227,18 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # puts Egger's numbers under its panel. Inside the panel it covered the
   # curve on a fit that rises into its own corner, and it could hold only one
   # column, which left nowhere for a subgroup to go.
-  tg <- if (isTRUE(result)) {
-    dr_summary_grob(dr_summary_table(x, result.at, digits, use_sub), table)
+  # The effects at chosen doses sit under the figure; the effect per
+  # increment is in the subtitle above it.
+  tg <- if (isTRUE(result) && length(rt)) {
+    dt <- dr_dose_table(x, rt, digits, use_sub)
+    if (identical(match.arg(table, c("horizontal", "vertical")), "vertical")) {
+      m <- as.data.frame(t(as.matrix(dt[, -1L, drop = FALSE])),
+                         stringsAsFactors = FALSE)
+      names(m) <- paste(names(dt)[1L], dt[[1L]])
+      dt <- cbind(data.frame(` ` = names(dt)[-1L], check.names = FALSE,
+                             stringsAsFactors = FALSE), m)
+    }
+    dr_stats_grob(dt)
   } else {
     NULL
   }
@@ -241,7 +270,14 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     dr_height_in(fs$height)
   }
   sub_g    <- if (isTRUE(subtitle)) {
-    dr_subtitle_grob(dr_subtitle_lines(x, result.at, digits))
+    panel_cm <- if (length(marg) == 2L && all(is.finite(marg))) {
+      dev_w * 2.54 - sum(marg)
+    } else {
+      dev_w * 2.54 * 0.8
+    }
+    dr_subtitle_grob(dr_subtitle_wrap(
+      dr_subtitle_tokens(x, result.at, digits, wald = wald,
+                         deviance = deviance), panel_cm))
   } else {
     NULL
   }
@@ -276,13 +312,29 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                            prediction = FALSE, points = TRUE, studies = TRUE,
                            ref.shape = TRUE, studlab = FALSE,
                            reference = TRUE, rug = NULL,
-                           knot.lines = TRUE, grid = FALSE,
+                           knot.lines = TRUE, grid = FALSE, mark.doses = NULL,
                            subgroup = NULL, col = "#1F2A44",
                            fill.ci = "grey75", fill.pi = "grey90",
                            legend = NULL, target = TRUE,
                            tests = list(wald = TRUE)) {
   use_sub <- dr_use_subgroups(x, subgroup, "easydr_curve()")
   tab  <- x$curve
+  xref <- x$reference$curve
+  if (is.null(mark.doses)) {
+    mark.doses <- x$predicted$dose[!x$predicted$is_ref]
+  }
+  # A dose asked for above the highest observed one carries the curve on to
+  # it, so the reported effect has a curve to sit on.
+  top <- max(tab$dose)
+  if (length(mark.doses) && max(mark.doses) > top) {
+    ext <- dr_predicted(x$fit, sort(unique(c(xref, seq(top, max(mark.doses),
+                                                         length.out = 25)))),
+                        xref, x$provenance$level, x$sm,
+                        x$provenance$single_study, x$shape,
+                        range(x$frame$dose))$table
+    ext <- ext[ext$dose > top, , drop = FALSE]
+    tab <- rbind(tab, ext[, names(tab)])
+  }
   unit <- if (is.null(x$dose_unit)) "dose" else x$dose_unit
   show_pi <- isTRUE(prediction) && isTRUE(x$prediction$estimable) &&
     !all(is.na(tab$pi.lb))
@@ -343,8 +395,24 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     p <- p + ggplot2::geom_ribbon(
       ggplot2::aes(ymin = .data$pi.lb, ymax = .data$pi.ub), fill = fill.pi)
   }
+  # Inside the observed doses the band is solid; past them it fades, and the
+  # curve turns dashed, because there is no data there to support it. The
+  # boundary point belongs to both pieces so they meet.
+  obs_rng <- range(x$frame$dose)
+  inside  <- tab$dose >= obs_rng[1L] - 1e-9 & tab$dose <= obs_rng[2L] + 1e-9
+  tab_in  <- tab[inside, , drop = FALSE]
+  edge    <- tab_in[which.max(tab_in$dose), , drop = FALSE]
+  tab_out <- tab[!inside & tab$dose > obs_rng[2L], , drop = FALSE]
+  if (nrow(tab_out)) tab_out <- rbind(edge, tab_out)
   p <- p + ggplot2::geom_ribbon(
+    data = tab_in,
     ggplot2::aes(ymin = .data$ci.lb, ymax = .data$ci.ub), fill = fill.ci)
+  if (nrow(tab_out)) {
+    p <- p + ggplot2::geom_ribbon(
+      data = tab_out,
+      ggplot2::aes(ymin = .data$ci.lb, ymax = .data$ci.ub), fill = fill.ci,
+      alpha = 0.35)
+  }
 
   # A spline's knots are where its pieces join, so they are drawn as lines
   # across the panel; the rug they replace only marked the reported doses.
@@ -418,8 +486,13 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     }
   }
 
-  p <- p + ggplot2::geom_line(ggplot2::aes(y = .data$est), colour = col,
-                              linewidth = 0.9)
+  p <- p + ggplot2::geom_line(data = tab_in, ggplot2::aes(y = .data$est),
+                              colour = col, linewidth = 0.9)
+  if (nrow(tab_out)) {
+    p <- p + ggplot2::geom_line(data = tab_out, ggplot2::aes(y = .data$est),
+                                colour = col, linewidth = 0.9,
+                                linetype = "dashed")
+  }
 
   # One curve per subgroup level, over the overall band. Each level is told
   # apart twice over, by colour and by line type, because colour alone is lost
@@ -474,14 +547,14 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                                colour = "grey25", linewidth = 0.5,
                                length = grid::unit(0.035, "npc"))
   }
-  if (any(tab$extrapolated)) {
-    ex <- tab[tab$extrapolated, , drop = FALSE]
-    p <- p + ggplot2::geom_point(data = ex, inherit.aes = FALSE,
-                                 ggplot2::aes(x = .data$dose, y = .data$est),
-                                 shape = 4L, colour = "#C0392B", size = 1.6)
+  marks <- if (length(mark.doses)) {
+    m <- dr_predicted(x$fit, sort(unique(c(xref, mark.doses))), xref,
+                      x$provenance$level, x$sm, x$provenance$single_study,
+                      x$shape, range(x$frame$dose))$table
+    m[!m$is_ref, , drop = FALSE]
+  } else {
+    x$predicted[0L, , drop = FALSE]
   }
-
-  marks <- x$predicted[!x$predicted$is_ref, , drop = FALSE]
   if (isTRUE(points) && nrow(marks) > 0L) {
     p <- p + ggplot2::geom_point(data = marks, inherit.aes = FALSE,
                                  ggplot2::aes(x = .data$dose, y = .data$est),
@@ -522,8 +595,10 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   } else {
     p + ggplot2::scale_y_continuous(limits = ylim)
   }
-  if (isTRUE(points) && nrow(x$predicted) > 1L) {
-    br <- sort(unique(x$predicted$dose))
+  # The dose axis is labelled where the figure has something to say: the
+  # lowest dose, the knots, and the doses reported in the table.
+  br <- sort(unique(signif(c(min(x$frame$dose), knots, mark.doses), 6)))
+  if (length(br) > 1L) {
     p <- p + ggplot2::scale_x_continuous(breaks = br,
                                          labels = dr_num_lab(signif(br, 3)))
   }
@@ -533,16 +608,17 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   if (show_pi) {
     bands <- paste0(bands, " and ", format(100 * x$provenance$level), "% PI")
   }
-  foot <- c(paste0("Reference ", x$reference$curve, " ", unit,
-                   ".  Band: ", bands,
-                   ".  Shape = ", x$shape$label,
-                   if (use_sub)
-                     ".  The dark line and the band are the overall fit.",
-                   if (any(tab$extrapolated))
-                     ".  Crosses mark doses beyond the observed range."),
+  # Under the figure only what explains its marks; the result and the tests
+  # are in the subtitle.
+  extra <- tests[setdiff(names(tests), c("wald", "deviance"))]
+  foot <- c(paste0("Band: ", bands, ".",
+                   if (use_sub) "  The dark line and the band are the overall fit.",
+                   if (nrow(tab_out))
+                     "  Dashed: beyond the highest observed dose."),
             if (isTRUE(studies))
               "Points: each study's effects against its own reference dose.",
-            do.call(dr_test_notes, c(list(x), tests)),
+            if (length(extra))
+              do.call(dr_test_notes, c(list(x, wald = FALSE), extra)),
             legend)
 
   # The target doses sit in the corner the curve leaves empty: bottom right

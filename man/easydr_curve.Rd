@@ -22,12 +22,13 @@ easydr_curve(
   knot.lines = TRUE,
   grid = FALSE,
   subtitle = TRUE,
+  results.table = NULL,
   result = TRUE,
   result.at = NULL,
   table = "horizontal",
   target = TRUE,
   wald = TRUE,
-  deviance = FALSE,
+  deviance = TRUE,
   r2 = FALSE,
   r2adj = FALSE,
   aic = FALSE,
@@ -110,9 +111,18 @@ shapes without knots.}
 \code{TRUE} adds the major grid.}
 
 \item{subtitle}{\code{TRUE}, the default, writes the headline result under the
-title: the effect (in bold red) with its confidence interval and p value,
-the number of studies and dose comparisons, and the heterogeneity. With
-subgroups drawn it reports the overall fit.}
+title, wrapped to the width of the panel: the effect per increment of
+dose (in bold red) with its confidence interval and p value, the
+reference dose, the number of studies and dose comparisons, the
+heterogeneity with the Q test p value, and the linearity and deviance
+tests as p values (see \code{wald} and \code{deviance}). With subgroups drawn it
+reports the overall fit.}
+
+\item{results.table}{the doses to report in the table under the figure,
+each against the reference, such as \code{results.table = c(2, 4, 6)}. They
+are also marked on the curve and labelled on the dose axis. A dose above
+the highest one observed extends the curve, dashed, with a fainter band.
+\code{NULL}, the default, uses the doses \code{at} named in \code{\link[=easydr]{easydr()}}.}
 
 \item{result}{\code{TRUE}, the default, puts a summary table under the figure:
 the effect with its confidence interval, its p value, the heterogeneity

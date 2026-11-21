@@ -853,55 +853,115 @@ dr_wrap_text <- function(lines, width_cm, size = 9) {
   }), use.names = FALSE)
 }
 
-#' The summary line under a curve's title
+#' The summary line under a curve's title, as tokens
 #'
-#' Reads the headline result the way a paper's figure legend would: the effect
-#' with its interval and p value, then how many studies and dose comparisons
-#' it rests on, then the heterogeneity. The effect is the part a reader looks
-#' for, so it is set in bold red.
+#' The effect per increment of dose comes first and in bold red, because it
+#' is what the figure is for. Then the reference dose, how many studies and
+#' dose comparisons it rests on, and the tests, each as its p value only.
 #'
 #' @keywords internal
 #' @noRd
-dr_subtitle_lines <- function(x, at = NULL, digits = 3) {
+dr_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
+                               deviance = TRUE) {
   col  <- dr_result_column(x, at, digits)
   lab  <- dr_pooled_at(x, at)$label
-  pv   <- function(p) if (startsWith(p, "<")) paste("p", p) else paste("p =", p)
-  lvl  <- format(100 * x$provenance$level)
-  eff  <- paste0(x$sm, " ", col[1L], " (", lvl, "% CI ", col[2L], ", ",
-                 pv(col[3L]), ")")
-  ncmp <- sum(!x$frame$is_ref)
-  het  <- x$heterogeneity
-  line2 <- if (isTRUE(het$estimable)) {
-    sprintf("heterogeneity I\u00b2 = %.1f%% (Q = %.2f, %d df, %s).",
-            het$i2, het$Q, het$df, pv(dr_p(het$p)))
-  } else {
-    "heterogeneity not estimable."
+  pv   <- function(p) {
+    p <- dr_p(p)
+    if (startsWith(p, "<")) paste("p", p) else paste("p =", p)
   }
-  list(
-    # A trailing space has no width when measured, so the gap after the
-    # colon is asked for explicitly.
-    list(list(text = paste0(lab, ":"), gap = TRUE),
-         list(text = eff, strong = TRUE),
-         list(text = paste0(". ", x$counts$studies, " studies, ", ncmp,
-                            " dose comparisons;"))),
-    list(list(text = line2)))
+  lvl  <- format(100 * x$provenance$level)
+  unit <- if (is.null(x$dose_unit)) "" else paste0(" ", x$dose_unit)
+  eff  <- paste0(x$sm, " ", col[1L], " (", lvl, "% CI ", col[2L], ", ",
+                 if (startsWith(col[3L], "<")) paste("p", col[3L]) else
+                   paste("p =", col[3L]), ")")
+  het  <- x$heterogeneity
+  rest <- c(paste0("Reference ", x$reference$curve, unit, ";"),
+            paste0(x$counts$studies, " studies, ", sum(!x$frame$is_ref),
+                   " dose comparisons;"),
+            if (isTRUE(het$estimable))
+              sprintf("I\u00b2 = %.1f%% (Q test %s);", het$i2, pv(het$p)))
+  if (isTRUE(wald)) {
+    nl <- x$nonlinearity
+    rest <- c(rest, if (identical(x$shape$name, "linear")) {
+      "linearity test not applicable;"
+    } else if (!is.null(nl) && isTRUE(nl$estimable)) {
+      paste0("linearity test ", pv(nl$p), ";")
+    } else "linearity test not available;")
+  }
+  if (isTRUE(deviance)) {
+    g <- x$gof
+    rest <- c(rest, if (!is.null(g) && !identical(g$available, FALSE) &&
+                          !is.null(g$p) && is.finite(g$p)) {
+      paste0("deviance test ", pv(g$p), ";")
+    } else "deviance test not available;")
+  }
+  # The last clause ends the sentence.
+  rest[length(rest)] <- sub(";$", ".", rest[length(rest)])
+  # Each clause is kept whole when the line wraps, so a test never splits
+  # from its p value.
+  c(list(list(text = paste0(lab, ":"), space = FALSE),
+         list(text = eff, strong = TRUE, space = TRUE),
+         list(text = ".", space = FALSE)),
+    lapply(rest, function(w) list(text = w, space = TRUE)))
+}
+
+#' Break subtitle tokens into lines no wider than a width
+#'
+#' @keywords internal
+#' @noRd
+dr_subtitle_wrap <- function(tokens, width_cm, size = 9.5) {
+  wide <- function(txt, strong) dr_measure(grid::convertWidth(grid::grobWidth(
+    grid::textGrob(txt, gp = grid::gpar(fontsize = size,
+                                        fontface = if (strong) "bold" else "plain"))),
+    "cm", valueOnly = TRUE))
+  sp <- wide("a a", FALSE) - wide("aa", FALSE)
+  lines <- list()
+  cur <- list()
+  used <- 0
+  for (tk in tokens) {
+    w <- wide(tk$text, isTRUE(tk$strong)) +
+      (if (length(cur) && isTRUE(tk$space)) sp else 0)
+    if (length(cur) && used + w > width_cm) {
+      lines[[length(lines) + 1L]] <- cur
+      cur <- list()
+      used <- 0
+      tk$space <- FALSE
+      w <- wide(tk$text, isTRUE(tk$strong))
+    }
+    if (!length(cur)) tk$space <- FALSE
+    cur[[length(cur) + 1L]] <- tk
+    used <- used + w
+  }
+  if (length(cur)) lines[[length(lines) + 1L]] <- cur
+  # Each line becomes runs of plain and strong text, spaces kept inside them.
+  lapply(lines, function(ln) {
+    runs <- list()
+    for (tk in ln) {
+      txt <- paste0(if (isTRUE(tk$space)) " " else "", tk$text)
+      st  <- isTRUE(tk$strong)
+      n   <- length(runs)
+      if (n && identical(runs[[n]]$strong, st)) {
+        runs[[n]]$text <- paste0(runs[[n]]$text, txt)
+      } else {
+        runs[[n + 1L]] <- list(text = txt, strong = st)
+      }
+    }
+    runs
+  })
 }
 
 #' Draw subtitle lines centred, each made of plain and emphasised pieces
 #'
 #' Each line is drawn twice from one plotmath expression: once in grey with the
 #' emphasised piece held as an invisible phantom, once in red with only that
-#' piece visible. Both copies share one layout, so the pieces meet exactly,
-#' which measuring them one by one did not manage.
+#' piece visible. Both copies share one layout, so the pieces meet exactly.
 #'
 #' @keywords internal
 #' @noRd
 dr_subtitle_grob <- function(lines, size = 9.5, col = "grey30",
                              strong_col = "#C0392B") {
   piece <- function(sg, show) {
-    txt <- sg$text
-    if (isTRUE(sg$gap)) txt <- paste0(txt, " ")
-    e <- if (isTRUE(sg$strong)) bquote(bold(.(txt))) else txt
+    e <- if (isTRUE(sg$strong)) bquote(bold(.(sg$text))) else sg$text
     if (show) e else bquote(phantom(.(e)))
   }
   layer <- function(segs, strong) {
@@ -925,4 +985,42 @@ dr_subtitle_grob <- function(lines, size = 9.5, col = "grey30",
   g <- grid::gTree(children = do.call(grid::gList, kids))
   attr(g, "height") <- grid::unit(lh * length(lines) + 4, "points")
   g
+}
+
+#' The table of effects at chosen doses, under a curve
+#'
+#' One row per dose, each measured against the reference: the dose, the
+#' effect, its interval and its p value. With subgroups drawn, one column per
+#' level and the overall fit, each cell the effect with its interval.
+#'
+#' @keywords internal
+#' @noRd
+dr_dose_table <- function(x, doses, digits = 3, use_sub = FALSE) {
+  xref <- x$reference$curve
+  unit <- if (is.null(x$dose_unit)) "Dose" else paste0("Dose (", x$dose_unit, ")")
+  cell <- function(f, d) dr_result_column(f, list(type = "pair",
+                                                  value = c(d, xref)), digits)
+  if (!isTRUE(use_sub)) {
+    rows <- lapply(doses, function(d) cell(x, d)[1:3])
+    out <- data.frame(dr_num_lab(signif(doses, 4)),
+                      vapply(rows, `[`, character(1), 1L),
+                      vapply(rows, `[`, character(1), 2L),
+                      vapply(rows, `[`, character(1), 3L),
+                      check.names = FALSE, stringsAsFactors = FALSE)
+    names(out) <- c(unit, x$sm, paste0(format(100 * x$provenance$level),
+                                       "% CI"), "p value")
+    return(out)
+  }
+  out <- data.frame(dr_num_lab(signif(doses, 4)), check.names = FALSE,
+                    stringsAsFactors = FALSE)
+  names(out) <- unit
+  fits <- c(x$subgroup$fits, list(Overall = x))
+  for (lv in names(fits)) {
+    f <- fits[[lv]]
+    out[[lv]] <- if (is.null(f)) "not fitted" else vapply(doses, function(d) {
+      v <- cell(f, d)
+      paste0(v[1L], " (", v[2L], ")")
+    }, character(1))
+  }
+  out
 }
