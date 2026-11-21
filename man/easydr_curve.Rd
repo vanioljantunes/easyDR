@@ -21,6 +21,7 @@ easydr_curve(
   rug = NULL,
   knot.lines = TRUE,
   grid = FALSE,
+  subtitle = TRUE,
   result = TRUE,
   result.at = NULL,
   table = "horizontal",
@@ -107,6 +108,11 @@ shapes without knots.}
 
 \item{grid}{\code{FALSE}, the default, draws the panel without grid lines.
 \code{TRUE} adds the major grid.}
+
+\item{subtitle}{\code{TRUE}, the default, writes the headline result under the
+title: the effect (in bold red) with its confidence interval and p value,
+the number of studies and dose comparisons, and the heterogeneity. With
+subgroups drawn it reports the overall fit.}
 
 \item{result}{\code{TRUE}, the default, puts a summary table under the figure:
 the effect with its confidence interval, its p value, the heterogeneity

@@ -389,10 +389,15 @@ dr_grob_height <- function(g, pad = 26) {
 dr_draw_stack <- function(body, body_h = NULL, title = NULL, footer = NULL,
                           footer_h = NULL, title_size = 12, footer_size = 9,
                           body_w = NULL, title_hjust = 0.5,
-                          footer_x = grid::unit(4, "pt")) {
+                          footer_x = grid::unit(4, "pt"), subtitle = NULL) {
   fill    <- is.null(body_h)
   grobs   <- list(body)
   heights <- list(if (fill) grid::unit(1, "null") else body_h)
+  # The subtitle goes on first so the title ends up above it.
+  if (!is.null(subtitle)) {
+    grobs   <- c(list(subtitle), grobs)
+    heights <- c(list(attr(subtitle, "height")), heights)
+  }
   if (!is.null(title)) {
     tx <- if (title_hjust == 0) grid::unit(4, "pt") else
       grid::unit(title_hjust, "npc")
@@ -846,4 +851,78 @@ dr_wrap_text <- function(lines, width_cm, size = 9) {
     }
     c(out, trimws(cur))
   }), use.names = FALSE)
+}
+
+#' The summary line under a curve's title
+#'
+#' Reads the headline result the way a paper's figure legend would: the effect
+#' with its interval and p value, then how many studies and dose comparisons
+#' it rests on, then the heterogeneity. The effect is the part a reader looks
+#' for, so it is set in bold red.
+#'
+#' @keywords internal
+#' @noRd
+dr_subtitle_lines <- function(x, at = NULL, digits = 3) {
+  col  <- dr_result_column(x, at, digits)
+  lab  <- dr_pooled_at(x, at)$label
+  pv   <- function(p) if (startsWith(p, "<")) paste("p", p) else paste("p =", p)
+  lvl  <- format(100 * x$provenance$level)
+  eff  <- paste0(x$sm, " ", col[1L], " (", lvl, "% CI ", col[2L], ", ",
+                 pv(col[3L]), ")")
+  ncmp <- sum(!x$frame$is_ref)
+  het  <- x$heterogeneity
+  line2 <- if (isTRUE(het$estimable)) {
+    sprintf("heterogeneity I\u00b2 = %.1f%% (Q = %.2f, %d df, %s).",
+            het$i2, het$Q, het$df, pv(dr_p(het$p)))
+  } else {
+    "heterogeneity not estimable."
+  }
+  list(
+    # A trailing space has no width when measured, so the gap after the
+    # colon is asked for explicitly.
+    list(list(text = paste0(lab, ":"), gap = TRUE),
+         list(text = eff, strong = TRUE),
+         list(text = paste0(". ", x$counts$studies, " studies, ", ncmp,
+                            " dose comparisons;"))),
+    list(list(text = line2)))
+}
+
+#' Draw subtitle lines centred, each made of plain and emphasised pieces
+#'
+#' Each line is drawn twice from one plotmath expression: once in grey with the
+#' emphasised piece held as an invisible phantom, once in red with only that
+#' piece visible. Both copies share one layout, so the pieces meet exactly,
+#' which measuring them one by one did not manage.
+#'
+#' @keywords internal
+#' @noRd
+dr_subtitle_grob <- function(lines, size = 9.5, col = "grey30",
+                             strong_col = "#C0392B") {
+  piece <- function(sg, show) {
+    txt <- sg$text
+    if (isTRUE(sg$gap)) txt <- paste0(txt, " ")
+    e <- if (isTRUE(sg$strong)) bquote(bold(.(txt))) else txt
+    if (show) e else bquote(phantom(.(e)))
+  }
+  layer <- function(segs, strong) {
+    parts <- lapply(segs, function(sg) piece(sg, isTRUE(sg$strong) == strong))
+    as.call(c(as.name("paste"), parts))
+  }
+  lh <- 1.35 * size
+  kids <- list()
+  for (i in seq_along(lines)) {
+    segs <- lines[[i]]
+    y <- grid::unit(1, "npc") - grid::unit((i - 0.5) * lh, "points")
+    kids[[length(kids) + 1L]] <- grid::textGrob(
+      as.expression(layer(segs, FALSE)), x = grid::unit(0.5, "npc"), y = y,
+      gp = grid::gpar(fontsize = size, col = col))
+    if (any(vapply(segs, function(sg) isTRUE(sg$strong), logical(1)))) {
+      kids[[length(kids) + 1L]] <- grid::textGrob(
+        as.expression(layer(segs, TRUE)), x = grid::unit(0.5, "npc"), y = y,
+        gp = grid::gpar(fontsize = size, col = strong_col))
+    }
+  }
+  g <- grid::gTree(children = do.call(grid::gList, kids))
+  attr(g, "height") <- grid::unit(lh * length(lines) + 4, "points")
+  g
 }

@@ -70,6 +70,10 @@
 #'   shapes without knots.
 #' @param grid `FALSE`, the default, draws the panel without grid lines.
 #'   `TRUE` adds the major grid.
+#' @param subtitle `TRUE`, the default, writes the headline result under the
+#'   title: the effect (in bold red) with its confidence interval and p value,
+#'   the number of studies and dose comparisons, and the heterogeneity. With
+#'   subgroups drawn it reports the overall fit.
 #' @param result `TRUE`, the default, puts a summary table under the figure:
 #'   the effect with its confidence interval, its p value, the heterogeneity
 #'   and the number of studies. The figure then carries its own numbers. With
@@ -146,6 +150,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          prediction = FALSE, points = TRUE, studies = TRUE,
                          ref.shape = TRUE, studlab = FALSE, reference = TRUE,
                          rug = NULL, knot.lines = TRUE, grid = FALSE,
+                         subtitle = TRUE,
                          result = TRUE, result.at = NULL,
                          table = "horizontal", target = TRUE,
                          wald = TRUE, deviance = FALSE, r2 = FALSE,
@@ -235,7 +240,13 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   } else {
     dr_height_in(fs$height)
   }
-  title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
+  sub_g    <- if (isTRUE(subtitle)) {
+    dr_subtitle_grob(dr_subtitle_lines(x, result.at, digits))
+  } else {
+    NULL
+  }
+  title_in <- (if (is.null(main)) 0 else 1.9 * 12 / 72) +
+    (if (is.null(sub_g)) 0 else dr_height_in(attr(sub_g, "height")))
   size <- dr_fig_size(w_in,
                       min(max(0.50 * w_in, 3.1), 4.4) + foot_in + title_in +
                         0.12)
@@ -244,10 +255,10 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
 
   if (is.null(fs)) {
     dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5,
-                  footer_x = foot_x)
+                  footer_x = foot_x, subtitle = sub_g)
   } else {
     dr_draw_stack(p, NULL, title = main, footer = fs$grob,
-                  footer_h = fs$height, title_hjust = 0.5)
+                  footer_h = fs$height, title_hjust = 0.5, subtitle = sub_g)
   }
   invisible(tab)
 }
