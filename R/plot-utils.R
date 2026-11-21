@@ -875,13 +875,7 @@ dr_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
                  if (startsWith(col[3L], "<")) paste("p", col[3L]) else
                    paste("p =", col[3L]), ")")
   het  <- x$heterogeneity
-  # The reference and the counts go beside the panel when there is a key
-  # there to sit above; otherwise they stay in this line.
-  rest <- c(if (!isTRUE(side_info)) c(
-              paste0("Reference ", x$reference$curve, unit, ";"),
-              paste0(x$counts$studies, " studies, ", sum(!x$frame$is_ref),
-                     " dose comparisons;")),
-            if (isTRUE(het$estimable))
+  rest <- c(if (isTRUE(het$estimable))
               sprintf("I\u00b2 = %.1f%%, Q test %s;", het$i2, pv(het$p)))
   if (isTRUE(wald)) {
     nl <- x$nonlinearity
@@ -902,8 +896,30 @@ dr_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
   rest[length(rest)] <- sub(";$", ".", rest[length(rest)])
   # Each clause is kept whole when the line wraps, so a test never splits
   # from its p value.
-  # Two rows: the effect, then the heterogeneity and the tests.
-  list(list(list(text = paste0(lab, ":"), space = FALSE),
+  # What the curve is and what it rests on. Counts of people and of
+  # person-time are different things, so a fit mixing incidence-rate studies
+  # with the others reports both rather than adding them up.
+  fr   <- x$frame
+  # A count in the millions is written short, "4.19M", so the row fits.
+  big  <- function(v) if (v >= 1e6) {
+    paste0(formatC(v / 1e6, format = "fg", digits = 3), "M")
+  } else {
+    format(round(v), big.mark = ",", scientific = FALSE, trim = TRUE)
+  }
+  is_pt <- fr$type %in% "ir"
+  sizes <- c(if (any(!is_pt) && all(is.finite(fr$n[!is_pt])))
+               paste(big(sum(fr$n[!is_pt])), "participants"),
+             if (any(is_pt) && all(is.finite(fr$n[is_pt])))
+               paste(big(sum(fr$n[is_pt])), "person-years"))
+  nm <- sub(",.*$", "", x$shape$label)
+  nm <- paste0(toupper(substring(nm, 1, 1)), substring(nm, 2))
+  info <- c(paste0(nm, ";"),
+            paste0(x$counts$studies, " studies", if (length(sizes)) ";" else "."),
+            if (length(sizes)) paste0(paste(sizes, collapse = ", "), "."))
+  # Three rows: the curve and its data, the effect, then the heterogeneity
+  # and the tests.
+  list(lapply(info, function(w) list(text = w, space = TRUE)),
+       list(list(text = paste0(lab, ":"), space = FALSE),
             list(text = eff, strong = TRUE, space = TRUE),
             list(text = ".", space = FALSE)),
        lapply(rest, function(w) list(text = w, space = TRUE)))
@@ -915,7 +931,17 @@ dr_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
 #' @noRd
 dr_subtitle_wrap <- function(groups, width_cm, size = 9.5) {
   # Each group starts on a new line and wraps only if it is wider than the
-  # panel.
+  # panel. Text is measured on a raster device, the kind the figure is
+  # written to: a PDF device reads the same words several percent wider and
+  # broke lines that fitted.
+  old <- grDevices::dev.cur()
+  tf  <- tempfile(fileext = ".png")
+  grDevices::png(tf, width = 7, height = 7, units = "in", res = 300)
+  on.exit({
+    grDevices::dev.off()
+    if (old > 1L) grDevices::dev.set(old)
+    unlink(tf)
+  }, add = TRUE)
   do.call(c, lapply(groups, dr_subtitle_wrap1, width_cm = width_cm,
                     size = size))
 }

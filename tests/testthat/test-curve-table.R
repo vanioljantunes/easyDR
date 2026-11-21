@@ -28,7 +28,8 @@ test_that("the subtitle reports the tests as p values only", {
   expect_match(txt, "Q test p")
   expect_match(txt, "linearity p")
   expect_match(txt, "deviance p")
-  expect_match(txt, "Reference 0")
+  expect_match(txt, "Restricted cubic spline")
+  expect_match(txt, "studies")
   expect_false(grepl("X2 =|deviance =", txt))
 })
 

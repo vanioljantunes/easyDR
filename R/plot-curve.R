@@ -277,8 +277,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     }
     dr_subtitle_grob(dr_subtitle_wrap(
       dr_subtitle_tokens(x, result.at, digits, wald = wald,
-                         deviance = deviance,
-                         side_info = isTRUE(built$side_info)), panel_cm))
+                         deviance = deviance), panel_cm))
   } else {
     NULL
   }
@@ -436,12 +435,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # subgroup figure already spends shape on its levels, and a seventh
   # reference would have to reuse one, so both fall back to circles.
   ref_shapes <- c(21L, 22L, 24L, 8L, 23L, 25L)
-  # The reference and the counts sit above the key, one per row, so the
-  # subtitle can keep to the result and the tests.
-  key_title <- paste0("Reference ", xref, " ", unit, "\n",
-                      x$counts$studies, " studies\n",
-                      sum(!x$frame$is_ref), " dose comparisons\n\n",
-                      "Study reference dose")
+  key_title <- "Study reference dose"
   ref_levels <- if (is.null(obs)) numeric(0) else sort(unique(obs$ref_dose))
   shape_key  <- isTRUE(ref.shape) && !is.null(obs) && !use_sub &&
     length(ref_levels) <= length(ref_shapes)
