@@ -130,6 +130,7 @@ ed_gamma <- function(x, gamma = c(0.5, 0.8)) {
   dr_check_gamma(gamma)
   grid <- dr_ed_grid(x)
   out  <- dr_ed_from_curve(grid, dr_curve_at(x, grid), gamma)
+  if (!is.null(out)) out$ed <- dr_ed_emax(x$shape, gamma, out$ed)
   if (is.null(out)) {
     stop("easydr: this curve has no effect to take a fraction of. A flat ",
          "fit has no target dose.", call. = FALSE)
@@ -197,6 +198,7 @@ easydr_target_dose <- function(x, gamma = c(0.5, 0.8), B = 500L,
     if (inherits(est, "try-error")) next
     got <- dr_ed_from_curve(grid, est, gamma)
     if (is.null(got)) next
+    got$ed <- dr_ed_emax(d$shape, gamma, got$ed)
     draws[b, ] <- c(got$ed, got$ed_max)
     if (!isTRUE(quiet) && b %% 50L == 0L) {
       message("easydr: bootstrap draw ", b, " of ", B)
@@ -315,4 +317,27 @@ dr_gof_line <- function(x) {
               sprintf("%.3f", g$r2),
               if (isTRUE(nl$estimable)) dr_p_lab(nl$p) else "not estimable"),
     check.names = FALSE, stringsAsFactors = FALSE)
+}
+
+#' Target doses of an Emax curve, as shares of its own ceiling
+#'
+#' An Emax curve names its ED50 as a parameter: the dose giving half of the
+#' maximum effect the curve rises towards. Reading the ED50 off the observed
+#' range instead takes half of the effect at the highest dose, which the curve
+#' has not yet reached, and prints a second, smaller ED50 beside the first.
+#' So an Emax shape reports ED(gamma) = ED50 (gamma / (1 - gamma))^(1 / h),
+#' which gives back the parameter at gamma = 0.5. Any other shape keeps the
+#' doses read off the curve.
+#'
+#' @keywords internal
+#' @noRd
+dr_ed_emax <- function(shape, gamma, ed) {
+  if (is.null(shape) || !shape$name %in% c("emax", "hyperbolic_emax") ||
+      is.null(shape$ed50) || is.null(shape$steepness)) {
+    return(ed)
+  }
+  out <- shape$ed50 * (gamma / (1 - gamma))^(1 / shape$steepness)
+  out[gamma >= 1] <- NA_real_
+  names(out) <- names(ed)
+  out
 }

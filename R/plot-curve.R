@@ -430,7 +430,9 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   if (isTRUE(target) && !is.null(x$target) && !isTRUE(use_sub)) {
     tg <- x$target
     lab <- paste0(c(names(tg$ed), "ED max"), "  ",
-                  formatC(c(tg$ed, tg$ed_max), format = "f", digits = 1),
+                  # Four significant figures, as the shape line under the
+                  # figure prints the ED50, so the two read the same.
+                  formatC(c(tg$ed, tg$ed_max), format = "fg", digits = 4),
                   " ", unit, collapse = "\n")
     ref <- if (isTRUE(x$ratio)) 1 else 0
     rising <- utils::tail(tab$est, 1) >= ref

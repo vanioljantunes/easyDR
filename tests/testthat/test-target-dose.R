@@ -13,14 +13,11 @@ emax_fit <- function(ed50 = NULL) {
 test_that("the target dose matches the algebra for a known ED50", {
   f <- emax_fit(ed50 = 5)
   got <- ed_gamma(f, gamma = c(0.5, 0.8))
-  # E(d) is proportional to d / (d + 5), rising throughout, so the largest
-  # effect inside the range is at its top and the dose reaching a fraction
-  # g of it solves d / (d + 5) = g * hi / (hi + 5).
+  # E(d) is proportional to d / (d + 5), so a fraction g of the ceiling the
+  # curve rises towards is reached at d = 5 g / (1 - g): the ED50 is the
+  # parameter itself, the number printed under the figure.
   hi <- f$counts$dose_max
-  want <- vapply(c(0.5, 0.8), function(g) {
-    k <- g * hi / (hi + 5)
-    5 * k / (1 - k)
-  }, numeric(1))
+  want <- 5 * c(0.5, 0.8) / (1 - c(0.5, 0.8))
   expect_equal(unname(got$ed), want, tolerance = 1e-3)
   expect_equal(got$ed_max, hi)
   expect_named(got$ed, c("ED50", "ED80"))
