@@ -862,7 +862,7 @@ dr_wrap_text <- function(lines, width_cm, size = 9) {
 #' @keywords internal
 #' @noRd
 dr_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
-                               deviance = TRUE) {
+                               deviance = TRUE, side_info = FALSE) {
   col  <- dr_result_column(x, at, digits)
   lab  <- dr_pooled_at(x, at)$label
   pv   <- function(p) {
@@ -875,41 +875,55 @@ dr_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
                  if (startsWith(col[3L], "<")) paste("p", col[3L]) else
                    paste("p =", col[3L]), ")")
   het  <- x$heterogeneity
-  rest <- c(paste0("Reference ", x$reference$curve, unit, ";"),
-            paste0(x$counts$studies, " studies, ", sum(!x$frame$is_ref),
-                   " dose comparisons;"),
+  # The reference and the counts go beside the panel when there is a key
+  # there to sit above; otherwise they stay in this line.
+  rest <- c(if (!isTRUE(side_info)) c(
+              paste0("Reference ", x$reference$curve, unit, ";"),
+              paste0(x$counts$studies, " studies, ", sum(!x$frame$is_ref),
+                     " dose comparisons;")),
             if (isTRUE(het$estimable))
-              sprintf("I\u00b2 = %.1f%% (Q test %s);", het$i2, pv(het$p)))
+              sprintf("I\u00b2 = %.1f%%, Q test %s;", het$i2, pv(het$p)))
   if (isTRUE(wald)) {
     nl <- x$nonlinearity
     rest <- c(rest, if (identical(x$shape$name, "linear")) {
       "linearity test not applicable;"
     } else if (!is.null(nl) && isTRUE(nl$estimable)) {
-      paste0("linearity test ", pv(nl$p), ";")
+      paste0("linearity ", pv(nl$p), ";")
     } else "linearity test not available;")
   }
   if (isTRUE(deviance)) {
     g <- x$gof
     rest <- c(rest, if (!is.null(g) && !identical(g$available, FALSE) &&
                           !is.null(g$p) && is.finite(g$p)) {
-      paste0("deviance test ", pv(g$p), ";")
+      paste0("deviance ", pv(g$p), ";")
     } else "deviance test not available;")
   }
   # The last clause ends the sentence.
   rest[length(rest)] <- sub(";$", ".", rest[length(rest)])
   # Each clause is kept whole when the line wraps, so a test never splits
   # from its p value.
-  c(list(list(text = paste0(lab, ":"), space = FALSE),
-         list(text = eff, strong = TRUE, space = TRUE),
-         list(text = ".", space = FALSE)),
-    lapply(rest, function(w) list(text = w, space = TRUE)))
+  # Two rows: the effect, then the heterogeneity and the tests.
+  list(list(list(text = paste0(lab, ":"), space = FALSE),
+            list(text = eff, strong = TRUE, space = TRUE),
+            list(text = ".", space = FALSE)),
+       lapply(rest, function(w) list(text = w, space = TRUE)))
 }
 
 #' Break subtitle tokens into lines no wider than a width
 #'
 #' @keywords internal
 #' @noRd
-dr_subtitle_wrap <- function(tokens, width_cm, size = 9.5) {
+dr_subtitle_wrap <- function(groups, width_cm, size = 9.5) {
+  # Each group starts on a new line and wraps only if it is wider than the
+  # panel.
+  do.call(c, lapply(groups, dr_subtitle_wrap1, width_cm = width_cm,
+                    size = size))
+}
+
+#' @rdname dr_subtitle_wrap
+#' @keywords internal
+#' @noRd
+dr_subtitle_wrap1 <- function(tokens, width_cm, size = 9.5) {
   wide <- function(txt, strong) dr_measure(grid::convertWidth(grid::grobWidth(
     grid::textGrob(txt, gp = grid::gpar(fontsize = size,
                                         fontface = if (strong) "bold" else "plain"))),
@@ -958,8 +972,8 @@ dr_subtitle_wrap <- function(tokens, width_cm, size = 9.5) {
 #'
 #' @keywords internal
 #' @noRd
-dr_subtitle_grob <- function(lines, size = 9.5, col = "grey30",
-                             strong_col = "#C0392B") {
+dr_subtitle_grob <- function(lines, size = 9.5, col = "black",
+                             strong_col = "black") {
   piece <- function(sg, show) {
     e <- if (isTRUE(sg$strong)) bquote(bold(.(sg$text))) else sg$text
     if (show) e else bquote(phantom(.(e)))

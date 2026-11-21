@@ -277,7 +277,8 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     }
     dr_subtitle_grob(dr_subtitle_wrap(
       dr_subtitle_tokens(x, result.at, digits, wald = wald,
-                         deviance = deviance), panel_cm))
+                         deviance = deviance,
+                         side_info = isTRUE(built$side_info)), panel_cm))
   } else {
     NULL
   }
@@ -435,6 +436,12 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # subgroup figure already spends shape on its levels, and a seventh
   # reference would have to reuse one, so both fall back to circles.
   ref_shapes <- c(21L, 22L, 24L, 8L, 23L, 25L)
+  # The reference and the counts sit above the key, one per row, so the
+  # subtitle can keep to the result and the tests.
+  key_title <- paste0("Reference ", xref, " ", unit, "\n",
+                      x$counts$studies, " studies\n",
+                      sum(!x$frame$is_ref), " dose comparisons\n\n",
+                      "Study reference dose")
   ref_levels <- if (is.null(obs)) numeric(0) else sort(unique(obs$ref_dose))
   shape_key  <- isTRUE(ref.shape) && !is.null(obs) && !use_sub &&
     length(ref_levels) <= length(ref_shapes)
@@ -458,7 +465,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
           colour = pt_line, fill = pt_fill, stroke = 0.6) +
         ggplot2::scale_shape_manual(
           values = stats::setNames(ref_shapes[seq_along(labs_ref)], labs_ref),
-          name = "Study reference dose", drop = FALSE,
+          name = key_title, drop = FALSE,
           guide = ggplot2::guide_legend(override.aes = list(size = 3)))
     } else {
       p <- p + ggplot2::geom_point(
@@ -576,6 +583,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     ggplot2::labs(x = xlab, y = ylab) +
     ggplot2::theme_bw() +
     ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                   axis.text = ggplot2::element_text(colour = "black"),
                    panel.grid.major = if (isTRUE(grid))
                      ggplot2::element_line(colour = "grey92") else
                        ggplot2::element_blank(),
@@ -596,8 +604,9 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     p + ggplot2::scale_y_continuous(limits = ylim)
   }
   # The dose axis is labelled where the figure has something to say: the
-  # lowest dose, the knots, and the doses reported in the table.
-  br <- sort(unique(signif(c(min(x$frame$dose), knots, mark.doses), 6)))
+  # lowest and highest observed doses, the knots, and the doses reported in
+  # the table.
+  br <- sort(unique(signif(c(range(x$frame$dose), knots, mark.doses), 6)))
   if (length(br) > 1L) {
     p <- p + ggplot2::scale_x_continuous(breaks = br,
                                          labels = dr_num_lab(signif(br, 3)))
@@ -611,12 +620,13 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # Under the figure only what explains its marks; the result and the tests
   # are in the subtitle.
   extra <- tests[setdiff(names(tests), c("wald", "deviance"))]
+  # Band and points read as one legend, so they share a row.
   foot <- c(paste0("Band: ", bands, ".",
+                   if (isTRUE(studies))
+                     "  Points: each study's effects against its own reference dose.",
                    if (use_sub) "  The dark line and the band are the overall fit.",
                    if (nrow(tab_out))
                      "  Dashed: beyond the highest observed dose."),
-            if (isTRUE(studies))
-              "Points: each study's effects against its own reference dose.",
             if (length(extra))
               do.call(dr_test_notes, c(list(x, wald = FALSE), extra)),
             legend)
@@ -641,7 +651,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   }
 
   list(plot = p, foot = foot, tab = tab, use_sub = use_sub,
-       main = main)
+       main = main, side_info = shape_key)
 }
 
 
