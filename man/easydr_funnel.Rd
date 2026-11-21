@@ -26,7 +26,8 @@ easydr_funnel(
 \item{x}{a fitted result from \code{\link[=easydr]{easydr()}}.}
 
 \item{at}{what each study reports. \code{NULL} (the default) uses the
-\code{result.at} given to \code{\link[=easydr]{easydr()}}; \code{"per.unit"} or a number overrides it.}
+\code{result.at} given to \code{\link[=easydr]{easydr()}}; one number (an increment of dose) or
+\code{c(numerator, denominator)} overrides it.}
 
 \item{main}{plot title. \code{NULL} writes one; \code{FALSE} draws none.}
 

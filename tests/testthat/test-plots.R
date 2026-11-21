@@ -54,7 +54,7 @@ test_that("a curve has no single trend, so the forest compares one dose", {
   rcs <- bin_fit("rcs")
   f   <- easydr_forest(rcs, at = 25)
   expect_equal(f$at, 25)
-  expect_match(f$label, "at 25 g/day against 0")
+  expect_match(f$label, "25 vs 0 g/day")
   # The pooled row must agree with what the fit predicts at that dose.
   pred <- rcs$curve$est[which.min(abs(rcs$curve$dose - 25))]
   expect_equal(exp(f$pooled$est), pred, tolerance = 0.05)

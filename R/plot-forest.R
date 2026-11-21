@@ -23,9 +23,10 @@
 #'
 #' @param x a fitted result from [easydr()].
 #' @param at what each study reports: `"per.unit"` (the default), the effect
-#'   of one unit of dose, which is the study's slope for a straight line and
-#'   one unit above the reference against the reference for any other shape;
-#'   or a number, the effect at that dose against the reference.
+#'   per `increment` of dose, which is the study's slope times the increment
+#'   for a straight line and the reference plus the increment against the
+#'   reference for any other shape; or `c(numerator, denominator)`, one dose
+#'   against another. The forest does not follow `result.at` of the fit.
 #' @param increment the step the per-unit effect is reported for, 1 by
 #'   default. `increment = 100` reports each study and the pooled estimate per
 #'   100 units of dose, as many papers do; ignored when `at` is a number.
