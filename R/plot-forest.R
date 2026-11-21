@@ -45,6 +45,10 @@
 #'   weights stay each study's share of the overall fit. See the `subgroup`
 #'   argument of [easydr()].
 #' @param digits digits for the value column.
+#' @param just how the value columns sit in their cells: `"center"` (the
+#'   default), `"right"` or `"left"`. The study column stays on the left.
+#' @param smlab the label over the effect column. `NULL` names the curve the
+#'   per-study effects were read from, such as "Linear curve model".
 #' @param legend optional free text drawn under the figure, one line per
 #'   element, in the manner of an added row.
 #' @param columns `TRUE`, the default, shows the dose levels and dose range
@@ -86,6 +90,7 @@
 easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab = NULL, xlim = NULL,
                           order = c("data", "effect", "weight", "study"),
                           subgroup = NULL, digits = 3, legend = NULL,
+                          just = "center", smlab = NULL,
                           columns = TRUE, row.height = 0.26,
                           effect.width = 3.1,
                           filetype = c("png", "pdf", "tiff"),
@@ -158,7 +163,9 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
           plan,
           mk("subtotal", "  Subtotal", "bold", pl$est, pl$lb, pl$ub,
              sum(d$weight, na.rm = TRUE)),
-          mk("note", "", note = paste0("  ", het_line(f$heterogeneity))))
+          mk("note", "", note = paste0("  ", het_line(f$heterogeneity))),
+          mk("note", "", note = paste0("  ", dr_forest_deviance(f$gof))),
+          mk("note", "", note = paste0("  ", dr_linearity_note(f, lead = ""))))
       }
     }
     plan <- rbind(plan, mk("pooled", "Overall", "bold", e$pooled$est,
@@ -171,9 +178,32 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
   plan$y   <- rev(seq_len(n))
   header_y <- n + 1
   het_y    <- 0
-  # The deviance test of the overall fit sits one row under its I2 line.
+  # The deviance and linearity tests of the overall fit sit under its I2.
   dev_y    <- -1
-  ylim     <- c(dev_y - 0.5, header_y + 0.5)
+  lin_y    <- -2
+  ylim     <- c(lin_y - 0.5, header_y + 0.5)
+  # Each subtotal with its tests, and the overall row with its tests, sit in
+  # an outlined box in a subgroup forest.
+  boxes <- NULL
+  if (use_sub) {
+    for (i in which(plan$kind == "subtotal")) {
+      j <- i
+      while (j < n && plan$kind[j + 1L] == "note") j <- j + 1L
+      boxes <- rbind(boxes, data.frame(top = plan$y[i] + 0.5, bottom = plan$y[j] - 0.5))
+    }
+    boxes <- rbind(boxes, data.frame(top = plan$y[plan$kind == "pooled"] + 0.5,
+                                     bottom = lin_y - 0.5))
+  }
+  box_layers <- function(left = FALSE, right = FALSE) {
+    if (is.null(boxes)) return(list())
+    seg <- function(x, xend, y, yend) ggplot2::annotate(
+      "segment", x = x, xend = xend, y = y, yend = yend,
+      colour = "grey20", linewidth = 0.5)
+    c(list(seg(-Inf, Inf, boxes$top, boxes$top),
+           seg(-Inf, Inf, boxes$bottom, boxes$bottom)),
+      if (left) list(seg(-Inf, -Inf, boxes$bottom, boxes$top)),
+      if (right) list(seg(Inf, Inf, boxes$bottom, boxes$top)))
+  }
   is_study <- plan$kind == "study"
   zebra    <- dr_zebra(plan$y[is_study])
 
@@ -205,17 +235,22 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
     lapply(which(plan$kind == "note"),
            function(i) list(y = plan$y[i], label = plan$note[i])),
     list(list(y = het_y, label = het_text)),
-    list(list(y = dev_y, label = dr_forest_deviance(x$gof))))
+    list(list(y = dev_y, label = dr_forest_deviance(x$gof))),
+    list(list(y = lin_y, label = dr_linearity_note(x, lead = ""))))
 
+  centered <- identical(just, "center")
   p_labels <- dr_text_panel(
     lab_cols, lab_right, ypos = plan$y, face = plan$face,
-    header_y = header_y, ylim = ylim, zebra = zebra, notes = notes)
+    header_y = header_y, ylim = ylim, zebra = zebra, notes = notes,
+    center = c(FALSE, rep(centered, length(lab_cols) - 1L))) + box_layers(left = TRUE)
 
   val_cols <- list(`x` = vals, Weight = wts)
   names(val_cols)[1L] <- paste0(x$sm, " (", lvl, "% CI)")
   p_values <- dr_text_panel(
-    val_cols, c(FALSE, TRUE), ypos = plan$y, face = plan$face,
-    header_y = header_y, ylim = ylim, zebra = zebra)
+    val_cols, c(identical(just, "right"), !identical(just, "left")),
+    ypos = plan$y, face = plan$face,
+    header_y = header_y, ylim = ylim, zebra = zebra,
+    center = rep(centered, 2L)) + box_layers(right = TRUE)
 
   # The effect panel. Squares have area proportional to weight, which is what
   # a reader reads off a square, and a diamond spans a pooled interval.
@@ -264,7 +299,7 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
     # The curve the per-study effects were read from, over the effect column
     # where meta's smlab sits.
     ggplot2::annotate("text", x = (lo + hi) / 2, y = header_y,
-                      label = dr_shape_title(x$shape$name),
+                      label = if (is.null(smlab)) paste0(dr_shape_title(x$shape$name), " curve model") else smlab,
                       fontface = "bold", size = 3.2) +
     ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$lb, xmax = .data$ub),
                            width = 0.26, orientation = "y", linewidth = 0.45) +
@@ -278,7 +313,8 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
                                 labels = ticks$labels[keep]) +
     ggplot2::coord_cartesian(xlim = c(lo, hi), ylim = ylim) +
     ggplot2::labs(x = xlab) +
-    dr_gg_theme(axis = TRUE)
+    dr_gg_theme(axis = TRUE) +
+    box_layers()
 
   if (is.null(main)) {
     main <- paste0("Dose-response trend per study (", x$sm_label, ")")
@@ -299,16 +335,8 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
 
   body_h <- grid::unit((ylim[2] - ylim[1]) * row.height, "inches") +
     grid::unit(0.40, "inches")
-  if (is.null(legend) && isTRUE(columns)) {
-    legend <- paste0("Dose levels: exposure categories the study reported. ",
-                     "Dose range: its lowest to its highest dose.")
-  }
-  if (use_sub) {
-    legend <- c(legend, paste0(
-      "Grouped by ", x$subgroup$var, ". A subtotal is the model refitted ",
-      "within that level, drawn as a grey diamond. Squares and weights are ",
-      "each study's share of the overall fit."))
-  }
+  # No footer unless one is asked for: the columns and the boxes say what
+  # the rows are.
   # The footer is wrapped to the width the figure actually has, and counted
   # into the height that is handed back. A caller opens a device at that
   # height, so a footer measured as one line and drawn as three is a footer

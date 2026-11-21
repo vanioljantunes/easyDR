@@ -15,6 +15,8 @@ easydr_forest(
   subgroup = NULL,
   digits = 3,
   legend = NULL,
+  just = "center",
+  smlab = NULL,
   columns = TRUE,
   row.height = 0.26,
   effect.width = 3.1,
@@ -61,6 +63,12 @@ argument of \code{\link[=easydr]{easydr()}}.}
 
 \item{legend}{optional free text drawn under the figure, one line per
 element, in the manner of an added row.}
+
+\item{just}{how the value columns sit in their cells: \code{"center"} (the
+default), \code{"right"} or \code{"left"}. The study column stays on the left.}
+
+\item{smlab}{the label over the effect column. \code{NULL} names the curve the
+per-study effects were read from, such as "Linear curve model".}
 
 \item{columns}{\code{TRUE}, the default, shows the dose levels and dose range
 each study brought. \code{FALSE} shows the study label alone.}

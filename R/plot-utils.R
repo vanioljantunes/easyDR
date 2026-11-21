@@ -283,20 +283,22 @@ dr_zebra <- function(ypos) {
 #' @keywords internal
 #' @noRd
 dr_text_panel <- function(cols, right, ypos, face, header_y, ylim, zebra,
-                          notes = NULL, cell = 3.0, hdr = 3.2, xlab = " ") {
+                          notes = NULL, cell = 3.0, hdr = 3.2, xlab = " ",
+                          center = rep(FALSE, length(cols))) {
   w <- vapply(seq_along(cols), function(i)
     max(nchar(c(names(cols)[i], as.character(cols[[i]]))), na.rm = TRUE) +
       if (right[i]) 1.5 else 2.5, numeric(1))
   edge  <- cumsum(w) / sum(w)
   start <- c(0, utils::head(edge, -1))
-  xs    <- ifelse(right, edge, start)
+  xs    <- ifelse(center, (start + edge) / 2, ifelse(right, edge, start))
+  hj    <- ifelse(center, 0.5, ifelse(right, 1, 0))
 
   cells <- do.call(rbind, lapply(seq_along(cols), function(i) data.frame(
     x = xs[i], ypos = ypos, label = as.character(cols[[i]]), face = face,
-    hjust = if (right[i]) 1 else 0, stringsAsFactors = FALSE)))
+    hjust = hj[i], stringsAsFactors = FALSE)))
   cells <- cells[!is.na(cells$label) & cells$label != "", , drop = FALSE]
   heads <- data.frame(x = xs, ypos = header_y, label = names(cols),
-                      hjust = ifelse(right, 1, 0), stringsAsFactors = FALSE)
+                      hjust = hj, stringsAsFactors = FALSE)
 
   p <- ggplot2::ggplot(cells, ggplot2::aes(y = .data$ypos)) +
     zebra +
