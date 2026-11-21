@@ -13,6 +13,8 @@ easydr_loo(
   xlab = NULL,
   ylab = NULL,
   ylim = NULL,
+  digits = 3,
+  position = c("top", "bottom", "left", "right"),
   filetype = c("png", "pdf", "tiff"),
   path = NULL,
   file.name = NULL,
@@ -37,6 +39,12 @@ the table when it is asked for. \code{FALSE} draws nothing.}
 
 \item{main, xlab, ylab, ylim}{passed to that plot. \code{main = FALSE} drops the
 title; the rest default to the fit's own labels.}
+
+\item{digits}{digits after the decimal point in the plot's table, 3 by
+default.}
+
+\item{position}{where the curves sit against their table: \code{"top"} (the
+default, table underneath), \code{"bottom"}, \code{"left"} or \code{"right"}.}
 
 \item{filetype}{the format a saved figure is written in: \code{"png"} (the
 default), \code{"pdf"} or \code{"tiff"}. Only used when \code{file.name} is given.}

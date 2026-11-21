@@ -16,7 +16,7 @@ easydr_curve(
   points = TRUE,
   studies = TRUE,
   ref.shape = TRUE,
-  studlabel = FALSE,
+  studlab = FALSE,
   reference = TRUE,
   rug = TRUE,
   result = TRUE,
@@ -51,7 +51,7 @@ easydr_curve(
 none.}
 
 \item{xlab, ylab}{axis labels. \code{NULL} writes them from the dose unit and the
-summary measure.}
+summary measure, such as "Risk Ratio (RR)".}
 
 \item{xlim, ylim}{axis limits on the reported scale, for example
 \code{ylim = c(0.8, 2)}. \code{NULL} fits them to whatever is drawn.}
@@ -68,8 +68,12 @@ are the ones named in \code{at}.}
 \item{studies}{\code{TRUE}, the default, draws the evidence behind the curve:
 one point per reported dose category, at that dose on the x axis and at
 the effect the study reported for it against its own reference dose on
-the y axis. The reference categories are not drawn, because every one of
-them sits on the null by construction. With several panels
+the y axis. Each point's area follows the participants behind it: the
+category's own and those of its study's reference category, with a
+floor so the smallest stays visible. The reference
+categories are not drawn, because every one of them sits on the null by
+construction. The curve and its marked doses are drawn over the points,
+so where they meet the curve stays readable. With several panels
 (\code{mult.curves = TRUE}) the default is \code{FALSE}, because the points crowd
 the small panels.}
 
@@ -82,9 +86,10 @@ point as a circle. It is ignored when subgroup curves are drawn, which use
 shape for the levels, and with more than six reference doses, which run
 out of shapes.}
 
-\item{studlabel}{\code{TRUE} writes each study's label once, beside its
-highest-dose point, so a reader can tell which study a run of points
-belongs to. It needs \code{studies = TRUE}.}
+\item{studlab}{\code{FALSE}, the default, leaves the study names off. \code{TRUE}
+writes each study's name once, beside its highest-dose point, so a reader
+can tell which study a run of points belongs to. It needs
+\code{studies = TRUE}.}
 
 \item{reference}{\code{TRUE}, the default, draws the null line and marks the
 reference dose.}

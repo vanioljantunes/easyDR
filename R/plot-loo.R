@@ -11,7 +11,7 @@
 #' @keywords internal
 #' @noRd
 dr_loo_plot <- function(out, object, main = NULL, xlab = NULL, ylab = NULL,
-                        ylim = NULL, digits = 4,
+                        ylim = NULL, digits = 3, position = "top",
                         filetype = c("png", "pdf", "tiff"),
                         path = NULL, file.name = NULL,
                         width = NULL, height = NULL) {
@@ -45,7 +45,7 @@ dr_loo_plot <- function(out, object, main = NULL, xlab = NULL, ylab = NULL,
   }))
   pooled <- data.frame(dose = base$curve$dose, est = base$curve$est)
 
-  if (is.null(ylab)) ylab <- out$sm_label
+  if (is.null(ylab)) ylab <- dr_sm_axis(object$sm)
   if (is.null(xlab)) xlab <- paste0("Dose (", unit, ")")
   if (is.null(main)) main <- "Dose-response omitting each study"
   if (identical(main, FALSE)) main <- NULL
@@ -130,14 +130,39 @@ dr_loo_plot <- function(out, object, main = NULL, xlab = NULL, ylab = NULL,
   spec <- dr_file_spec(file.name, filetype, path, width, height,
                        what = "easydr_loo()")
   title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
-  w_in     <- max(7.6, dr_grob_width_in(tg) + 0.5)
-  size <- dr_fig_size(w_in,
-                      min(max(0.42 * w_in, 2.9), 4.0) + title_in +
-                        dr_height_in(dr_grob_height(tg)) + 0.22)
+  tw_in    <- dr_grob_width_in(tg)
+  th_in    <- dr_height_in(dr_grob_height(tg))
+  side     <- position %in% c("left", "right")
+  if (side) {
+    # Side by side, the panel keeps a readable width of its own and the
+    # figure is as tall as the longer of the two.
+    w_in <- 6.2 + tw_in + 0.5
+    size <- dr_fig_size(w_in, max(4.2, th_in + 0.4) + title_in + 0.12,
+                        max.w = 20)
+  } else {
+    w_in <- max(7.6, tw_in + 0.5)
+    size <- dr_fig_size(w_in,
+                        min(max(0.42 * w_in, 2.9), 4.0) + title_in + th_in +
+                          0.22)
+  }
   con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
   on.exit(dr_end_file(con), add = TRUE)
 
-  g <- dr_draw_stack(p, NULL, title = main, footer = tg,
-                     footer_h = dr_grob_height(tg))
+  tbl_w <- grid::unit(tw_in + 0.3, "in")
+  g <- switch(position,
+    top = dr_draw_stack(p, NULL, title = main, footer = tg,
+                        footer_h = dr_grob_height(tg)),
+    bottom = dr_draw_stack(gridExtra::arrangeGrob(
+      grobs = list(tg, ggplot2::ggplotGrob(p)), ncol = 1,
+      heights = grid::unit.c(dr_grob_height(tg) + grid::unit(10, "pt"),
+                             grid::unit(1, "null"))), NULL, title = main),
+    left = dr_draw_stack(gridExtra::arrangeGrob(
+      grobs = list(ggplot2::ggplotGrob(p), tg), ncol = 2,
+      widths = grid::unit.c(grid::unit(1, "null"), tbl_w)), NULL,
+      title = main),
+    right = dr_draw_stack(gridExtra::arrangeGrob(
+      grobs = list(tg, ggplot2::ggplotGrob(p)), ncol = 2,
+      widths = grid::unit.c(tbl_w, grid::unit(1, "null"))), NULL,
+      title = main))
   invisible(list(table = tab, curves = curves, grob = g))
 }

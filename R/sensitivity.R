@@ -170,6 +170,10 @@ dr_sens_row <- function(label, studies, got, base, reason) {
 #'   the table when it is asked for. `FALSE` draws nothing.
 #' @param main,xlab,ylab,ylim passed to that plot. `main = FALSE` drops the
 #'   title; the rest default to the fit's own labels.
+#' @param digits digits after the decimal point in the plot's table, 3 by
+#'   default.
+#' @param position where the curves sit against their table: `"top"` (the
+#'   default, table underneath), `"bottom"`, `"left"` or `"right"`.
 #'
 #' @return An object of class `easydr_sensitivity`: the ordered table in
 #'   `$table`, the refits themselves in `$refits` so any row can be inspected
@@ -202,10 +206,13 @@ dr_sens_row <- function(label, studies, got, base, reason) {
 #' @export
 easydr_loo <- function(object, at = NULL, quiet = FALSE, plot = TRUE,
                        main = NULL, xlab = NULL, ylab = NULL, ylim = NULL,
+                       digits = 3,
+                       position = c("top", "bottom", "left", "right"),
                        filetype = c("png", "pdf", "tiff"),
                        path = NULL, file.name = NULL,
                        width = NULL, height = NULL) {
   dr_require_single(object, "easydr_loo()")
+  position <- match.arg(position)
   inh <- dr_inherited(object)
   if (length(inh$studies) < 2L) {
     stop("easydr: leave-one-out needs at least two studies; this fit has ",
@@ -227,7 +234,8 @@ easydr_loo <- function(object, at = NULL, quiet = FALSE, plot = TRUE,
     # when every refit failed the table is the whole answer, and it says why.
     if (any(out$table$status == "fitted")) {
       out$plot <- dr_loo_plot(out, object, main = main, xlab = xlab,
-                              ylab = ylab, ylim = ylim,
+                              ylab = ylab, ylim = ylim, digits = digits,
+                              position = position,
                               filetype = filetype, path = path,
                               file.name = file.name,
                               width = width, height = height)

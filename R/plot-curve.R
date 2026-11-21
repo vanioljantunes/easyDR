@@ -27,7 +27,7 @@
 #' @param main plot title. `NULL` writes one naming the shape; `FALSE` draws
 #'   none.
 #' @param xlab,ylab axis labels. `NULL` writes them from the dose unit and the
-#'   summary measure.
+#'   summary measure, such as "Risk Ratio (RR)".
 #' @param xlim,ylim axis limits on the reported scale, for example
 #'   `ylim = c(0.8, 2)`. `NULL` fits them to whatever is drawn.
 #' @param round digits for the labels printed beside the marked doses. `NULL`
@@ -39,8 +39,12 @@
 #' @param studies `TRUE`, the default, draws the evidence behind the curve:
 #'   one point per reported dose category, at that dose on the x axis and at
 #'   the effect the study reported for it against its own reference dose on
-#'   the y axis. The reference categories are not drawn, because every one of
-#'   them sits on the null by construction. With several panels
+#'   the y axis. Each point's area follows the participants behind it: the
+#'   category's own and those of its study's reference category, with a
+#'   floor so the smallest stays visible. The reference
+#'   categories are not drawn, because every one of them sits on the null by
+#'   construction. The curve and its marked doses are drawn over the points,
+#'   so where they meet the curve stays readable. With several panels
 #'   (`mult.curves = TRUE`) the default is `FALSE`, because the points crowd
 #'   the small panels.
 #' @param ref.shape `TRUE`, the default, gives the study points one shape per
@@ -51,9 +55,10 @@
 #'   point as a circle. It is ignored when subgroup curves are drawn, which use
 #'   shape for the levels, and with more than six reference doses, which run
 #'   out of shapes.
-#' @param studlabel `TRUE` writes each study's label once, beside its
-#'   highest-dose point, so a reader can tell which study a run of points
-#'   belongs to. It needs `studies = TRUE`.
+#' @param studlab `FALSE`, the default, leaves the study names off. `TRUE`
+#'   writes each study's name once, beside its highest-dose point, so a reader
+#'   can tell which study a run of points belongs to. It needs
+#'   `studies = TRUE`.
 #' @param reference `TRUE`, the default, draws the null line and marks the
 #'   reference dose.
 #' @param rug `TRUE`, the default, ticks the doses the fit reports along the
@@ -133,7 +138,7 @@
 easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          xlim = NULL, ylim = NULL, round = NULL,
                          prediction = FALSE, points = TRUE, studies = TRUE,
-                         ref.shape = TRUE, studlabel = FALSE, reference = TRUE,
+                         ref.shape = TRUE, studlab = FALSE, reference = TRUE,
                          rug = TRUE, result = TRUE, result.at = NULL,
                          table = "horizontal", target = TRUE,
                          wald = TRUE, deviance = FALSE, r2 = FALSE,
@@ -158,7 +163,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
       x, mult.curves = mult.curves, curve.panels = curve.panels,
       main = main, xlab = xlab, ylab = ylab, xlim = xlim, ylim = ylim,
       round = round, prediction = prediction, points = points,
-      studies = studies, ref.shape = ref.shape, studlabel = studlabel,
+      studies = studies, ref.shape = ref.shape, studlab = studlab,
       reference = reference,
       rug = rug, result = result, result.at = result.at, digits = digits,
       col = col, fill.ci = fill.ci, fill.pi = fill.pi, legend = legend,
@@ -170,43 +175,58 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   built   <- dr_curve_panel(
     x, main = main, xlab = xlab, ylab = ylab, xlim = xlim, ylim = ylim,
     round = round, prediction = prediction, points = points,
-    studies = studies, ref.shape = ref.shape, studlabel = studlabel,
+    studies = studies, ref.shape = ref.shape, studlab = studlab,
     reference = reference,
     rug = rug, subgroup = subgroup, col = col, fill.ci = fill.ci,
     fill.pi = fill.pi, legend = legend, target = target,
     tests = list(wald = wald, deviance = deviance, r2 = r2, r2adj = r2adj,
                  aic = aic, bic = bic))
-  p       <- built$plot
+  p       <- dr_centre_legend(built$plot)
+  marg    <- attr(p, "panel_margins")
   foot    <- built$foot
   tab     <- built$tab
   use_sub <- built$use_sub
   main    <- built$main
 
+  spec <- dr_file_spec(file.name, filetype, path, width, height,
+                       what = "easydr_curve()")
   # The summary sits under the figure, below the footer, the way the funnel
   # puts Egger's numbers under its panel. Inside the panel it covered the
   # curve on a fit that rises into its own corner, and it could hold only one
   # column, which left nowhere for a subgroup to go.
-  if (isTRUE(result)) {
-    tg <- dr_summary_grob(dr_summary_table(x, result.at, digits, use_sub), table)
-    fs <- dr_footer_stack(foot, tg)
+  tg <- if (isTRUE(result)) {
+    dr_summary_grob(dr_summary_table(x, result.at, digits, use_sub), table)
   } else {
-    tg <- NULL
-    fs <- NULL
+    NULL
   }
+  w_in <- max(7.2, dr_grob_width_in(tg) + 0.5)
+
+  # The footer lines start where the panel box starts and wrap at its right
+  # edge, so the text reads as belonging to the plot above it.
+  dev_w <- if (!is.null(spec) && !is.null(spec$width)) {
+    spec$width
+  } else if (is.null(spec) && !is.null(grDevices::dev.list())) {
+    grDevices::dev.size("in")[1L]
+  } else {
+    dr_fig_size(w_in, 1)[["width"]]
+  }
+  foot_x <- grid::unit(4, "pt")
+  if (length(marg) == 2L && all(is.finite(marg))) {
+    foot_x <- grid::unit(marg[["left"]], "cm")
+    foot <- dr_wrap_text(foot, dev_w * 2.54 - sum(marg), 9)
+  }
+  fs <- if (is.null(tg)) NULL else dr_footer_stack(foot, tg, text_x = foot_x)
 
   # The panel is the figure here, and the band under it is whatever the
   # footer needs. The width follows the summary table when there is one,
   # because a subgroup table with four columns is wider than a plot of a
   # single curve wants to be.
-  spec <- dr_file_spec(file.name, filetype, path, width, height,
-                       what = "easydr_curve()")
   foot_in  <- if (is.null(fs)) {
     (1.35 * 9 * length(foot) + 8) / 72
   } else {
     dr_height_in(fs$height)
   }
   title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
-  w_in     <- max(7.2, dr_grob_width_in(tg) + 0.5)
   size <- dr_fig_size(w_in,
                       min(max(0.50 * w_in, 3.1), 4.4) + foot_in + title_in +
                         0.12)
@@ -214,7 +234,8 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   on.exit(dr_end_file(con), add = TRUE)
 
   if (is.null(fs)) {
-    dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5)
+    dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5,
+                  footer_x = foot_x)
   } else {
     dr_draw_stack(p, NULL, title = main, footer = fs$grob,
                   footer_h = fs$height, title_hjust = 0.5)
@@ -233,7 +254,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
 dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                            xlim = NULL, ylim = NULL, round = NULL,
                            prediction = FALSE, points = TRUE, studies = TRUE,
-                           ref.shape = TRUE, studlabel = FALSE,
+                           ref.shape = TRUE, studlab = FALSE,
                            reference = TRUE, rug = TRUE,
                            subgroup = NULL, col = "#1F2A44",
                            fill.ci = "grey75", fill.pi = "grey90",
@@ -251,7 +272,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   }
 
   if (is.null(xlab)) xlab <- paste0("Dose (", unit, ")")
-  if (is.null(ylab)) ylab <- x$sm_label
+  if (is.null(ylab)) ylab <- dr_sm_axis(x$sm)
   if (is.null(main)) main <- paste0("Dose-response: ", x$shape$label)
   if (identical(main, FALSE)) main <- NULL
   # The studies behind the curve. A ratio measure already carries each category
@@ -269,11 +290,19 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                        function(z) z[1L], numeric(1))
     ref_dose <- vapply(split(obs$dose[is_ref], obs$studlab[is_ref]),
                        function(z) z[1L], numeric(1))
+    ref_n    <- vapply(split(obs$n[is_ref], obs$studlab[is_ref]),
+                       function(z) z[1L], numeric(1))
     obs <- obs[!is_ref, , drop = FALSE]
     obs$est <- if (x$ratio) exp(obs$y) else obs$y - ref[obs$studlab]
     obs$ref_dose <- unname(ref_dose[as.character(obs$studlab)])
-  } else if (isTRUE(studlabel)) {
-    warning("easydr: studlabel needs studies = TRUE, so no labels were drawn.",
+    # A contrast rests on two groups, so its size is both: the category and
+    # the reference it was measured against. With no counts at all, every
+    # point gets the same size.
+    obs$size_n <- obs$n + unname(ref_n[as.character(obs$studlab)])
+    if (!any(is.finite(obs$size_n))) obs$size_n <- 1
+    obs$size_n[!is.finite(obs$size_n)] <- stats::median(obs$size_n, na.rm = TRUE)
+  } else if (isTRUE(studlab)) {
+    warning("easydr: studlab needs studies = TRUE, so no labels were drawn.",
             call. = FALSE)
   }
 
@@ -317,25 +346,29 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
             "study point is drawn as a circle.", call. = FALSE)
   }
   if (!is.null(obs)) {
-    pt_fill <- grDevices::adjustcolor(col, alpha.f = 0.3)
+    pt_fill <- grDevices::adjustcolor(col, alpha.f = 0.25)
+    pt_line <- grDevices::adjustcolor(col, alpha.f = 0.6)
     if (shape_key) {
       labs_ref <- dr_num_lab(ref_levels)
       obs$ref_lab <- factor(dr_num_lab(obs$ref_dose), levels = labs_ref)
       p <- p +
         ggplot2::geom_point(
           data = obs, inherit.aes = FALSE,
-          ggplot2::aes(x = .data$dose, y = .data$est, shape = .data$ref_lab),
-          colour = col, fill = pt_fill, size = 2, stroke = 0.6) +
+          ggplot2::aes(x = .data$dose, y = .data$est, shape = .data$ref_lab,
+                       size = .data$size_n),
+          colour = pt_line, fill = pt_fill, stroke = 0.6) +
         ggplot2::scale_shape_manual(
           values = stats::setNames(ref_shapes[seq_along(labs_ref)], labs_ref),
-          name = "Study reference dose", drop = FALSE)
+          name = "Study reference dose", drop = FALSE,
+          guide = ggplot2::guide_legend(override.aes = list(size = 3)))
     } else {
       p <- p + ggplot2::geom_point(
         data = obs, inherit.aes = FALSE,
-        ggplot2::aes(x = .data$dose, y = .data$est),
-        shape = 21L, colour = col, fill = pt_fill, size = 2, stroke = 0.6)
+        ggplot2::aes(x = .data$dose, y = .data$est, size = .data$size_n),
+        shape = 21L, colour = pt_line, fill = pt_fill, stroke = 0.6)
     }
-    if (isTRUE(studlabel)) {
+    p <- p + ggplot2::scale_size(range = c(1, 7), guide = "none")
+    if (isTRUE(studlab)) {
       # One label per study, at its highest dose. A label on the right half of
       # the panel is written to the left of its bubble, so the last study does
       # not have its name cut off by the panel edge, and consecutive labels
@@ -447,7 +480,8 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                    legend.key.width = grid::unit(22, "pt"),
                    legend.key.height = grid::unit(10, "pt"),
                    legend.text = ggplot2::element_text(size = 8),
-                   legend.title = ggplot2::element_text(size = 8),
+                   legend.title = ggplot2::element_text(
+                     size = 8, hjust = if (use_sub) 0 else 0.5),
                    plot.margin = ggplot2::margin(6, 10, 2, 6))
   p <- if (x$ratio) {
     p + ggplot2::scale_y_log10(limits = ylim)
@@ -524,4 +558,66 @@ dr_linearity_note <- function(x, lead = ".  ") {
 dr_num_lab <- function(v) {
   vapply(v, function(z) format(z, trim = TRUE, drop0trailing = TRUE),
          character(1), USE.NAMES = FALSE)
+}
+
+
+#' Keep the panel centred when a key sits to its right
+#'
+#' A key on the right takes its width from the panel, which then sits left of
+#' the summary table under it. The same width is added as empty space on the
+#' left, so the panel is centred on the figure. Inside the key, the shapes and
+#' their values are centred under the title rather than left under it.
+#'
+#' @keywords internal
+#' @noRd
+dr_centre_legend <- function(p) {
+  g  <- ggplot2::ggplotGrob(p)
+  side <- function(g, idx) tryCatch(
+    sum(dr_measure(grid::convertWidth(g$widths[idx], "cm", valueOnly = TRUE))),
+    error = function(e) NA_real_)
+  margins <- function(g) {
+    pc <- unique(g$layout$l[g$layout$name == "panel"])[1L]
+    n  <- length(g$widths)
+    if (is.na(pc)) return(c(left = NA_real_, right = NA_real_))
+    c(left = side(g, seq_len(pc - 1L)), right = side(g, (pc + 1L):n))
+  }
+  at <- which(g$layout$name == "guide-box-right")
+  if (!length(at) || inherits(g$grobs[[at]], "zeroGrob")) {
+    attr(g, "panel_margins") <- margins(g)
+    return(g)
+  }
+  box <- g$grobs[[at]]
+  gi  <- which(box$layout$name == "guides")
+  if (length(gi) == 1L) {
+    gd <- box$grobs[[gi]]
+    lab <- grepl("^label", gd$layout$name)
+    n   <- length(gd$widths)
+    lc  <- max(gd$layout$r[lab])
+    if (lc + 1L <= n - 1L) {
+      cm <- tryCatch(grid::convertWidth(gd$widths[(lc + 1L):(n - 1L)], "cm",
+                                        valueOnly = TRUE),
+                     error = function(e) NULL)
+      if (!is.null(cm) && sum(cm) > 0) {
+        half <- grid::unit(sum(cm) / 2, "cm")
+        gd$widths[2L] <- gd$widths[2L] + half
+        gd$widths[(lc + 1L):(n - 1L)] <- grid::unit(0, "cm")
+        gd$widths[n - 1L] <- half
+        ti <- which(gd$layout$name == "title")
+        gd$layout$l[ti] <- 2L
+        gd$layout$r[ti] <- n - 1L
+        box$grobs[[gi]] <- gd
+        g$grobs[[at]] <- box
+      }
+    }
+  }
+  # The panel box, not the whole plot, is what the eye centres on: pad the
+  # left by what the right side (key, spacing, margin) has beyond the left
+  # side (axis title, tick labels, margin).
+  m   <- margins(g)
+  pad <- m[["right"]] - m[["left"]]
+  if (is.finite(pad) && pad > 0) {
+    g <- gtable::gtable_add_cols(g, grid::unit(pad, "cm"), pos = 0L)
+  }
+  attr(g, "panel_margins") <- margins(g)
+  g
 }

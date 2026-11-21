@@ -388,7 +388,8 @@ dr_grob_height <- function(g, pad = 26) {
 #' @noRd
 dr_draw_stack <- function(body, body_h = NULL, title = NULL, footer = NULL,
                           footer_h = NULL, title_size = 12, footer_size = 9,
-                          body_w = NULL, title_hjust = 0) {
+                          body_w = NULL, title_hjust = 0.5,
+                          footer_x = grid::unit(4, "pt")) {
   fill    <- is.null(body_h)
   grobs   <- list(body)
   heights <- list(if (fill) grid::unit(1, "null") else body_h)
@@ -405,7 +406,7 @@ dr_draw_stack <- function(body, body_h = NULL, title = NULL, footer = NULL,
       n <- length(strsplit(paste(footer, collapse = "\n"), "\n",
                            fixed = TRUE)[[1]])
       footer <- grid::textGrob(
-        paste(footer, collapse = "\n"), x = grid::unit(4, "pt"),
+        paste(footer, collapse = "\n"), x = footer_x,
         y = grid::unit(1, "npc"), hjust = 0, vjust = 1,
         gp = grid::gpar(fontsize = footer_size, lineheight = 1.25))
       if (is.null(footer_h)) {
@@ -510,14 +511,15 @@ dr_summary_table <- function(x, at = NULL, digits = 3, use_sub = FALSE) {
 #'
 #' @keywords internal
 #' @noRd
-dr_footer_stack <- function(text, table_grob, footer_size = 9) {
+dr_footer_stack <- function(text, table_grob, footer_size = 9,
+                            text_x = grid::unit(4, "pt")) {
   th <- dr_grob_height(table_grob)
   if (is.null(text)) {
     return(list(grob = table_grob, height = th))
   }
   n  <- length(strsplit(paste(text, collapse = "\n"), "\n", fixed = TRUE)[[1]])
   tx <- grid::textGrob(
-    paste(text, collapse = "\n"), x = grid::unit(4, "pt"),
+    paste(text, collapse = "\n"), x = text_x,
     y = grid::unit(1, "npc"), hjust = 0, vjust = 1,
     gp = grid::gpar(fontsize = footer_size, lineheight = 1.25))
   txh <- grid::unit(1.35 * footer_size * n + 8, "points")
@@ -815,4 +817,33 @@ dr_effect_contrast <- function(x, spec) {
   list(cvec = dr_contrast(x$shape, num, den),
        label = paste0(x$sm, " ", format(num), " vs ", format(den), " ", unit),
        at = num)
+}
+
+#' Wrap footer lines so none runs wider than a given width
+#'
+#' Each line is broken between words, measured at the footer's font size, so
+#' the text stays inside the band it is meant to sit in.
+#'
+#' @keywords internal
+#' @noRd
+dr_wrap_text <- function(lines, width_cm, size = 9) {
+  wide <- function(s) dr_measure(grid::convertWidth(
+    grid::grobWidth(grid::textGrob(s, gp = grid::gpar(fontsize = size))),
+    "cm", valueOnly = TRUE))
+  unlist(lapply(lines, function(line) {
+    if (!nzchar(line) || wide(line) <= width_cm) return(line)
+    words <- strsplit(line, " ", fixed = TRUE)[[1]]
+    out <- character(0)
+    cur <- ""
+    for (w in words) {
+      try_line <- if (nzchar(cur)) paste(cur, w) else w
+      if (nzchar(cur) && wide(trimws(try_line)) > width_cm) {
+        out <- c(out, trimws(cur))
+        cur <- w
+      } else {
+        cur <- try_line
+      }
+    }
+    c(out, trimws(cur))
+  }), use.names = FALSE)
 }
