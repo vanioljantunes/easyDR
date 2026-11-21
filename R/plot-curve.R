@@ -367,6 +367,22 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                        function(z) z[1L], numeric(1))
     obs <- obs[!is_ref, , drop = FALSE]
     obs$est <- if (x$ratio) exp(obs$y) else obs$y - ref[obs$studlab]
+    # A standardised mean difference puts each point on the SMD scale the curve
+    # is drawn on, standardised by dosresmeta the same way the fit was.
+    if (identical(x$sm, "SMD")) {
+      fr  <- x$frame
+      msd <- x$provenance$method.smd
+      if (is.null(msd)) msd <- "cohens"
+      smd <- unlist(unname(lapply(split(seq_len(nrow(fr)), fr$id), function(ix) {
+        ix <- ix[order(!fr$is_ref[ix])]
+        z  <- dosresmeta::covar.smd(y = fr$y[ix], sd = fr$cases[ix],
+                                    n = fr$n[ix], measure = "smd",
+                                    method = msd)$y
+        stats::setNames(as.numeric(z), ix)
+      })))
+      keep <- which(!fr$is_ref)
+      obs$est <- unname(smd[as.character(keep)])
+    }
     obs$ref_dose <- unname(ref_dose[as.character(obs$studlab)])
     # A contrast rests on two groups, so its size is both: the category and
     # the reference it was measured against. With no counts at all, every
