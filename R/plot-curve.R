@@ -65,7 +65,8 @@
 #'   for other shapes.
 #' @param result.at what the table reports. `NULL` (the default) uses the
 #'   `result.at` given to [easydr()], which is per unit of dose unless set
-#'   there; `"per.unit"` or a number overrides it for this plot.
+#'   there; one number (an increment of dose) or `c(numerator, denominator)`
+#'   overrides it for this plot.
 #' @param table `"horizontal"` (the default) puts the quantities across the
 #'   top of the summary table, `"vertical"` puts them down its first column.
 #' @param subgroup `TRUE` draws one curve per subgroup level, `FALSE` draws the

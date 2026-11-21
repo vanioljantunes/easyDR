@@ -29,9 +29,10 @@ easydr_forest(
 \item{x}{a fitted result from \code{\link[=easydr]{easydr()}}.}
 
 \item{at}{what each study reports: \code{"per.unit"} (the default), the effect
-of one unit of dose, which is the study's slope for a straight line and
-one unit above the reference against the reference for any other shape;
-or a number, the effect at that dose against the reference.}
+per \code{increment} of dose, which is the study's slope times the increment
+for a straight line and the reference plus the increment against the
+reference for any other shape; or \code{c(numerator, denominator)}, one dose
+against another. The forest does not follow \code{result.at} of the fit.}
 
 \item{increment}{the step the per-unit effect is reported for, 1 by
 default. \code{increment = 100} reports each study and the pooled estimate per

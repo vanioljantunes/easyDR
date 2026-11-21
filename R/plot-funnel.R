@@ -26,7 +26,8 @@
 #'
 #' @param x a fitted result from [easydr()].
 #' @param at what each study reports. `NULL` (the default) uses the
-#'   `result.at` given to [easydr()]; `"per.unit"` or a number overrides it.
+#'   `result.at` given to [easydr()]; one number (an increment of dose) or
+#'   `c(numerator, denominator)` overrides it.
 #' @param main plot title. `NULL` writes one; `FALSE` draws none.
 #' @param table `"horizontal"` (the default) puts the statistics across the
 #'   top of the table under the funnel, `"vertical"` puts them down its first

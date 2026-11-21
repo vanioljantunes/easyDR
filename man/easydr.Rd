@@ -28,7 +28,8 @@ easydr(
   ed50 = NULL,
   steepness = NULL,
   at = NULL,
-  result.at = "per.unit",
+  overall.per.unit = TRUE,
+  result.at = 1,
   grid = NULL,
   dose.unit = NULL,
   level = 0.95,
@@ -110,11 +111,16 @@ following Royston and Altman.}
 \item{at}{Doses to report predicted effects at. \code{NULL} uses a five-point
 grid across the observed dose range.}
 
-\item{result.at}{the effect every table and plot of this fit reports:
-\code{"per.unit"} (the default), the effect of one unit of dose, which is the
-slope of a straight line and one unit above the reference against the
-reference for any other shape; or a number, the effect at that dose
-against the reference. \code{\link[=easydr_curve]{easydr_curve()}}, \code{\link[=easydr_compare_shapes]{easydr_compare_shapes()}},
+\item{overall.per.unit}{\code{TRUE} (the default) reports every effect per
+increment of dose, the increment given in \code{result.at}: the slope times
+the increment for a straight line, the reference plus the increment
+against the reference for any other shape. \code{FALSE} reports one dose
+against another, the two given in \code{result.at}.}
+
+\item{result.at}{with \code{overall.per.unit = TRUE}, the increment, one number,
+1 by default (\code{result.at = 100} gives "per 100 g/day"). With
+\code{overall.per.unit = FALSE}, two doses, \code{c(numerator, denominator)}, such
+as \code{c(3, 0)}. \code{\link[=easydr_curve]{easydr_curve()}}, \code{\link[=easydr_compare_shapes]{easydr_compare_shapes()}},
 \code{\link[=easydr_knot_sensitivity]{easydr_knot_sensitivity()}} and \code{\link[=easydr_funnel]{easydr_funnel()}} follow it.
 \code{\link[=easydr_forest]{easydr_forest()}} does not: a forest compares studies per unit of dose.}
 

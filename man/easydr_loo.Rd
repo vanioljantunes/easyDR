@@ -25,7 +25,8 @@ easydr_loo(
 
 \item{at}{what each refit is compared on. \code{NULL} (the default) uses the
 \code{result.at} given to \code{\link[=easydr]{easydr()}}, per unit of dose unless set there;
-\code{"per.unit"} or a dose overrides it.}
+one number (an increment of dose) or \code{c(numerator, denominator)} overrides
+it.}
 
 \item{quiet}{\code{FALSE}, the default, prints one line per refit.}
 

@@ -27,8 +27,7 @@
 #' @keywords internal
 #' @noRd
 dr_study_effects <- function(x, at = NULL, what = "this plot",
-                             increment = 1) {
-  dr_check_increment(increment)
+                             increment = NULL) {
   if (!inherits(x, "easydr_result")) {
     stop("easydr: ", what, " takes a fitted result from easydr().",
          call. = FALSE)
@@ -49,28 +48,12 @@ dr_study_effects <- function(x, at = NULL, what = "this plot",
   xref <- x$reference$curve
   unit <- if (is.null(x$dose_unit)) "dose unit" else x$dose_unit
 
-  # Per unit of dose by default, as in the summary under a curve: the slope
-  # of a straight line, or one unit above the reference against the reference
-  # for any other shape. A number compares studies at that dose instead.
-  at <- dr_result_at(x, at)
-  if (identical(at, "per.unit") && identical(x$shape$name, "linear")) {
-    cvec    <- matrix(increment, nrow = 1L, ncol = 1L)
-    label   <- dr_label(x$sm, x$dose_unit, increment)
-    at_used <- NA_real_
-  } else {
-    if (identical(at, "per.unit")) {
-      at_used <- xref + increment
-      label   <- paste0(x$sm, " ", format(at_used), " vs ", format(xref), " ", unit)
-    } else {
-      if (!is.numeric(at) || length(at) != 1L || !is.finite(at)) {
-        stop("easydr: `at` is \"per.unit\" or a single dose, such as at = 10.",
-             call. = FALSE)
-      }
-      at_used <- at
-      label   <- paste0(x$sm, " at ", at_used, " ", unit, " against ", xref)
-    }
-    cvec <- dr_contrast(x$shape, at_used, xref)
-  }
+  # The fit's result.at unless the plot names its own: an increment of dose
+  # (one number) or one dose against another (two numbers).
+  ct      <- dr_effect_contrast(x, dr_result_at(x, at, increment))
+  cvec    <- ct$cvec
+  label   <- ct$label
+  at_used <- ct$at
 
   Psi <- x$Psi
   if (is.null(Psi)) Psi <- matrix(0, ncol(bi), ncol(bi))
@@ -132,30 +115,11 @@ dr_study_effects <- function(x, at = NULL, what = "this plot",
 #'
 #' @keywords internal
 #' @noRd
-dr_pooled_at <- function(x, at = NULL, increment = 1) {
-  dr_check_increment(increment)
-  at <- dr_result_at(x, at)
-  xref <- x$reference$curve
-  unit <- if (is.null(x$dose_unit)) "dose unit" else x$dose_unit
-  if (identical(at, "per.unit")) {
-    if (identical(x$shape$name, "linear")) {
-      cvec    <- matrix(increment, nrow = 1L, ncol = 1L)
-      label   <- dr_label(x$sm, x$dose_unit, increment)
-      at_used <- NA_real_
-    } else {
-      at_used <- xref + increment
-      cvec    <- dr_contrast(x$shape, at_used, xref)
-      label   <- paste0(x$sm, " ", format(at_used), " vs ", format(xref), " ", unit)
-    }
-  } else {
-    if (!is.numeric(at) || length(at) != 1L || !is.finite(at)) {
-      stop("easydr: `result.at` is \"per.unit\" or one dose, such as ",
-           "result.at = 2.", call. = FALSE)
-    }
-    at_used <- at
-    cvec  <- dr_contrast(x$shape, at_used, xref)
-    label <- paste0(x$sm, " at ", at_used, " ", unit)
-  }
+dr_pooled_at <- function(x, at = NULL, increment = NULL) {
+  ct      <- dr_effect_contrast(x, dr_result_at(x, at, increment))
+  cvec    <- ct$cvec
+  label   <- ct$label
+  at_used <- ct$at
 
   b  <- as.numeric(coef(x$fit))
   V  <- as.matrix(vcov(x$fit))
@@ -767,28 +731,83 @@ dr_check_increment <- function(increment) {
   invisible(increment)
 }
 
-#' Check a result.at value
+#' Read result.at into what a table reports
+#'
+#' `overall.per.unit = TRUE` makes `result.at` an increment of dose, one
+#' number, 1 by default: the slope times that increment for a straight line,
+#' and the reference plus that increment against the reference for any other
+#' shape, which is how Crippa's forests report "per 100 g/day". With
+#' `overall.per.unit = FALSE`, `result.at` is two doses,
+#' `c(numerator, denominator)`, and the effect is the first against the
+#' second. `"per.unit"` is kept as a name for an increment of 1.
+#'
 #' @keywords internal
 #' @noRd
-dr_check_result_at <- function(result.at) {
-  if (identical(result.at, "per.unit")) return(result.at)
-  if (!is.numeric(result.at) || length(result.at) != 1L ||
-      !is.finite(result.at)) {
-    stop("easydr: `result.at` is \"per.unit\" or one dose, such as ",
-         "result.at = 2.", call. = FALSE)
+dr_check_result_at <- function(result.at, overall.per.unit = TRUE) {
+  if (!isTRUE(overall.per.unit) && !isFALSE(overall.per.unit)) {
+    stop("easydr: `overall.per.unit` is TRUE or FALSE.", call. = FALSE)
   }
-  result.at
+  if (isTRUE(overall.per.unit)) {
+    if (identical(result.at, "per.unit")) result.at <- 1
+    if (!is.numeric(result.at) || length(result.at) != 1L ||
+        !is.finite(result.at) || result.at <= 0) {
+      stop("easydr: with overall.per.unit = TRUE, `result.at` is the increment ",
+           "of dose the effect is reported for, one number above zero, such as ",
+           "result.at = 1 or result.at = 100.", call. = FALSE)
+    }
+    return(list(type = "increment", value = as.numeric(result.at)))
+  }
+  if (!is.numeric(result.at) || length(result.at) != 2L ||
+      any(!is.finite(result.at)) || result.at[1L] == result.at[2L]) {
+    stop("easydr: with overall.per.unit = FALSE, `result.at` is two different ",
+         "doses, c(numerator, denominator), such as result.at = c(3, 0).",
+         call. = FALSE)
+  }
+  list(type = "pair", value = as.numeric(result.at))
 }
 
 #' The effect a table or plot reports
 #'
-#' What the caller asked for, else what the fit was told in easydr(), else
-#' per unit of dose.
+#' What the plot asked for, else what the fit was told in easydr(), else an
+#' increment of one unit. A plot's own `at` reads like `result.at`: one number
+#' is an increment, two numbers are c(numerator, denominator). `increment` is
+#' the forest's own step, used with `at = "per.unit"`.
 #'
 #' @keywords internal
 #' @noRd
-dr_result_at <- function(x, at = NULL) {
-  if (!is.null(at)) return(at)
-  if (is.list(x) && !is.null(x$result_at)) return(x$result_at)
-  "per.unit"
+dr_result_at <- function(x, at = NULL, increment = NULL) {
+  if (!is.null(increment)) dr_check_increment(increment)
+  if (is.list(at) && !is.null(at$type)) return(at)
+  if (is.null(at)) {
+    if (!is.null(increment)) return(list(type = "increment", value = increment))
+    if (is.list(x) && is.list(x$result_at)) return(x$result_at)
+    return(list(type = "increment", value = 1))
+  }
+  if (identical(at, "per.unit")) {
+    return(list(type = "increment", value = if (is.null(increment)) 1 else increment))
+  }
+  dr_check_result_at(at, overall.per.unit = !(is.numeric(at) && length(at) == 2L))
+}
+
+#' The contrast row, label and dose for one result.at
+#' @keywords internal
+#' @noRd
+dr_effect_contrast <- function(x, spec) {
+  xref <- x$reference$curve
+  unit <- if (is.null(x$dose_unit)) "dose unit" else x$dose_unit
+  if (identical(spec$type, "increment")) {
+    k <- spec$value
+    if (identical(x$shape$name, "linear")) {
+      return(list(cvec = matrix(k, nrow = 1L, ncol = 1L),
+                  label = dr_label(x$sm, x$dose_unit, k), at = NA_real_))
+    }
+    num <- xref + k
+    den <- xref
+  } else {
+    num <- spec$value[1L]
+    den <- spec$value[2L]
+  }
+  list(cvec = dr_contrast(x$shape, num, den),
+       label = paste0(x$sm, " ", format(num), " vs ", format(den), " ", unit),
+       at = num)
 }

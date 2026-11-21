@@ -89,7 +89,8 @@ overall fit.}
 
 \item{result.at}{what the table reports. \code{NULL} (the default) uses the
 \code{result.at} given to \code{\link[=easydr]{easydr()}}, which is per unit of dose unless set
-there; \code{"per.unit"} or a number overrides it for this plot.}
+there; one number (an increment of dose) or \code{c(numerator, denominator)}
+overrides it for this plot.}
 
 \item{table}{\code{"horizontal"} (the default) puts the quantities across the
 top of the summary table, \code{"vertical"} puts them down its first column.}

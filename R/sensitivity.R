@@ -161,7 +161,8 @@ dr_sens_row <- function(label, studies, got, base, reason) {
 #' @param object a fitted result from [easydr()].
 #' @param at what each refit is compared on. `NULL` (the default) uses the
 #'   `result.at` given to [easydr()], per unit of dose unless set there;
-#'   `"per.unit"` or a dose overrides it.
+#'   one number (an increment of dose) or `c(numerator, denominator)` overrides
+#'   it.
 #' @param quiet `FALSE`, the default, prints one line per refit.
 #' @param plot `TRUE`, the default, draws the dose-response once per omitted
 #'   study over the pooled one, letters each curve, and puts the table
