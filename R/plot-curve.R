@@ -278,7 +278,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     }
     dr_subtitle_grob(dr_subtitle_wrap(
       dr_subtitle_tokens(x, result.at, digits, wald = wald,
-                         deviance = deviance), panel_cm))
+                         deviance = deviance, subgroup = use_sub), panel_cm))
   } else {
     NULL
   }
@@ -467,6 +467,18 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   if (!is.null(obs)) {
     pt_fill <- grDevices::adjustcolor(col, alpha.f = 0.25)
     pt_line <- grDevices::adjustcolor(col, alpha.f = 0.6)
+    # By subgroup, each study's circles take the colour of its level's curve,
+    # so a reader can tell which points a curve was fitted to. A study whose
+    # level could not be fitted keeps the overall colour.
+    if (use_sub) {
+      drawn_lv <- x$subgroup$levels[
+        vapply(x$subgroup$fits, Negate(is.null), logical(1))]
+      lv_col <- dr_subgroup_style(drawn_lv)$colour
+      pt_lv  <- unname(x$subgroup$by_study[as.character(obs$studlab)])
+      base   <- ifelse(pt_lv %in% drawn_lv, lv_col[pt_lv], col)
+      pt_fill <- grDevices::adjustcolor(base, alpha.f = 0.25)
+      pt_line <- grDevices::adjustcolor(base, alpha.f = 0.6)
+    }
     if (shape_key) {
       labs_ref <- dr_num_lab(ref_levels)
       obs$ref_lab <- factor(dr_num_lab(obs$ref_dose), levels = labs_ref)

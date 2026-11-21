@@ -862,7 +862,8 @@ dr_wrap_text <- function(lines, width_cm, size = 9) {
 #' @keywords internal
 #' @noRd
 dr_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
-                               deviance = TRUE, side_info = FALSE) {
+                               deviance = TRUE, side_info = FALSE,
+                               subgroup = FALSE) {
   col  <- dr_result_column(x, at, digits)
   lab  <- dr_pooled_at(x, at)$label
   pv   <- function(p) {
@@ -891,6 +892,14 @@ dr_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
                           !is.null(g$p) && is.finite(g$p)) {
       paste0("deviance ", pv(g$p), ";")
     } else "deviance test not available;")
+  }
+  # A curve drawn by subgroup carries the test for subgroup differences
+  # (Berlin, 1993), the comparison its several lines invite.
+  if (isTRUE(subgroup)) {
+    t <- x$subgroup$test
+    rest <- c(rest, if (!is.null(t) && isTRUE(t$estimable)) {
+      paste0("test of subgroup differences ", pv(t$p), ";")
+    } else "test of subgroup differences not available;")
   }
   # The last clause ends the sentence.
   rest[length(rest)] <- sub(";$", ".", rest[length(rest)])

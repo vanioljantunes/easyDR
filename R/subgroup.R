@@ -6,9 +6,12 @@
 # approximation, the columns by the name the first fit resolved. A level that
 # re-derived any of those would print cleanly and answer a different question.
 #
-# Each level keeps its own tau, the way meta's subgroup analysis does. There is
-# no test for subgroup differences: the table reports the levels side by side
-# and leaves the comparison to the reader.
+# Each level keeps its own tau, the way meta's subgroup analysis does. The
+# test for subgroup differences is not a comparison of those separate fits:
+# it is the meta-regression of Berlin, Longnecker and Greenland (1993), the
+# whole model fitted once with the subgroup column as a moderator and the
+# moderator terms tested jointly by a Wald test. That is how the Crippa group
+# reports "P for heterogeneity" between subgroups.
 
 #' Fit the inherited model inside each level of a subgroup column
 #'
@@ -88,7 +91,8 @@ dr_subgroup_fits <- function(object, var) {
 
   out <- list(var = var, levels = levels_in_order,
               by_study = stats::setNames(value, tab$.study),
-              fits = fits, table = do.call(rbind, rows))
+              fits = fits, table = do.call(rbind, rows),
+              test = dr_subgroup_difference(object, var))
 
   bad <- out$table$status == "failed"
   if (any(bad)) {
@@ -99,6 +103,44 @@ dr_subgroup_fits <- function(object, var) {
             call. = FALSE)
   }
   out
+}
+
+#' The test for subgroup differences
+#'
+#' Berlin, Longnecker and Greenland (1993): the inherited model fitted once
+#' with the subgroup column as a study-level moderator, through the engine,
+#' and the moderator terms tested jointly by dosresmeta's Wald test. It keeps
+#' the overall fit's pooling method, so it moves with `method.tau` the way the
+#' overall estimate does. A moderator model the data cannot carry, such as one
+#' with more coefficients than studies, is reported as not estimable with its
+#' reason rather than stopping the subgroup fits.
+#'
+#' @keywords internal
+#' @noRd
+dr_subgroup_difference <- function(object, var) {
+  m <- tryCatch(suppressWarnings(
+    easydr_metareg(object, mods = stats::reformulate(var))),
+    error = function(e) e)
+  if (inherits(m, "error")) {
+    return(list(estimable = FALSE, reason = dr_one_line(conditionMessage(m))))
+  }
+  m$test
+}
+
+#' The test for subgroup differences, as one line of a figure
+#'
+#' Written the way the linearity test is, so the two read as a pair.
+#'
+#' @keywords internal
+#' @noRd
+dr_subgroup_test_note <- function(sg) {
+  t <- sg$test
+  if (is.null(t) || !isTRUE(t$estimable)) {
+    return("Test of subgroup differences: not available")
+  }
+  paste0("Test of subgroup differences: X2 = ",
+         formatC(t$chi2, format = "f", digits = 2), " (df = ", t$df, "), ",
+         dr_p_lab(t$p))
 }
 
 #' An error message as one line, short enough for a table cell

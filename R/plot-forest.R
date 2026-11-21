@@ -187,7 +187,9 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
   # The deviance and linearity tests of the overall fit sit under its I2.
   dev_y    <- -1
   lin_y    <- -2
-  ylim     <- c(lin_y - 0.5, header_y + 0.5)
+  # A subgroup forest adds the test for subgroup differences under them.
+  sub_y    <- if (use_sub) -3 else lin_y
+  ylim     <- c(sub_y - 0.5, header_y + 0.5)
   # Each subtotal with its tests, and the overall row with its tests, sit in
   # an outlined box in a subgroup forest.
   boxes <- NULL
@@ -198,7 +200,7 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
       boxes <- rbind(boxes, data.frame(top = plan$y[i] + 0.5, bottom = plan$y[j] - 0.5))
     }
     boxes <- rbind(boxes, data.frame(top = plan$y[plan$kind == "pooled"] + 0.5,
-                                     bottom = lin_y - 0.5))
+                                     bottom = sub_y - 0.5))
   }
   box_layers <- function(left = FALSE, right = FALSE) {
     if (is.null(boxes)) return(list())
@@ -246,7 +248,8 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
            function(i) list(y = plan$y[i], label = plan$note[i])),
     list(list(y = het_y, label = het_text)),
     list(list(y = dev_y, label = dr_forest_deviance(x$gof))),
-    list(list(y = lin_y, label = dr_linearity_note(x, lead = ""))))
+    list(list(y = lin_y, label = dr_linearity_note(x, lead = ""))),
+    if (use_sub) list(list(y = sub_y, label = dr_subgroup_test_note(x$subgroup))))
 
   centered <- identical(just, "center")
   p_labels <- dr_text_panel(
