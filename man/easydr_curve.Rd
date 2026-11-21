@@ -14,7 +14,8 @@ easydr_curve(
   round = NULL,
   prediction = FALSE,
   points = TRUE,
-  studies = FALSE,
+  studies = TRUE,
+  ref.shape = TRUE,
   studlabel = FALSE,
   reference = TRUE,
   rug = TRUE,
@@ -64,14 +65,25 @@ marks the doses without labelling them.}
 \item{points}{\code{TRUE}, the default, marks the doses the fit reports, which
 are the ones named in \code{at}.}
 
-\item{studies}{\code{TRUE} draws the evidence behind the curve: one bubble per
-reported dose category, at the effect that study reported for it against
-its own reference, with the bubble area scaled to the participants that
-category carried. The reference categories are not drawn, because every
-one of them sits on the null by construction. \code{FALSE} is the default.}
+\item{studies}{\code{TRUE}, the default, draws the evidence behind the curve:
+one point per reported dose category, at that dose on the x axis and at
+the effect the study reported for it against its own reference dose on
+the y axis. The reference categories are not drawn, because every one of
+them sits on the null by construction. With several panels
+(\code{mult.curves = TRUE}) the default is \code{FALSE}, because the points crowd
+the small panels.}
+
+\item{ref.shape}{\code{TRUE}, the default, gives the study points one shape per
+reference dose (circle, square, triangle, star, diamond, inverted
+triangle), with a "Study reference dose" key beside the panel listing
+each value. A study's effects are measured against its own reference, so
+a point is read against that dose, not the curve's. \code{FALSE} draws every
+point as a circle. It is ignored when subgroup curves are drawn, which use
+shape for the levels, and with more than six reference doses, which run
+out of shapes.}
 
 \item{studlabel}{\code{TRUE} writes each study's label once, beside its
-highest-dose bubble, so a reader can tell which study a run of bubbles
+highest-dose point, so a reader can tell which study a run of points
 belongs to. It needs \code{studies = TRUE}.}
 
 \item{reference}{\code{TRUE}, the default, draws the null line and marks the

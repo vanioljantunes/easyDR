@@ -53,6 +53,10 @@
 #'   element, in the manner of an added row.
 #' @param columns `TRUE`, the default, shows the dose levels and dose range
 #'   each study brought. `FALSE` shows the study label alone.
+#' @param ref.dose `TRUE`, the default, adds a "Reference dose" column: the
+#'   dose each study measured its own effects against. Studies often differ
+#'   here, and a reader comparing their rows should see it. It needs
+#'   `columns = TRUE`.
 #' @param row.height height of one study row, in inches. Fixed rather than
 #'   stretched, so a forest of six studies and one of thirty print with the
 #'   same spacing.
@@ -91,7 +95,8 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
                           order = c("data", "effect", "weight", "study"),
                           subgroup = NULL, digits = 3, legend = NULL,
                           just = "center", smlab = NULL,
-                          columns = TRUE, row.height = 0.26,
+                          columns = TRUE, ref.dose = TRUE,
+                          row.height = 0.26,
                           effect.width = 3.1,
                           filetype = c("png", "pdf", "tiff"),
                           path = NULL, file.name = NULL,
@@ -119,16 +124,17 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
   # widths and the zebra are built once instead of twice.
   mk <- function(kind, label, face = "plain", est = NA_real_, lb = NA_real_,
                  ub = NA_real_, weight = NA_real_, levels = "", dose = "",
-                 note = NA_character_) {
+                 ref = "", note = NA_character_) {
     data.frame(kind = kind, label = label, face = face, est = est, lb = lb,
                ub = ub, weight = weight, levels = levels, dose = dose,
-               note = note, stringsAsFactors = FALSE)
+               ref = ref, note = note, stringsAsFactors = FALSE)
   }
   study_rows <- function(d, indent = "") {
     if (nrow(d) == 0L) return(NULL)
     mk("study", paste0(indent, d$study), "plain", d$est, d$lb, d$ub, d$weight,
        as.character(d$levels),
-       paste0(signif(d$dose_min, 3), " to ", signif(d$dose_max, 3)))
+       paste0(signif(d$dose_min, 3), " to ", signif(d$dose_max, 3)),
+       ifelse(is.na(d$dose_ref), "", as.character(signif(d$dose_ref, 3))))
   }
   het_line <- function(h) {
     if (isTRUE(h$estimable)) {
@@ -225,6 +231,10 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
     lab_cols <- c(lab_cols, list(`Dose levels` = plan$levels, x = plan$dose))
     names(lab_cols)[3L] <- paste0("Dose range", unit)
     lab_right <- c(FALSE, TRUE, TRUE)
+    if (isTRUE(ref.dose)) {
+      lab_cols  <- c(lab_cols, list(`Reference dose` = plan$ref))
+      lab_right <- c(lab_right, TRUE)
+    }
   }
 
   het      <- e$heterogeneity

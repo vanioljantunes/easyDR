@@ -68,6 +68,7 @@ dr_study_effects <- function(x, at = NULL, what = "this plot",
       levels   = length(unique(sub$dose)),
       dose_min = min(sub$dose),
       dose_max = max(sub$dose),
+      dose_ref = if (any(sub$is_ref)) sub$dose[sub$is_ref][1L] else NA_real_,
       stringsAsFactors = FALSE
     )
     if (is.na(id) || id > nrow(bi)) {

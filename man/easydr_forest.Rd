@@ -18,6 +18,7 @@ easydr_forest(
   just = "center",
   smlab = NULL,
   columns = TRUE,
+  ref.dose = TRUE,
   row.height = 0.26,
   effect.width = 3.1,
   filetype = c("png", "pdf", "tiff"),
@@ -72,6 +73,11 @@ per-study effects were read from, such as "Linear curve model".}
 
 \item{columns}{\code{TRUE}, the default, shows the dose levels and dose range
 each study brought. \code{FALSE} shows the study label alone.}
+
+\item{ref.dose}{\code{TRUE}, the default, adds a "Reference dose" column: the
+dose each study measured its own effects against. Studies often differ
+here, and a reader comparing their rows should see it. It needs
+\code{columns = TRUE}.}
 
 \item{row.height}{height of one study row, in inches. Fixed rather than
 stretched, so a forest of six studies and one of thirty print with the

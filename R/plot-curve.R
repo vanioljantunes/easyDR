@@ -36,13 +36,23 @@
 #'   `FALSE`, the default, draws the confidence band alone.
 #' @param points `TRUE`, the default, marks the doses the fit reports, which
 #'   are the ones named in `at`.
-#' @param studies `TRUE` draws the evidence behind the curve: one bubble per
-#'   reported dose category, at the effect that study reported for it against
-#'   its own reference, with the bubble area scaled to the participants that
-#'   category carried. The reference categories are not drawn, because every
-#'   one of them sits on the null by construction. `FALSE` is the default.
+#' @param studies `TRUE`, the default, draws the evidence behind the curve:
+#'   one point per reported dose category, at that dose on the x axis and at
+#'   the effect the study reported for it against its own reference dose on
+#'   the y axis. The reference categories are not drawn, because every one of
+#'   them sits on the null by construction. With several panels
+#'   (`mult.curves = TRUE`) the default is `FALSE`, because the points crowd
+#'   the small panels.
+#' @param ref.shape `TRUE`, the default, gives the study points one shape per
+#'   reference dose (circle, square, triangle, star, diamond, inverted
+#'   triangle), with a "Study reference dose" key beside the panel listing
+#'   each value. A study's effects are measured against its own reference, so
+#'   a point is read against that dose, not the curve's. `FALSE` draws every
+#'   point as a circle. It is ignored when subgroup curves are drawn, which use
+#'   shape for the levels, and with more than six reference doses, which run
+#'   out of shapes.
 #' @param studlabel `TRUE` writes each study's label once, beside its
-#'   highest-dose bubble, so a reader can tell which study a run of bubbles
+#'   highest-dose point, so a reader can tell which study a run of points
 #'   belongs to. It needs `studies = TRUE`.
 #' @param reference `TRUE`, the default, draws the null line and marks the
 #'   reference dose.
@@ -122,8 +132,8 @@
 #' @export
 easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          xlim = NULL, ylim = NULL, round = NULL,
-                         prediction = FALSE, points = TRUE, studies = FALSE,
-                         studlabel = FALSE, reference = TRUE,
+                         prediction = FALSE, points = TRUE, studies = TRUE,
+                         ref.shape = TRUE, studlabel = FALSE, reference = TRUE,
                          rug = TRUE, result = TRUE, result.at = NULL,
                          table = "horizontal", target = TRUE,
                          wald = TRUE, deviance = FALSE, r2 = FALSE,
@@ -141,11 +151,15 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # worth naming rather than quietly drawing one panel.
   result.at <- dr_result_at(x, result.at)
   if (inherits(x, "easydr_multi") || isTRUE(mult.curves)) {
+    # Small panels side by side have no room for the study points, so they
+    # are left out unless asked for.
+    if (missing(studies)) studies <- FALSE
     return(dr_curve_multi(
       x, mult.curves = mult.curves, curve.panels = curve.panels,
       main = main, xlab = xlab, ylab = ylab, xlim = xlim, ylim = ylim,
       round = round, prediction = prediction, points = points,
-      studies = studies, studlabel = studlabel, reference = reference,
+      studies = studies, ref.shape = ref.shape, studlabel = studlabel,
+      reference = reference,
       rug = rug, result = result, result.at = result.at, digits = digits,
       col = col, fill.ci = fill.ci, fill.pi = fill.pi, legend = legend,
       filetype = filetype, path = path, file.name = file.name,
@@ -156,7 +170,8 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   built   <- dr_curve_panel(
     x, main = main, xlab = xlab, ylab = ylab, xlim = xlim, ylim = ylim,
     round = round, prediction = prediction, points = points,
-    studies = studies, studlabel = studlabel, reference = reference,
+    studies = studies, ref.shape = ref.shape, studlabel = studlabel,
+    reference = reference,
     rug = rug, subgroup = subgroup, col = col, fill.ci = fill.ci,
     fill.pi = fill.pi, legend = legend, target = target,
     tests = list(wald = wald, deviance = deviance, r2 = r2, r2adj = r2adj,
@@ -217,8 +232,9 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
 #' @noRd
 dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                            xlim = NULL, ylim = NULL, round = NULL,
-                           prediction = FALSE, points = TRUE, studies = FALSE,
-                           studlabel = FALSE, reference = TRUE, rug = TRUE,
+                           prediction = FALSE, points = TRUE, studies = TRUE,
+                           ref.shape = TRUE, studlabel = FALSE,
+                           reference = TRUE, rug = TRUE,
                            subgroup = NULL, col = "#1F2A44",
                            fill.ci = "grey75", fill.pi = "grey90",
                            legend = NULL, target = TRUE,
@@ -243,15 +259,19 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # reported effect. A continuous measure carries the group mean instead, and
   # the effect is that mean minus the study's own reference mean. The reference
   # categories themselves are left out: they sit on the null by construction and
-  # would draw a row of bubbles that says nothing.
+  # would draw a row of points that says nothing. Each point keeps the dose its
+  # study measured against, which is what its shape shows.
   obs <- NULL
   if (isTRUE(studies)) {
     obs <- x$frame
-    ref <- vapply(split(obs$y[obs$is_ref], obs$studlab[obs$is_ref]),
-                  function(z) z[1L], numeric(1))
-    obs <- obs[!obs$is_ref, , drop = FALSE]
+    is_ref   <- obs$is_ref
+    ref      <- vapply(split(obs$y[is_ref], obs$studlab[is_ref]),
+                       function(z) z[1L], numeric(1))
+    ref_dose <- vapply(split(obs$dose[is_ref], obs$studlab[is_ref]),
+                       function(z) z[1L], numeric(1))
+    obs <- obs[!is_ref, , drop = FALSE]
     obs$est <- if (x$ratio) exp(obs$y) else obs$y - ref[obs$studlab]
-    if (!any(is.finite(obs$n))) obs$n <- 1
+    obs$ref_dose <- unname(ref_dose[as.character(obs$studlab)])
   } else if (isTRUE(studlabel)) {
     warning("easydr: studlabel needs studies = TRUE, so no labels were drawn.",
             call. = FALSE)
@@ -283,13 +303,38 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
       ggplot2::geom_vline(xintercept = x$reference$curve, linetype = "dotted",
                           colour = "grey45", linewidth = 0.4)
   }
+  # Shapes for the reference doses, in the order a reader names them. A
+  # subgroup figure already spends shape on its levels, and a seventh
+  # reference would have to reuse one, so both fall back to circles.
+  ref_shapes <- c(21L, 22L, 24L, 8L, 23L, 25L)
+  ref_levels <- if (is.null(obs)) numeric(0) else sort(unique(obs$ref_dose))
+  shape_key  <- isTRUE(ref.shape) && !is.null(obs) && !use_sub &&
+    length(ref_levels) <= length(ref_shapes)
+  if (isTRUE(ref.shape) && !is.null(obs) && !use_sub &&
+      length(ref_levels) > length(ref_shapes)) {
+    warning("easydr: the studies use ", length(ref_levels), " reference ",
+            "doses and there are ", length(ref_shapes), " shapes, so every ",
+            "study point is drawn as a circle.", call. = FALSE)
+  }
   if (!is.null(obs)) {
-    p <- p +
-      ggplot2::geom_point(
+    pt_fill <- grDevices::adjustcolor(col, alpha.f = 0.3)
+    if (shape_key) {
+      labs_ref <- dr_num_lab(ref_levels)
+      obs$ref_lab <- factor(dr_num_lab(obs$ref_dose), levels = labs_ref)
+      p <- p +
+        ggplot2::geom_point(
+          data = obs, inherit.aes = FALSE,
+          ggplot2::aes(x = .data$dose, y = .data$est, shape = .data$ref_lab),
+          colour = col, fill = pt_fill, size = 2, stroke = 0.6) +
+        ggplot2::scale_shape_manual(
+          values = stats::setNames(ref_shapes[seq_along(labs_ref)], labs_ref),
+          name = "Study reference dose", drop = FALSE)
+    } else {
+      p <- p + ggplot2::geom_point(
         data = obs, inherit.aes = FALSE,
-        ggplot2::aes(x = .data$dose, y = .data$est, size = .data$n),
-        colour = col, fill = col, shape = 21L, alpha = 0.25, stroke = 0) +
-      ggplot2::scale_size_area(max_size = 7, guide = "none")
+        ggplot2::aes(x = .data$dose, y = .data$est),
+        shape = 21L, colour = col, fill = pt_fill, size = 2, stroke = 0.6)
+    }
     if (isTRUE(studlabel)) {
       # One label per study, at its highest dose. A label on the right half of
       # the panel is written to the left of its bubble, so the last study does
@@ -394,9 +439,10 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     ggplot2::labs(x = xlab, y = ylab) +
     ggplot2::theme_bw() +
     ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
-                   legend.position = if (use_sub) "top" else "none",
-                   legend.direction = "horizontal",
-                   legend.justification = "left",
+                   legend.position = if (use_sub) "top" else
+                     if (shape_key) "right" else "none",
+                   legend.direction = if (use_sub) "horizontal" else "vertical",
+                   legend.justification = if (use_sub) "left" else "center",
                    legend.margin = ggplot2::margin(0, 0, 2, 0),
                    legend.key.width = grid::unit(22, "pt"),
                    legend.key.height = grid::unit(10, "pt"),
@@ -417,12 +463,12 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   foot <- c(paste0("Reference ", x$reference$curve, " ", unit,
                    ".  Band: ", bands,
                    ".  Shape = ", x$shape$label,
-                   if (isTRUE(studies))
-                     ".  Bubbles: reported effects, sized by participants.",
                    if (use_sub)
                      ".  The dark line and the band are the overall fit.",
                    if (any(tab$extrapolated))
                      ".  Crosses mark doses beyond the observed range."),
+            if (isTRUE(studies))
+              "Points: each study's effects against its own reference dose.",
             do.call(dr_test_notes, c(list(x), tests)),
             legend)
 
@@ -468,4 +514,14 @@ dr_linearity_note <- function(x, lead = ".  ") {
   }
   paste0(lead, "Linearity test: X2 = ", formatC(nl$statistic, format = "f", digits = 2),
          " (df = ", nl$df, "), ", dr_p_lab(nl$p))
+}
+
+
+#' A dose written the way a reader would: no trailing zeros, no padding
+#'
+#' @keywords internal
+#' @noRd
+dr_num_lab <- function(v) {
+  vapply(v, function(z) format(z, trim = TRUE, drop0trailing = TRUE),
+         character(1), USE.NAMES = FALSE)
 }
