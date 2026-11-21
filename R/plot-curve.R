@@ -61,9 +61,15 @@
 #'   `studies = TRUE`.
 #' @param reference `TRUE`, the default, draws the null line and marks the
 #'   reference dose.
-#' @param rug `TRUE`, the default, ticks the doses the fit reports along the
-#'   bottom: the ones `at` named in [easydr()], and the reference. It marks
-#'   where the reported effects sit on the axis, not where the data is.
+#' @param rug `TRUE` ticks the doses the fit reports along the bottom: the
+#'   ones `at` named in [easydr()], and the reference. It marks where the
+#'   reported effects sit on the axis, not where the data is. The default,
+#'   `NULL`, draws it unless knot lines are drawn instead.
+#' @param knot.lines `TRUE`, the default, draws a dashed vertical line at each
+#'   knot of a restricted cubic spline, in place of the rug. Ignored for
+#'   shapes without knots.
+#' @param grid `FALSE`, the default, draws the panel without grid lines.
+#'   `TRUE` adds the major grid.
 #' @param result `TRUE`, the default, puts a summary table under the figure:
 #'   the effect with its confidence interval, its p value, the heterogeneity
 #'   and the number of studies. The figure then carries its own numbers. With
@@ -139,7 +145,8 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          xlim = NULL, ylim = NULL, round = NULL,
                          prediction = FALSE, points = TRUE, studies = TRUE,
                          ref.shape = TRUE, studlab = FALSE, reference = TRUE,
-                         rug = TRUE, result = TRUE, result.at = NULL,
+                         rug = NULL, knot.lines = TRUE, grid = FALSE,
+                         result = TRUE, result.at = NULL,
                          table = "horizontal", target = TRUE,
                          wald = TRUE, deviance = FALSE, r2 = FALSE,
                          r2adj = FALSE, aic = FALSE, bic = FALSE,
@@ -165,7 +172,8 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
       round = round, prediction = prediction, points = points,
       studies = studies, ref.shape = ref.shape, studlab = studlab,
       reference = reference,
-      rug = rug, result = result, result.at = result.at, digits = digits,
+      rug = rug, knot.lines = knot.lines, grid = grid,
+      result = result, result.at = result.at, digits = digits,
       col = col, fill.ci = fill.ci, fill.pi = fill.pi, legend = legend,
       filetype = filetype, path = path, file.name = file.name,
       width = width, height = height))
@@ -177,7 +185,8 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     round = round, prediction = prediction, points = points,
     studies = studies, ref.shape = ref.shape, studlab = studlab,
     reference = reference,
-    rug = rug, subgroup = subgroup, col = col, fill.ci = fill.ci,
+    rug = rug, knot.lines = knot.lines, grid = grid,
+    subgroup = subgroup, col = col, fill.ci = fill.ci,
     fill.pi = fill.pi, legend = legend, target = target,
     tests = list(wald = wald, deviance = deviance, r2 = r2, r2adj = r2adj,
                  aic = aic, bic = bic))
@@ -255,7 +264,8 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                            xlim = NULL, ylim = NULL, round = NULL,
                            prediction = FALSE, points = TRUE, studies = TRUE,
                            ref.shape = TRUE, studlab = FALSE,
-                           reference = TRUE, rug = TRUE,
+                           reference = TRUE, rug = NULL,
+                           knot.lines = TRUE, grid = FALSE,
                            subgroup = NULL, col = "#1F2A44",
                            fill.ci = "grey75", fill.pi = "grey90",
                            legend = NULL, target = TRUE,
@@ -324,6 +334,16 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   }
   p <- p + ggplot2::geom_ribbon(
     ggplot2::aes(ymin = .data$ci.lb, ymax = .data$ci.ub), fill = fill.ci)
+
+  # A spline's knots are where its pieces join, so they are drawn as lines
+  # across the panel; the rug they replace only marked the reported doses.
+  knots <- if (identical(x$shape$name, "rcs")) x$shape$knots else NULL
+  show_knots <- isTRUE(knot.lines) && length(knots) > 0L
+  if (is.null(rug)) rug <- !show_knots
+  if (show_knots) {
+    p <- p + ggplot2::geom_vline(xintercept = knots, linetype = "longdash",
+                                 colour = "grey55", linewidth = 0.4)
+  }
 
   if (isTRUE(reference)) {
     p <- p +
@@ -472,6 +492,9 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     ggplot2::labs(x = xlab, y = ylab) +
     ggplot2::theme_bw() +
     ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                   panel.grid.major = if (isTRUE(grid))
+                     ggplot2::element_line(colour = "grey92") else
+                       ggplot2::element_blank(),
                    legend.position = if (use_sub) "top" else
                      if (shape_key) "right" else "none",
                    legend.direction = if (use_sub) "horizontal" else "vertical",
@@ -487,6 +510,11 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     p + ggplot2::scale_y_log10(limits = ylim)
   } else {
     p + ggplot2::scale_y_continuous(limits = ylim)
+  }
+  if (isTRUE(points) && nrow(x$predicted) > 1L) {
+    br <- sort(unique(x$predicted$dose))
+    p <- p + ggplot2::scale_x_continuous(breaks = br,
+                                         labels = dr_num_lab(signif(br, 3)))
   }
   p <- p + ggplot2::coord_cartesian(xlim = xlim)
 

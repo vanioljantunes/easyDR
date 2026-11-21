@@ -18,7 +18,9 @@ easydr_curve(
   ref.shape = TRUE,
   studlab = FALSE,
   reference = TRUE,
-  rug = TRUE,
+  rug = NULL,
+  knot.lines = TRUE,
+  grid = FALSE,
   result = TRUE,
   result.at = NULL,
   table = "horizontal",
@@ -94,9 +96,17 @@ can tell which study a run of points belongs to. It needs
 \item{reference}{\code{TRUE}, the default, draws the null line and marks the
 reference dose.}
 
-\item{rug}{\code{TRUE}, the default, ticks the doses the fit reports along the
-bottom: the ones \code{at} named in \code{\link[=easydr]{easydr()}}, and the reference. It marks
-where the reported effects sit on the axis, not where the data is.}
+\item{rug}{\code{TRUE} ticks the doses the fit reports along the bottom: the
+ones \code{at} named in \code{\link[=easydr]{easydr()}}, and the reference. It marks where the
+reported effects sit on the axis, not where the data is. The default,
+\code{NULL}, draws it unless knot lines are drawn instead.}
+
+\item{knot.lines}{\code{TRUE}, the default, draws a dashed vertical line at each
+knot of a restricted cubic spline, in place of the rug. Ignored for
+shapes without knots.}
+
+\item{grid}{\code{FALSE}, the default, draws the panel without grid lines.
+\code{TRUE} adds the major grid.}
 
 \item{result}{\code{TRUE}, the default, puts a summary table under the figure:
 the effect with its confidence interval, its p value, the heterogeneity
