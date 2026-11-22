@@ -20,6 +20,7 @@ easydr_forest(
   columns = TRUE,
   ref.dose = TRUE,
   row.height = 0.26,
+  header.line = TRUE,
   effect.width = 3.1,
   filetype = c("png", "pdf", "tiff"),
   path = NULL,
@@ -82,6 +83,9 @@ here, and a reader comparing their rows should see it. It needs
 \item{row.height}{height of one study row, in inches. Fixed rather than
 stretched, so a forest of six studies and one of thirty print with the
 same spacing.}
+
+\item{header.line}{\code{TRUE}, the default, draws a black line under the
+column labels, across the whole figure.}
 
 \item{effect.width}{width of the interval panel, in inches. The two text
 panels take the width their characters need and this takes the rest, so

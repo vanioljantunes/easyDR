@@ -11,7 +11,7 @@ easydr_funnel(
   xlab = NULL,
   ylab = NULL,
   levels = c(99, 95, 90),
-  shade = c("white", "grey85", "grey70"),
+  shade = c("grey96", "grey90", "grey83"),
   labels = FALSE,
   digits = 4,
   table = "horizontal",
@@ -33,10 +33,12 @@ easydr_funnel(
 
 \item{xlab, ylab}{axis labels. \code{NULL} writes them from the fit.}
 
-\item{levels}{the pseudo confidence regions to shade, as percentages,
+\item{levels}{the significance contours to shade, as percentages,
 outermost first.}
 
-\item{shade}{fill colours for those regions, outermost first.}
+\item{shade}{fill colours for those regions, outermost first. The default
+greys get lighter outwards and stay pale, so the innermost region does
+not swamp the points.}
 
 \item{labels}{\code{TRUE} writes the study labels beside the points.}
 
@@ -44,7 +46,7 @@ outermost first.}
 
 \item{table}{\code{"horizontal"} (the default) puts the statistics across the
 top of the table under the funnel, \code{"vertical"} puts them down its first
-column. Either way the table is headed "Summary".}
+column. Either way the table is headed "Egger's regression test".}
 
 \item{filetype}{the format a saved figure is written in: \code{"png"} (the
 default), \code{"pdf"} or \code{"tiff"}. Only used when \code{file.name} is given.}

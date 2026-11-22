@@ -14,6 +14,7 @@ easydr_loo(
   ylab = NULL,
   ylim = NULL,
   digits = 3,
+  shift = FALSE,
   position = c("top", "bottom", "left", "right"),
   filetype = c("png", "pdf", "tiff"),
   path = NULL,
@@ -28,7 +29,9 @@ easydr_loo(
 \item{at}{what each refit is compared on. \code{NULL} (the default) uses the
 \code{result.at} given to \code{\link[=easydr]{easydr()}}, per unit of dose unless set there;
 one number (an increment of dose) or \code{c(numerator, denominator)} overrides
-it.}
+it. An increment asked of a curve is read as the linear trend per that
+increment, from a linear fit of the same studies, because a curve has no
+single step per unit; its p value is reported beside the interval.}
 
 \item{quiet}{\code{FALSE}, the default, prints one line per refit.}
 
@@ -42,6 +45,10 @@ title; the rest default to the fit's own labels.}
 
 \item{digits}{digits after the decimal point in the plot's table, 3 by
 default.}
+
+\item{shift}{\code{FALSE}, the default, leaves the shift column out of the
+figure and the printed table; \code{TRUE} adds it. The rows are ordered by the
+shift either way.}
 
 \item{position}{where the curves sit against their table: \code{"top"} (the
 default, table underneath), \code{"bottom"}, \code{"left"} or \code{"right"}.}
