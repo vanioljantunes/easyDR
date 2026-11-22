@@ -102,8 +102,13 @@ dr_boot_once <- function(x, reprofile) {
   shape <- if (isTRUE(reprofile) && !is.null(x$shape$profiled_over)) {
     # The unresolved shape, so the profile runs again on this draw. Holding
     # ED50 at the value the real data chose is exactly the narrowness this
-    # bootstrap exists to correct.
-    try(dr_shape(x$shape$name, frame$dose), silent = TRUE)
+    # bootstrap exists to correct. A parameter the caller fixed is handed
+    # back as fixed, so only what the profile chose is searched again
+    # (audit F6): with ed50 = 20 and the steepness profiled, every draw keeps
+    # ED50 at 20 and searches the steepness.
+    try(dr_shape(x$shape$name, frame$dose, knots = x$args$knots,
+                 powers = x$args$powers, ed50 = x$args$ed50,
+                 steepness = x$args$steepness), silent = TRUE)
   } else {
     x$shape
   }
@@ -111,7 +116,6 @@ dr_boot_once <- function(x, reprofile) {
 
   p <- x$provenance
   shape <- try(dr_profile_shape(shape, frame, sm = x$sm, intake = p$intake,
-                                proc = p$proc, method = p$method,
                                 covariance = p$covariance,
                                 method.smd = p$method.smd), silent = TRUE)
   if (inherits(shape, "try-error")) return(NULL)
@@ -164,7 +168,11 @@ dr_check_boot <- function(B) {
 dr_boot_curve <- function(x, doses, B = 500L, reprofile = TRUE, seed = NULL,
                           quiet = TRUE) {
   dr_check_boot(B)
-  if (!is.null(seed)) set.seed(seed)
+  if (!is.null(seed)) {
+    old <- dr_rng_state()
+    on.exit(dr_rng_restore(old), add = TRUE)
+    set.seed(seed)
+  }
   xref <- x$reference$curve
   out  <- matrix(NA_real_, nrow = B, ncol = length(doses))
   for (b in seq_len(B)) {
@@ -184,6 +192,36 @@ dr_boot_curve <- function(x, doses, B = 500L, reprofile = TRUE, seed = NULL,
          "means the table is too small for the shape.", call. = FALSE)
   }
   list(draws = out, n = nrow(out), B = B, doses = doses)
+}
+
+#' The caller's random number state, to put back after a seeded call
+#'
+#' `set.seed()` inside a function replaces the global stream, so everything
+#' the user ran afterwards would follow from the seed easydr set rather than
+#' from their own (audit F13). A seeded call saves the state first and
+#' restores it on exit; an unseeded call leaves the stream alone.
+#'
+#' @keywords internal
+#' @noRd
+dr_rng_state <- function() {
+  if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+    get(".Random.seed", envir = globalenv(), inherits = FALSE)
+  } else {
+    NULL
+  }
+}
+
+#' @keywords internal
+#' @noRd
+dr_rng_restore <- function(old) {
+  if (is.null(old)) {
+    if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+      rm(".Random.seed", envir = globalenv())
+    }
+  } else {
+    assign(".Random.seed", old, envir = globalenv())
+  }
+  invisible(NULL)
 }
 
 #' Percentile limits of a bootstrap distribution

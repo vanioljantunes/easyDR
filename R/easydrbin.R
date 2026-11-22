@@ -30,10 +30,13 @@ easydrbin <- function(data,
                       dose.unit = NULL,
                       level = 0.95,
                       random = TRUE,
-                      common = FALSE) {
+                      common = FALSE,
+                      reference = NULL) {
   call <- match.call()
   sm <- match.arg(sm, c("RR", "OR", "IRR"))
 
+  # `reference` is set by dr_refit() only: the dose a sensitivity refit
+  # measures its contrasts against, inherited from the full fit (audit F7).
   dr_entry("bin", data, call,
            roles_args = list(dose = dose, studlab = studlab,
                              event.e = event.e, n.e = n.e, TE = TE,
@@ -44,7 +47,7 @@ easydrbin <- function(data,
            shape = shape, knots = knots, powers = powers,
            ed50 = ed50, steepness = steepness, grid = grid,
            at = at, dose.unit = dose.unit, level = level, common = common,
-           random = random)
+           random = random, reference = reference)
 }
 
 #' Translate method.tau into the engine's estimator name

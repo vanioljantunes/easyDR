@@ -13,14 +13,18 @@ emax_fit <- function(ed50 = NULL) {
 test_that("the target dose matches the algebra for a known ED50", {
   f <- emax_fit(ed50 = 5)
   got <- ed_gamma(f, gamma = c(0.5, 0.8))
-  # E(d) is proportional to d / (d + 5), so a fraction g of the ceiling the
-  # curve rises towards is reached at d = 5 g / (1 - g): the ED50 is the
-  # parameter itself, the number printed under the figure.
+  # E(d) is proportional to d / (d + 5). The target dose is read inside the
+  # observed range (audit F8), where the largest effect is at the top dose,
+  # so a fraction g of it is reached at d solving d / (d + 5) = g hi / (hi + 5).
+  # The ED50 parameter itself, 5 g / (1 - g), is returned apart as the
+  # asymptotic quantity.
   hi <- f$counts$dose_max
-  want <- 5 * c(0.5, 0.8) / (1 - c(0.5, 0.8))
+  top <- hi / (hi + 5)
+  want <- 5 * (c(0.5, 0.8) * top) / (1 - c(0.5, 0.8) * top)
   expect_equal(unname(got$ed), want, tolerance = 1e-3)
   expect_equal(got$ed_max, hi)
   expect_named(got$ed, c("ED50", "ED80"))
+  expect_equal(unname(got$asymptotic$ed), 5 * c(0.5, 0.8) / (1 - c(0.5, 0.8)))
 })
 
 test_that("a maximum at the end of the range is flagged, not reported", {

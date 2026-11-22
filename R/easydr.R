@@ -121,13 +121,27 @@
 #'   number giving how many to place. Values all between 0 and 1, such as
 #'   `knots = c(0.25, 0.50, 0.75)`, are read as percentiles of the doses and
 #'   easyDR computes the positions; anything else is taken as the positions
-#'   themselves. The default is 3 knots at the 10th, 50th and 90th percentiles
-#'   of the non-zero doses, and whatever is used is printed.
+#'   themselves. A count places Harrell's default positions for that count:
+#'   3 knots at the 10th, 50th and 90th percentiles, 4 at the 5th, 35th, 65th
+#'   and 95th, 5 at the 5th, 27.5th, 50th, 72.5th and 95th. Every percentile
+#'   is of all the doses in the table, the reference categories included, as
+#'   Crippa and Orsini place them. The default is 3 knots, and whatever is
+#'   used is printed.
 #' @param powers For `shape = "fp"`: one power for a first-order fractional
 #'   polynomial, such as `powers = -0.5`, or a pair for a second-order one.
-#'   Left `NULL`, the pair is chosen by likelihood from -2, -1, -0.5, 0, 0.5,
-#'   1, 2 and 3, as Royston and Altman suggest. A power of 0 is read as the logarithm,
-#'   following Royston and Altman.
+#'   Left `NULL`, the pair is chosen from -2, -1, -0.5, 0, 0.5, 1, 2 and 3,
+#'   as Royston and Altman suggest, by the one-stage maximum likelihood of
+#'   each candidate; the chosen pair is then fitted with the `proc` and
+#'   `method.tau` you asked for. A two-stage or REML likelihood changes with
+#'   the basis and would not compare candidates. The same rule chooses
+#'   `ed50` and `steepness` for the Emax family. A power of 0 is read as the
+#'   logarithm, following Royston and Altman.
+#' @param ed50,steepness For `shape = "emax"` or `"hyperbolic_emax"`: the
+#'   dose giving half of the curve's ceiling, and the Hill steepness (fixed
+#'   at 1 for the hyperbolic form). Left `NULL`, each is chosen from the data
+#'   by the one-stage maximum likelihood of a grid of candidates, the same
+#'   rule that chooses `powers`, and the information criteria charge for it.
+#'   A value you supply is held fixed, in the fit and in every bootstrap draw.
 #' @param at Doses to report predicted effects at. `NULL` uses a five-point
 #'   grid across the observed dose range.
 #' @param overall.per.unit `TRUE` (the default) reports every effect per
@@ -340,8 +354,14 @@ easydr <- function(data,
   # part of the result rather than a second call: ED50, ED80 and the dose of
   # the largest effect, read inside the observed range. Point estimates only;
   # easydr_target_dose() bootstraps intervals around the same numbers.
+  # Only the flat-curve case is caught, and its reason is kept; any other
+  # error in the target-dose code propagates (audit F14).
   if (out$shape$name %in% c("emax", "hyperbolic_emax")) {
-    out$target <- tryCatch(ed_gamma(out, c(0.5, 0.8)), error = function(e) NULL)
+    out$target <- tryCatch(ed_gamma(out, c(0.5, 0.8)),
+                           easydr_flat_curve = function(e) NULL)
+    if (is.null(out$target)) {
+      out$target_reason <- "the fitted curve is flat, so it has no target dose"
+    }
   }
 
   # The subgroup levels are fitted here rather than at drawing time, so the

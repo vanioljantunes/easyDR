@@ -160,9 +160,14 @@ test_that("a fractional polynomial takes one power or two", {
   expect_length(two$shape$powers, 2)
   expect_true(all(two$shape$powers %in% set))
   expect_lte(two$shape$powers[1], two$shape$powers[2])
+  # The search ranks candidates by their one-stage ML likelihood (audit F2),
+  # the only one that is of the same data for every pair, so the winner is
+  # compared with a stated pair on that scale. The two-stage REML likelihood
+  # of the user's fit moves with the basis and cannot order candidates.
   fixed <- easydr(alcohol_cancer, sm = "RR", shape = "fp", powers = c(-1, 0),
                   dose.unit = "g/day")
-  expect_gte(as.numeric(logLik(two$fit)), as.numeric(logLik(fixed$fit)) - 1e-6)
+  ll1 <- function(f) as.numeric(logLik(easyDR:::dr_refit_ml(f)$fit))
+  expect_gte(ll1(two), ll1(fixed) - 1e-6)
 
   # Three is a model this package does not fit, and must not be truncated.
   expect_error(

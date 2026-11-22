@@ -168,15 +168,10 @@ dr_mod_labels <- function(coef_names, shape_terms, mod_cols, vars, one_term,
   }
   esc <- function(z) gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", z)
   vapply(coef_names, function(nm) {
-    hit <- mod_cols[vapply(mod_cols, function(mc)
-      identical(mc, nm) || endsWith(nm, paste0(".", mc)), logical(1))]
-    if (length(hit) == 0L) return(nm)
-    mc   <- hit[which.max(nchar(hit))]
-    term <- if (identical(mc, nm)) {
-      NA_character_
-    } else {
-      sub(paste0("\\.", esc(mc), "$"), "", nm)
-    }
+    split <- dr_mod_split(nm, shape_terms, mod_cols)
+    if (is.null(split)) return(nm)
+    mc   <- split$mc
+    term <- split$term
     piece <- if (one_term || is.na(term) || !term %in% shape_terms) {
       "slope"
     } else {
@@ -194,6 +189,64 @@ dr_mod_labels <- function(coef_names, shape_terms, mod_cols, vars, one_term,
       paste0("change in ", piece, " per unit of ", var)
     }
   }, character(1), USE.NAMES = FALSE)
+}
+
+#' Split an engine coefficient name into its shape term and moderator column
+#'
+#' The engine names a moderator model's coefficients differently in the two
+#' pooling stages. Two-stage, where mixmeta names the second-stage regressors:
+#' `(Intercept)` and `designci` for a one-term shape, `dose.(Intercept)` and
+#' `dose.designci` for a multi-term one. One-stage, where the names come from
+#' the design: `dose` for the slope at the reference level and
+#' `dose:designci` for the change in it. Reading the names by the two-stage
+#' rule alone flagged every one-stage coefficient as a moderator term, so the
+#' Wald test tested the dose slope itself and had the wrong degrees of freedom
+#' (audit F1). The moderator column is read off the name here, in one place,
+#' and `(Intercept)` stands for "the reference level" in both stages.
+#'
+#' Returns `NULL` for a name that matches no moderator column and no shape
+#' term, and a list of `term` (`NA` when the shape has one term) and `mc`.
+#'
+#' @keywords internal
+#' @noRd
+dr_mod_split <- function(nm, shape_terms, mod_cols) {
+  esc <- function(z) gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", z)
+  # One-stage interaction: term:moderator column.
+  if (grepl(":", nm, fixed = TRUE)) {
+    term <- sub(":.*$", "", nm)
+    mc   <- sub("^[^:]*:", "", nm)
+    if (!mc %in% mod_cols) return(NULL)
+    return(list(term = term, mc = mc))
+  }
+  # One-stage reference level: the bare shape term.
+  if (nm %in% shape_terms) {
+    return(list(term = nm, mc = "(Intercept)"))
+  }
+  # Two-stage: the moderator column, on its own or as term.column.
+  hit <- mod_cols[vapply(mod_cols, function(mc)
+    identical(mc, nm) || endsWith(nm, paste0(".", mc)), logical(1))]
+  if (length(hit) == 0L) return(NULL)
+  mc   <- hit[which.max(nchar(hit))]
+  term <- if (identical(mc, nm)) {
+    NA_character_
+  } else {
+    sub(paste0("\\.", esc(mc), "$"), "", nm)
+  }
+  list(term = term, mc = mc)
+}
+
+#' Which coefficients are moderator terms
+#'
+#' A coefficient is a moderator term when its moderator column is anything
+#' other than `(Intercept)`, read by the same rule in both pooling stages.
+#'
+#' @keywords internal
+#' @noRd
+dr_mod_is_mod <- function(coef_names, shape_terms, mod_cols) {
+  vapply(coef_names, function(nm) {
+    split <- dr_mod_split(nm, shape_terms, mod_cols)
+    !is.null(split) && !identical(split$mc, "(Intercept)")
+  }, logical(1), USE.NAMES = FALSE)
 }
 
 # The meta-regression, and the bubble plot that draws it, are kept internal.
@@ -267,11 +320,19 @@ easydr_metareg <- function(object, mods, data = NULL, level = NULL) {
   b     <- coef(fit)
   se    <- sqrt(diag(as.matrix(vcov(fit))))
   zcrit <- stats::qnorm(1 - (1 - level) / 2)
-  labels <- dr_mod_labels(names(b), colnames(shp$basis(prep$frame$dose)),
-                          colnames(mm), vars, one_term = shp$terms == 1L,
+  shape_terms <- colnames(shp$basis(prep$frame$dose))
+  labels <- dr_mod_labels(names(b), shape_terms, colnames(mm), vars,
+                          one_term = shp$terms == 1L,
                           centres = centres, refs = refs)
-  is_mod <- !vapply(names(b), function(nm)
-    identical(nm, "(Intercept)") || endsWith(nm, ".(Intercept)"), logical(1))
+  # Which coefficients the Wald test covers is read from the names by the
+  # rule that knows both pooling stages, never from "(Intercept)" alone.
+  is_mod <- dr_mod_is_mod(names(b), shape_terms, colnames(mm))
+  if (!any(is_mod)) {
+    stop("easydr: no moderator coefficient could be identified among the ",
+         "engine's coefficients (", paste(names(b), collapse = ", "),
+         "). This is a defect in easydr's reading of the engine, not in ",
+         "your data.", call. = FALSE)
+  }
 
   terms_tab <- data.frame(
     coefficient = names(b), label = labels, estimate = as.numeric(b),

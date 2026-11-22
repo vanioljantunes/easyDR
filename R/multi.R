@@ -94,16 +94,26 @@ dr_refit_ml <- function(f) {
 #' from the same data, so leaving them uncounted hands the Emax family a
 #' discount no other shape gets and makes the comparison meaningless.
 #'
+#' `ml` is the one-stage ML refit from `dr_refit_ml()`. When that refit
+#' failed there is no comparable likelihood, and the value is `NA` rather
+#' than the two-stage REML criterion of the original fit, which is on a
+#' different scale from the other rows (audit F10). The BIC penalty for a
+#' profiled parameter uses the engine's own sample size, the number of
+#' non-reference contrasts, so the add-on is on the same footing as the
+#' engine's BIC (audit F12).
+#'
 #' @keywords internal
 #' @noRd
 dr_ic <- function(f, which = c("AIC", "BIC"), ml = NULL) {
   which <- match.arg(which)
-  use   <- if (is.null(ml)) f else ml
-  base  <- dr_try_num(if (which == "AIC") stats::AIC(use$fit) else
-                        stats::BIC(use$fit))
+  if (is.null(ml)) return(NA_real_)
+  base  <- dr_try_num(if (which == "AIC") stats::AIC(ml$fit) else
+                        stats::BIC(ml$fit))
   extra <- f$shape$profiled_params
   if (is.null(extra) || !is.finite(base)) return(base)
-  penalty <- if (which == "AIC") 2 else log(max(f$counts$categories, 2))
+  nobs <- dr_try_num(attr(stats::logLik(ml$fit), "nobs"))
+  if (!is.finite(nobs)) nobs <- sum(!ml$frame$is_ref)
+  penalty <- if (which == "AIC") 2 else log(max(nobs, 2))
   base + penalty * as.numeric(extra)
 }
 
@@ -188,7 +198,13 @@ print.easydr_multi <- function(x, digits = 3, ...) {
       " dose categories, dose range ", x$counts$dose_min, " to ",
       x$counts$dose_max, " ", unit, "\n\n", sep = "")
 
-  print(dr_multi_table(x, digits), row.names = FALSE, right = FALSE)
+  tab <- dr_multi_table(x, digits)
+  print(tab, row.names = FALSE, right = FALSE)
+  if (anyNA(tab$AIC)) {
+    cat("\nAIC and BIC are NA for ", paste(tab$Shape[is.na(tab$AIC)],
+        collapse = ", "), ": the one-stage maximum-likelihood refit they ",
+        "are computed from did not fit.\n", sep = "")
+  }
 
   cat("\nDeviance scores the fitted curve against a saturated model and",
       "\njudges the shape alone. AIC and BIC also pay for the",

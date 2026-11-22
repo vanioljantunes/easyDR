@@ -27,7 +27,9 @@ the level the model was fitted at.}
 
 \item{reprofile}{re-run the profile on each draw, for a shape that has one.}
 
-\item{seed}{a seed, so a reported interval can be reproduced.}
+\item{seed}{a seed, so a reported interval can be reproduced. The caller's
+random number stream is put back afterwards, so a seeded call leaves
+nothing run later any different.}
 
 \item{quiet}{\code{FALSE} reports progress.}
 }
@@ -39,7 +41,9 @@ reported dose.
 Reports ED max, the dose of the largest effect the curve reaches inside the
 observed range, and one target dose per \code{gamma}: the smallest dose reaching
 that fraction of it. Each comes with a percentile interval from a
-parametric bootstrap.
+parametric bootstrap. The same in-range definition is used for every
+shape; for an Emax curve the ED50 parameter, which refers to the ceiling
+the curve rises towards, is printed separately as the parameter.
 }
 \details{
 A target dose has no standard error, being a non-linear functional of the

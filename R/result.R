@@ -6,7 +6,7 @@
 #' @noRd
 dr_result <- function(fit, prep, sm, dose_unit, at, level, proc, method, call,
                       shape = NULL, grid = NULL, data = NULL, entry = NULL,
-                      args = NULL) {
+                      args = NULL, reference = NULL) {
   if (is.null(shape)) shape <- dr_shape_linear()
   curved <- shape$terms > 1L
   frame <- prep$frame
@@ -19,12 +19,29 @@ dr_result <- function(fit, prep, sm, dose_unit, at, level, proc, method, call,
   # the lowest dose in the table: a dose no study treated as its reference would
   # make the printed contrasts answer a question nobody asked. The disagreement
   # is recorded and printed.
+  #
+  # A refit inside a sensitivity analysis inherits the full fit's reference
+  # instead (audit F7), so every leave-one-out row and every subgroup level
+  # reports the same contrast as the overall fit. The engine never sees it:
+  # it fixes only the dose the predictions and contrasts are measured against.
   ref_doses <- frame$dose[frame$is_ref]
   xref <- min(ref_doses)
   if (length(unique(ref_doses)) > 1L) {
     prov$warnings <- c(prov$warnings, paste0(
       "per-study reference doses differ, from ", min(ref_doses), " to ",
       max(ref_doses), "; predicted effects are reported against ", xref))
+  }
+  if (!is.null(reference)) {
+    if (!is.numeric(reference) || length(reference) != 1L ||
+        !is.finite(reference)) {
+      stop("easydr: `reference` must be one finite dose.", call. = FALSE)
+    }
+    if (reference != xref) {
+      prov$warnings <- c(prov$warnings, paste0(
+        "predicted effects are reported against the inherited reference ",
+        reference, " rather than this subset's own lowest reference ", xref))
+    }
+    xref <- reference
   }
 
   # A curve has no single slope, so the slot is NULL rather than removed: a
@@ -254,7 +271,15 @@ print.easydr_result <- function(x, digits = 3, ...) {
     cat("Target doses (", unit, "): ",
         paste0(names(x$target$ed), " ", formatC(x$target$ed, format = "f", digits = 2),
                collapse = ", "),
-        ", ED max ", formatC(x$target$ed_max, format = "f", digits = 2), "\n", sep = "")
+        ", ED max ", formatC(x$target$ed_max, format = "f", digits = 2),
+        " (read inside the observed range)\n", sep = "")
+    if (!is.null(x$target$asymptotic)) {
+      cat("Emax parameter ED50 (asymptotic): ",
+          formatC(x$target$asymptotic$ed50, format = "f", digits = 2), " ",
+          unit, "\n", sep = "")
+    }
+  } else if (!is.null(x$target_reason)) {
+    cat("Target doses: not reported (", x$target_reason, ")\n", sep = "")
   }
   # Named here because the numbers above are the overall fit, and a reader who
   # asked for subgroups should not have to infer that from their absence.
@@ -511,8 +536,17 @@ Goodness of fit: not available (", x$result$gof$reason, ")
   tab <- x$per_study
   tab$slope <- signif(tab$slope, digits + 1)
   tab$se    <- signif(tab$se, digits + 1)
+  # For a multi-term shape the engine's first study coefficient is the
+  # coefficient of the first basis column, not a slope (audit F15).
+  shp   <- x$result$shape
+  first <- if (!is.null(shp) && shp$terms > 1L) {
+    paste0("first coefficient (", colnames(shp$basis(c(0, 1)))[1L], ")")
+  } else {
+    "slope"
+  }
+  scale <- if (isTRUE(x$result$ratio)) " (log scale)" else ""
   names(tab) <- c("study", "levels", "dose range", "design",
-                  "slope (log scale)", "SE")
+                  paste0(first, scale), "SE")
   print(tab, row.names = FALSE, right = FALSE)
   invisible(x)
 }

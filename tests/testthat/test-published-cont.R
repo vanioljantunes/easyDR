@@ -77,13 +77,18 @@ test_that("the quadratic shape on ari reproduces its captured values", {
 })
 
 test_that("the spline shape on ari reproduces its captured values", {
+  # Recaptured 2026-11-22 after audit F5: the default knots are now the
+  # 10th, 50th and 90th percentiles of every dose, reference included
+  # (0, 10, 30 here), where they were placed on the non-zero doses
+  # (2.6, 15, 30) before.
   fit <- easydrcont(ari_table(), sm = "SMD", shape = "rcs")
+  expect_equal(fit$shape$knots, c(0, 10, 30))
   expect_equal(as.numeric(coef(fit$fit)),
-               c(0.035448972, -0.035913366), tolerance = 1e-6)
-  expect_equal(fit$nonlinearity$statistic, 14.069064, tolerance = 1e-5)
-  expect_equal(fit$nonlinearity$p, 0.0001762185, tolerance = 1e-5)
-  expect_equal(fit$gof$deviance, 7.417995, tolerance = 1e-5)
-  expect_equal(fit$gof$p, 0.7642941, tolerance = 1e-5)
+               c(0.0419211427, -0.0528430015), tolerance = 1e-6)
+  expect_equal(fit$nonlinearity$statistic, 14.852331, tolerance = 1e-5)
+  expect_equal(fit$nonlinearity$p, 0.0001162643, tolerance = 1e-5)
+  expect_equal(fit$gof$deviance, 6.634727, tolerance = 1e-5)
+  expect_equal(fit$gof$p, 0.8278460, tolerance = 1e-5)
   # Unlike the alcohol data, here the departure from linearity is clear.
   expect_lt(fit$nonlinearity$p, 0.001)
 })

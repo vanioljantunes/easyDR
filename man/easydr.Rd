@@ -99,14 +99,29 @@ or \code{"indep"}. \code{NULL}, the default, chooses from what the table supplie
 number giving how many to place. Values all between 0 and 1, such as
 \code{knots = c(0.25, 0.50, 0.75)}, are read as percentiles of the doses and
 easyDR computes the positions; anything else is taken as the positions
-themselves. The default is 3 knots at the 10th, 50th and 90th percentiles
-of the non-zero doses, and whatever is used is printed.}
+themselves. A count places Harrell's default positions for that count:
+3 knots at the 10th, 50th and 90th percentiles, 4 at the 5th, 35th, 65th
+and 95th, 5 at the 5th, 27.5th, 50th, 72.5th and 95th. Every percentile
+is of all the doses in the table, the reference categories included, as
+Crippa and Orsini place them. The default is 3 knots, and whatever is
+used is printed.}
 
 \item{powers}{For \code{shape = "fp"}: one power for a first-order fractional
 polynomial, such as \code{powers = -0.5}, or a pair for a second-order one.
-Left \code{NULL}, the pair is chosen by likelihood from -2, -1, -0.5, 0, 0.5,
-1, 2 and 3, as Royston and Altman suggest. A power of 0 is read as the logarithm,
-following Royston and Altman.}
+Left \code{NULL}, the pair is chosen from -2, -1, -0.5, 0, 0.5, 1, 2 and 3,
+as Royston and Altman suggest, by the one-stage maximum likelihood of
+each candidate; the chosen pair is then fitted with the \code{proc} and
+\code{method.tau} you asked for. A two-stage or REML likelihood changes with
+the basis and would not compare candidates. The same rule chooses
+\code{ed50} and \code{steepness} for the Emax family. A power of 0 is read as the
+logarithm, following Royston and Altman.}
+
+\item{ed50, steepness}{For \code{shape = "emax"} or \code{"hyperbolic_emax"}: the
+dose giving half of the curve's ceiling, and the Hill steepness (fixed
+at 1 for the hyperbolic form). Left \code{NULL}, each is chosen from the data
+by the one-stage maximum likelihood of a grid of candidates, the same
+rule that chooses \code{powers}, and the information criteria charge for it.
+A value you supply is held fixed, in the fit and in every bootstrap draw.}
 
 \item{at}{Doses to report predicted effects at. \code{NULL} uses a five-point
 grid across the observed dose range.}

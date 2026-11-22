@@ -68,7 +68,6 @@ test_that("a profile that stops at the end of its grid says so", {
   shp$candidates <- data.frame(ed50 = c(0.001, 0.002), steepness = 1)
   got <- easyDR:::dr_profile_shape(
     shp, f$frame, sm = "MD", intake = f$provenance$intake,
-    proc = f$provenance$proc, method = f$provenance$method,
     covariance = f$provenance$covariance,
     method.smd = f$provenance$method.smd)
   expect_true(isTRUE(got$ed50_at_boundary))

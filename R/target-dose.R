@@ -109,6 +109,14 @@ dr_curve_at <- function(x, doses) {
 #' This gives the point estimate only. For an interval use
 #' [easydr_target_dose()], which bootstraps it.
 #'
+#' One definition is used for every shape: the fraction of the largest effect
+#' inside the observed dose range (Crippa and Orsini 2016, equation 15). An
+#' Emax curve also carries a parameter called ED50, the dose giving half of
+#' the ceiling the curve rises towards, which the fitted range may not reach.
+#' That is a different quantity, and for the Emax family it is returned
+#' alongside as `asymptotic`, labelled as the parameter, rather than being
+#' printed in the ED50 row.
+#'
 #' @param x a fitted result from [easydr()].
 #' @param gamma one or more fractions of the maximum effect, above 0 and at
 #'   most 1.
@@ -116,7 +124,9 @@ dr_curve_at <- function(x, doses) {
 #' @return A list with `ed`, one dose per `gamma`; `ed_max`, the dose of the
 #'   largest effect; `emax`, that effect; and `at_edge`, `TRUE` when the
 #'   largest effect sits at the top of the observed range rather than at a
-#'   turning point.
+#'   turning point. For an Emax shape, `asymptotic` holds the ED50 parameter
+#'   of the fitted curve and the doses reaching each `gamma` of its ceiling,
+#'   `ED50 (gamma / (1 - gamma))^(1 / steepness)`.
 #'
 #' @examples
 #' data(aripiprazole)
@@ -130,14 +140,25 @@ ed_gamma <- function(x, gamma = c(0.5, 0.8)) {
   dr_check_gamma(gamma)
   grid <- dr_ed_grid(x)
   out  <- dr_ed_from_curve(grid, dr_curve_at(x, grid), gamma)
-  if (!is.null(out)) out$ed <- dr_ed_emax(x$shape, gamma, out$ed)
   if (is.null(out)) {
-    stop("easydr: this curve has no effect to take a fraction of. A flat ",
-         "fit has no target dose.", call. = FALSE)
+    # A condition of its own, so the caller that folds target doses into a
+    # result can catch this case and nothing else (audit F14).
+    stop(structure(
+      class = c("easydr_flat_curve", "error", "condition"),
+      list(message = paste0("easydr: this curve has no effect to take a ",
+                            "fraction of. A flat fit has no target dose."),
+           call = NULL)))
   }
   names(out$ed) <- paste0("ED", format(100 * gamma, trim = TRUE))
   out$gamma <- gamma
   out$unit  <- x$dose_unit
+  # The Emax parameter is a different quantity from the in-range target
+  # dose (audit F8): kept, but apart and named as the parameter.
+  asym <- dr_ed_emax(x$shape, gamma, out$ed)
+  if (!is.null(asym)) {
+    out$asymptotic <- list(ed50 = x$shape$ed50, steepness = x$shape$steepness,
+                           ed = asym)
+  }
   out
 }
 
@@ -146,7 +167,9 @@ ed_gamma <- function(x, gamma = c(0.5, 0.8)) {
 #' Reports ED max, the dose of the largest effect the curve reaches inside the
 #' observed range, and one target dose per `gamma`: the smallest dose reaching
 #' that fraction of it. Each comes with a percentile interval from a
-#' parametric bootstrap.
+#' parametric bootstrap. The same in-range definition is used for every
+#' shape; for an Emax curve the ED50 parameter, which refers to the ceiling
+#' the curve rises towards, is printed separately as the parameter.
 #'
 #' A target dose has no standard error, being a non-linear functional of the
 #' coefficients with no derivative for a spline read off a grid, so the
@@ -162,7 +185,9 @@ ed_gamma <- function(x, gamma = c(0.5, 0.8)) {
 #' @param level the confidence level for the percentile interval. `NULL` uses
 #'   the level the model was fitted at.
 #' @param reprofile re-run the profile on each draw, for a shape that has one.
-#' @param seed a seed, so a reported interval can be reproduced.
+#' @param seed a seed, so a reported interval can be reproduced. The caller's
+#'   random number stream is put back afterwards, so a seeded call leaves
+#'   nothing run later any different.
 #' @param quiet `FALSE` reports progress.
 #'
 #' @return An object of class `easydr_target`, holding `table`, one row per
@@ -189,7 +214,11 @@ easydr_target_dose <- function(x, gamma = c(0.5, 0.8), B = 500L,
   grid  <- dr_ed_grid(x)
   xref  <- x$reference$curve
 
-  if (!is.null(seed)) set.seed(seed)
+  if (!is.null(seed)) {
+    old <- dr_rng_state()
+    on.exit(dr_rng_restore(old), add = TRUE)
+    set.seed(seed)
+  }
   draws <- matrix(NA_real_, nrow = B, ncol = length(gamma) + 1L)
   for (b in seq_len(B)) {
     d <- dr_boot_once(x, reprofile)
@@ -198,7 +227,6 @@ easydr_target_dose <- function(x, gamma = c(0.5, 0.8), B = 500L,
     if (inherits(est, "try-error")) next
     got <- dr_ed_from_curve(grid, est, gamma)
     if (is.null(got)) next
-    got$ed <- dr_ed_emax(d$shape, gamma, got$ed)
     draws[b, ] <- c(got$ed, got$ed_max)
     if (!isTRUE(quiet) && b %% 50L == 0L) {
       message("easydr: bootstrap draw ", b, " of ", B)
@@ -224,7 +252,8 @@ easydr_target_dose <- function(x, gamma = c(0.5, 0.8), B = 500L,
   structure(list(table = tab, gamma = gamma, emax = point$emax,
                  at_edge = point$at_edge, unit = x$dose_unit,
                  sm_label = x$sm_label, level = level,
-                 draws = nrow(draws), B = B,
+                 asymptotic = point$asymptotic,
+                 draws = nrow(draws), B = B, seed = seed,
                  # Whether the profile actually ran again, not merely
                  # whether it was asked for: a shape whose parameter
                  # the caller supplied has nothing to profile.
@@ -266,8 +295,16 @@ print.easydr_target <- function(x, digits = 2, ...) {
   names(show)[3:4] <- paste0(format(100 * x$level), "% ", c("lower", "upper"))
   print(show, row.names = FALSE, right = FALSE)
 
+  if (!is.null(x$asymptotic)) {
+    cat("\nEmax parameter ED50 (asymptotic, half of the ceiling the curve ",
+        "rises towards): ", format(round(x$asymptotic$ed50, digits)), " ",
+        unit, ". The rows above are read inside the observed range.\n",
+        sep = "")
+  }
+
   cat("\nPercentile interval from ", x$draws, " of ", x$B,
       " bootstrap draws", if (x$reprofiled) ", re-profiled on each draw",
+      if (is.null(x$seed)) ", no seed" else paste0(", seed ", x$seed),
       ".\n", sep = "")
   if (isTRUE(x$degenerate)) {
     cat("\nEvery draw gave the same target dose, so the interval has",
@@ -322,19 +359,19 @@ dr_gof_line <- function(x) {
 #' Target doses of an Emax curve, as shares of its own ceiling
 #'
 #' An Emax curve names its ED50 as a parameter: the dose giving half of the
-#' maximum effect the curve rises towards. Reading the ED50 off the observed
-#' range instead takes half of the effect at the highest dose, which the curve
-#' has not yet reached, and prints a second, smaller ED50 beside the first.
-#' So an Emax shape reports ED(gamma) = ED50 (gamma / (1 - gamma))^(1 / h),
-#' which gives back the parameter at gamma = 0.5. Any other shape keeps the
-#' doses read off the curve.
+#' maximum effect the curve rises towards, so ED(gamma) =
+#' ED50 (gamma / (1 - gamma))^(1 / h) gives back the parameter at gamma = 0.5.
+#' That ceiling may lie beyond the observed doses, so this is a different
+#' quantity from the in-range target dose every shape reports, and it is
+#' returned beside it as the asymptotic parameter rather than in its place
+#' (audit F8). `NULL` for any other shape.
 #'
 #' @keywords internal
 #' @noRd
 dr_ed_emax <- function(shape, gamma, ed) {
   if (is.null(shape) || !shape$name %in% c("emax", "hyperbolic_emax") ||
       is.null(shape$ed50) || is.null(shape$steepness)) {
-    return(ed)
+    return(NULL)
   }
   out <- shape$ed50 * (gamma / (1 - gamma))^(1 / shape$steepness)
   out[gamma >= 1] <- NA_real_

@@ -178,6 +178,17 @@ dr_check_sm_design <- function(sm, design, study, intake = "counts") {
          "incidence-rate data, whose denominator is person-time rather than ",
          "people. Use sm = ", dQuote("IRR"), ".", call. = FALSE)
   }
+  # A risk ratio from counts divides cases by people. Person-time is not
+  # people: `n - cases` would be person-years minus cases, a quantity with no
+  # meaning, and the number printed as a risk ratio would be neither a risk
+  # ratio nor the rate ratio (audit F4).
+  if (identical(sm, "RR") && identical(design, "ir")) {
+    stop("easydr: sm = ", dQuote("RR"), " but study ", study, " is ",
+         "incidence-rate data and easydr is computing the effect from its ",
+         "counts. A person-time denominator gives a rate ratio; use sm = ",
+         dQuote("IRR"), ", or supply the reported effect with its limits.",
+         call. = FALSE)
+  }
   if (identical(sm, "RR") && identical(design, "cc")) {
     stop("easydr: sm = ", dQuote("RR"), " but study ", study, " has a ",
          "case-control design and easydr is computing the effect from its ",
@@ -205,11 +216,29 @@ dr_cov_design <- function(sm, design, intake) {
 #' Infer which row of a study is its reference category
 #' @keywords internal
 #' @noRd
-dr_infer_ref <- function(data, roles, rows, d) {
+dr_infer_ref <- function(data, roles, rows, d, study = NULL) {
   if (!is.null(roles$TE)) {
     te <- data[[roles$TE]][rows]
     at_one <- which(!is.na(te) & abs(te - 1) < 1e-8)
     if (length(at_one) == 1L) return(at_one)
+    if (length(at_one) > 1L) {
+      # Published tables print a non-reference category as 1.00 now and
+      # then. The reference is the row that also carries no limits; when
+      # more than one row still qualifies, guessing the lowest dose would be
+      # silent and could be wrong, so the table has to say (audit F16).
+      no_limits <- at_one
+      if (!is.null(roles$lower) && !is.null(roles$upper)) {
+        lo <- data[[roles$lower]][rows][at_one]
+        hi <- data[[roles$upper]][rows][at_one]
+        no_limits <- at_one[is.na(lo) & is.na(hi)]
+      }
+      if (length(no_limits) == 1L) return(no_limits)
+      stop("easydr: study ", study, " reports an effect of exactly 1 in ",
+           length(at_one), " rows (doses ",
+           paste(signif(d[at_one], 4), collapse = ", "),
+           "), so the reference category cannot be inferred. Mark it in a ",
+           "`ref` column.", call. = FALSE)
+    }
     at_zero <- which(!is.na(te) & te == 0)
     if (length(at_zero) == 1L) return(at_zero)
   }
@@ -298,7 +327,7 @@ dr_prepare <- function(data, roles, sm) {
       }
       iref <- which(flag)
     } else {
-      iref <- dr_infer_ref(data, roles, rows, d)
+      iref <- dr_infer_ref(data, roles, rows, d, s)
       prov$inferred_ref <- c(prov$inferred_ref, s)
     }
 
@@ -316,7 +345,18 @@ dr_prepare <- function(data, roles, sm) {
 
   frame <- do.call(rbind, pieces)
   frame$id <- match(frame$studlab, studies)
-  frame <- frame[order(frame$id, frame$dose), , drop = FALSE]
+  # For a continuous outcome the engine takes the first row of each study as
+  # the reference (`covar.smd()` differences against row one and builds the
+  # covariance from its sd and n), so the marked reference row goes first
+  # and the rest follow by dose (audit F3). Sorting by dose alone handed the
+  # engine the lowest dose as reference whatever `ref` said. A binary
+  # contrast carries its reference in `v`, so order does not matter there
+  # and the plain dose order is kept.
+  frame <- if (identical(roles$intake, "continuous")) {
+    frame[order(frame$id, !frame$is_ref, frame$dose), , drop = FALSE]
+  } else {
+    frame[order(frame$id, frame$dose), , drop = FALSE]
+  }
   rownames(frame) <- NULL
 
   # V11: three dose levels are needed before a study can inform a nonlinearity
@@ -369,9 +409,11 @@ dr_study_frame <- function(data, roles, rows, iref, study, sm, design, prov) {
     cases <- as.numeric(data[[roles$event.e]][rows])
     total <- as.numeric(data[[roles$n.e]][rows])
 
-    # V5: counts must be coherent.
+    # V5: counts must be coherent. Only a person-time denominator may be
+    # smaller than the case count; for people, case-control included, the
+    # denominator is the whole category.
     bad <- which(is.na(cases) | is.na(total) | cases < 0 | total <= 0 |
-                   (identical(design, "ci") & cases > total))
+                   (!identical(design, "ir") & cases > total))
     if (length(bad) > 0L) {
       stop("easydr: study ", study, " has impossible counts in rows ",
            paste(rows[bad], collapse = ", "),
@@ -381,19 +423,26 @@ dr_study_frame <- function(data, roles, rows, iref, study, sm, design, prov) {
 
     # V6: a zero cell needs a correction, and the reviewer is told which. The
     # correction has to reach the counts handed to the engine as well, because
-    # the covariance approximation divides by them and fails on a zero.
+    # the covariance approximation divides by them and fails on a zero. It is
+    # applied to every cell of the study (escalc's to = "all") so that the
+    # effects and the covariance are computed from one set of counts: with
+    # to = "only0" the zero table alone was corrected while the covariance
+    # received cases + 0.5 for every category, and the two halves of one
+    # study disagreed (audit F11).
     es <- dr_escalc_counts(cases, total, iref, sm, design)
     y  <- es$y
     v  <- es$v
     if (any(cases == 0)) {
+      adj <- dr_zero_adjust(cases, total, design)
       msg <- paste0("study ", study, " has a dose category with zero cases, so ",
-                    "the escalc correction add = 1/2, to = only0 was applied ",
-                    "to that study, including the counts used for the ",
-                    "covariance")
+                    "the escalc correction add = 1/2, to = all was applied ",
+                    "to every category of that study, including the counts ",
+                    "used for the covariance")
       warning("easydr: ", msg, call. = FALSE)
       prov$warnings   <- c(prov$warnings, msg)
       prov$continuity <- c(prov$continuity, study)
-      cases <- cases + 0.5
+      cases <- adj$cases
+      total <- adj$total
     }
   } else if (roles$intake %in% c("effect", "effect_counts")) {
     te <- as.numeric(data[[roles$TE]][rows])
@@ -433,6 +482,44 @@ dr_study_frame <- function(data, roles, rows, iref, study, sm, design, prov) {
     if (!is.null(roles$event.e) && !is.null(roles$n.e)) {
       cases <- as.numeric(data[[roles$event.e]][rows])
       total <- as.numeric(data[[roles$n.e]][rows])
+      if (anyNA(cases) || anyNA(total)) {
+        # A study without usable counts cannot carry the covariance
+        # approximation, so its contrasts are treated as independent. That
+        # was reported in the covariance label only; it is a choice the
+        # reader should see made (audit F9).
+        msg <- paste0("study ", study, " has missing counts, so its ",
+                      "contrasts are treated as independent while the ",
+                      "other studies keep the covariance approximation")
+        warning("easydr: ", msg, call. = FALSE)
+        prov$warnings <- c(prov$warnings, msg)
+        cases <- rep(NA_real_, n)
+        total <- rep(NA_real_, n)
+      } else {
+        # V5 on the effect path: the counts feed the covariance, and an
+        # impossible count or a zero cell failed inside the engine with an
+        # unreadable message (audit F9). The same coherence check and the
+        # same zero-cell correction as the counts path apply.
+        bad <- which(cases < 0 | total <= 0 |
+                       (!identical(design, "ir") & cases > total))
+        if (length(bad) > 0L) {
+          stop("easydr: study ", study, " has impossible counts in rows ",
+               paste(rows[bad], collapse = ", "),
+               ". Cases must be non-negative and no larger than the ",
+               "denominator.", call. = FALSE)
+        }
+        if (any(cases == 0)) {
+          adj <- dr_zero_adjust(cases, total, design)
+          msg <- paste0("study ", study, " has a dose category with zero ",
+                        "cases, so add = 1/2 was applied to every category ",
+                        "of that study for the counts used in the ",
+                        "covariance; the reported effects are unchanged")
+          warning("easydr: ", msg, call. = FALSE)
+          prov$warnings   <- c(prov$warnings, msg)
+          prov$continuity <- c(prov$continuity, study)
+          cases <- adj$cases
+          total <- adj$total
+        }
+      }
     }
   } else {
     m  <- as.numeric(data[[roles$mean.e]][rows])
@@ -487,24 +574,39 @@ dr_escalc_counts <- function(cases, total, iref, sm, design) {
   n <- length(cases)
   y <- rep(NA_real_, n)
   v <- rep(NA_real_, n)
+  # A zero anywhere in the study corrects every contrast of that study, so
+  # the effects and the covariance counts (dr_zero_adjust()) agree.
   add <- if (any(cases == 0)) 1 / 2 else 0
   for (i in seq_len(n)) {
     if (i == iref) next
     es <- if (identical(measure, "IRR")) {
       metafor::escalc(measure = "IRR", x1i = cases[i], x2i = cases[iref],
                       t1i = total[i], t2i = total[iref],
-                      add = add, to = "only0")
+                      add = add, to = "all")
     } else if (identical(measure, "OR")) {
       metafor::escalc(measure = "OR", ai = cases[i], bi = total[i] - cases[i],
                       ci = cases[iref], di = total[iref] - cases[iref],
-                      add = add, to = "only0")
+                      add = add, to = "all")
     } else {
       metafor::escalc(measure = "RR", ai = cases[i], bi = total[i] - cases[i],
                       ci = cases[iref], di = total[iref] - cases[iref],
-                      add = add, to = "only0")
+                      add = add, to = "all")
     }
     y[i] <- as.numeric(es$yi)
     v[i] <- as.numeric(es$vi)
   }
   list(y = y, v = v)
+}
+
+#' The counts after escalc's add = 1/2, to = "all" correction
+#'
+#' For a two-by-two table escalc adds 1/2 to all four cells, so the cases rise
+#' by 1/2 and the denominator (cases plus non-cases) by 1. For person-time
+#' data only the event counts are corrected; the person-time is unchanged.
+#'
+#' @keywords internal
+#' @noRd
+dr_zero_adjust <- function(cases, total, design) {
+  list(cases = cases + 0.5,
+       total = if (identical(design, "ir")) total else total + 1)
 }

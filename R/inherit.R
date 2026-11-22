@@ -28,7 +28,7 @@
 dr_entry <- function(kind, data, call, roles_args, sm, method.tau, proc,
                      covariance, method.smd, shape, knots, powers,
                      ed50 = NULL, steepness = NULL, grid, at,
-                     dose.unit, level, common, random) {
+                     dose.unit, level, common, random, reference = NULL) {
   dr_check_level(level)
   method <- dr_method_tau(method.tau, common, random)
 
@@ -40,10 +40,11 @@ dr_entry <- function(kind, data, call, roles_args, sm, method.tau, proc,
                     studies = prep$frame$studlab)
   prep  <- dr_drop_thin(prep, shp, proc)
   # A shape with a parameter that is not linear in the model, which is the
-  # Emax family, is resolved by fitting over a grid and keeping the best.
-  # Every other shape passes straight through.
+  # Emax family and a fractional polynomial with no powers given, is resolved
+  # by fitting over a grid in one stage by maximum likelihood and keeping the
+  # best; the winner is then fitted under the caller's settings below. Every
+  # other shape passes straight through.
   shp   <- dr_profile_shape(shp, prep$frame, sm = sm, intake = roles$intake,
-                            proc = proc, method = method,
                             covariance = covariance, method.smd = method.smd)
   fit   <- dr_fit(prep$frame, sm = sm, intake = roles$intake, proc = proc,
                   method = method, covariance = covariance,
@@ -55,7 +56,10 @@ dr_entry <- function(kind, data, call, roles_args, sm, method.tau, proc,
             entry = if (identical(kind, "cont")) "easydrcont" else "easydrbin",
             args = dr_entry_args(roles, sm, method.tau, proc, covariance, shp,
                                  dose.unit, level, common, random,
-                                 method.smd = method.smd))
+                                 method.smd = method.smd, knots = knots,
+                                 powers = powers, ed50 = ed50,
+                                 steepness = steepness),
+            reference = reference)
 }
 
 #' Leave out the studies a two-stage shape cannot be fitted in
@@ -103,7 +107,8 @@ dr_drop_thin <- function(prep, shape, proc) {
 #' @noRd
 dr_entry_args <- function(roles, sm, method.tau, proc, covariance, shape,
                           dose.unit, level, common, random,
-                          method.smd = NULL) {
+                          method.smd = NULL, knots = NULL, powers = NULL,
+                          ed50 = NULL, steepness = NULL) {
   cols <- roles[setdiff(names(roles), "intake")]
   cols <- cols[!vapply(cols, is.null, logical(1))]
   model <- list(sm = sm, method.tau = method.tau, proc = proc, shape = shape,
@@ -111,6 +116,13 @@ dr_entry_args <- function(roles, sm, method.tau, proc, covariance, shape,
                 random = random)
   if (!is.null(covariance)) model$covariance <- covariance
   if (!is.null(method.smd)) model$method.smd <- method.smd
+  # The shape parameters the caller fixed, kept apart from the resolved
+  # shape: a bootstrap that profiles again must search only the parameters
+  # the profile chose, and hold these at the values given (audit F6).
+  if (!is.null(knots))     model$knots     <- knots
+  if (!is.null(powers))    model$powers    <- powers
+  if (!is.null(ed50))      model$ed50      <- ed50
+  if (!is.null(steepness)) model$steepness <- steepness
   c(cols, model)
 }
 
@@ -174,6 +186,13 @@ dr_inherited_line <- function(inh) {
 #' no longer suits raises its own error, which the caller records against that
 #' row rather than swallowing.
 #'
+#' The reference dose travels too. A subset whose lowest reference dose differs
+#' from the full fit's would otherwise report its contrasts against a
+#' different dose, so a leave-one-out row or a subgroup level would compare a
+#' different quantity from the overall fit without the label saying so
+#' (audit F7). The engine never sees this reference: it only fixes the dose
+#' the predicted effects and contrasts are measured against.
+#'
 #' @param extra arguments to override for this refit only, used for the dose a
 #'   curve is compared at. Nothing about the model may be overridden this way.
 #'
@@ -186,7 +205,7 @@ dr_refit <- function(inh, keep, extra = NULL) {
   if (length(extra) > 0L) {
     forbidden <- intersect(names(extra),
                            c("sm", "proc", "method.tau", "shape", "covariance",
-                             "method.smd", "level"))
+                             "method.smd", "level", "reference"))
     if (length(forbidden) > 0L) {
       stop("easydr: a refit may not override ",
            paste(forbidden, collapse = ", "),
@@ -194,5 +213,6 @@ dr_refit <- function(inh, keep, extra = NULL) {
     }
     args[names(extra)] <- extra
   }
+  args$reference <- inh$reference
   do.call(inh$entry, c(list(data = sub), args))
 }

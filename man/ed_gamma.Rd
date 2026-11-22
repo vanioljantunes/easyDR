@@ -16,7 +16,9 @@ most 1.}
 A list with \code{ed}, one dose per \code{gamma}; \code{ed_max}, the dose of the
 largest effect; \code{emax}, that effect; and \code{at_edge}, \code{TRUE} when the
 largest effect sits at the top of the observed range rather than at a
-turning point.
+turning point. For an Emax shape, \code{asymptotic} holds the ED50 parameter
+of the fitted curve and the doses reaching each \code{gamma} of its ceiling,
+\code{ED50 (gamma / (1 - gamma))^(1 / steepness)}.
 }
 \description{
 \code{ed_gamma()} reads one number off a fitted curve: the smallest dose at
@@ -32,6 +34,14 @@ is which.
 
 This gives the point estimate only. For an interval use
 \code{\link[=easydr_target_dose]{easydr_target_dose()}}, which bootstraps it.
+
+One definition is used for every shape: the fraction of the largest effect
+inside the observed dose range (Crippa and Orsini 2016, equation 15). An
+Emax curve also carries a parameter called ED50, the dose giving half of
+the ceiling the curve rises towards, which the fitted range may not reach.
+That is a different quantity, and for the Emax family it is returned
+alongside as \code{asymptotic}, labelled as the parameter, rather than being
+printed in the ED50 row.
 }
 \examples{
 data(aripiprazole)

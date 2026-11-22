@@ -134,23 +134,20 @@ dr_shape_log <- function(dose) {
 #' @keywords internal
 #' @noRd
 dr_shape_rcs <- function(dose, knots) {
-  positive <- dose[dose > 0]
-  if (length(positive) == 0L) positive <- dose
-
-  k <- if (is.null(knots)) {
-    as.numeric(stats::quantile(positive, c(0.10, 0.50, 0.90), names = FALSE))
-  } else if (length(knots) == 1L) {
-    n <- as.integer(knots)
+  # One rule for every spelling of the request (audit F5). A count, `NULL`
+  # (which is a count of 3) and a vector of proportions are all percentiles
+  # of every dose in the table, the reference rows included, which is how
+  # Crippa and Orsini place them and how easydr_knot_sensitivity() reads its
+  # percentiles. A count uses Harrell's default positions for that count.
+  # Anything else is the knot positions themselves.
+  k <- if (is.null(knots) || length(knots) == 1L) {
+    n <- if (is.null(knots)) 3L else as.integer(knots)
     if (is.na(n) || n < 3L) {
       stop("easydr: a restricted cubic spline needs at least 3 knots. ",
            "`knots` was given as ", knots, ".", call. = FALSE)
     }
-    as.numeric(stats::quantile(positive, seq(0.05, 0.95, length.out = n),
-                               names = FALSE))
+    as.numeric(stats::quantile(dose, dr_rcs_positions(n), names = FALSE))
   } else if (all(knots > 0 & knots < 1)) {
-    # Proportions are percentiles of every dose in the table, the reference
-    # rows included, which is how Orsini and Crippa place them and how
-    # easydr_knot_sensitivity() reads its percentiles.
     as.numeric(stats::quantile(dose, knots, names = FALSE))
   } else {
     as.numeric(knots)
@@ -185,6 +182,27 @@ dr_shape_rcs <- function(dose, knots) {
          colnames(m) <- c("dose", paste0("dose_nl", seq_len(ncol(m) - 1L)))
          m
        })
+}
+
+#' Harrell's default knot positions, as percentiles, for a knot count
+#'
+#' The positions `Hmisc::rcspline.eval` and `rms::rcs` use for 3 to 7 knots.
+#' Beyond 7 they spread evenly between the 2.5th and 97.5th percentiles, as
+#' rcspline.eval does. The percentiles are taken of the whole dose vector
+#' with `stats::quantile`; rcspline.eval's small-sample rule, which moves the
+#' outer knots to the fifth smallest and largest observation, is not applied,
+#' because the dosresmeta convention is the plain percentile.
+#'
+#' @keywords internal
+#' @noRd
+dr_rcs_positions <- function(n) {
+  switch(as.character(n),
+         "3" = c(0.10, 0.50, 0.90),
+         "4" = c(0.05, 0.35, 0.65, 0.95),
+         "5" = c(0.05, 0.275, 0.50, 0.725, 0.95),
+         "6" = c(0.05, 0.23, 0.41, 0.59, 0.77, 0.95),
+         "7" = c(0.025, 0.1833, 0.3417, 0.50, 0.6583, 0.8167, 0.975),
+         seq(0.025, 0.975, length.out = n))
 }
 
 #' Fractional polynomial through the engine
@@ -464,13 +482,26 @@ dr_emax_shape <- function(dose, ed50, steepness, name) {
 #'
 #' Chosen on the log likelihood, which for a fixed number of coefficients
 #' orders the candidates the same way the deviance does. A candidate the
-#' engine cannot fit is skipped rather than failing the call: a grid is
-#' expected to contain values the data will not support.
+#' engine cannot fit, or that the engine reports as not converged, is skipped
+#' rather than failing the call: a grid is expected to contain values the
+#' data will not support.
+#'
+#' Every candidate is fitted in one stage by maximum likelihood, whatever the
+#' caller asked for, and the winner is then refitted under the caller's
+#' settings by `dr_entry()`. The two-stage likelihood is the likelihood of
+#' the study-specific coefficients, which change with the basis (rescaling a
+#' column rescales them and their covariance), and REML adds a term in the
+#' design. Neither is comparable across candidates: on the alcohol data the
+#' two-stage REML profile picked fractional-polynomial powers of (-2, -2)
+#' and the one-stage ML profile (-2, 1), from a difference in scale alone.
+#' Only the one-stage ML likelihood is of the same data for every candidate,
+#' which is the rule `dr_refit_ml()` already applies to AIC (audit F2;
+#' Royston and Altman choose powers by ML deviance).
 #'
 #' @keywords internal
 #' @noRd
-dr_profile_shape <- function(shape, frame, sm, intake, proc, method,
-                             covariance, method.smd) {
+dr_profile_shape <- function(shape, frame, sm, intake, covariance,
+                             method.smd) {
   if (!isTRUE(shape$profile)) return(shape)
   cand <- shape$candidates
   best <- NULL
@@ -479,10 +510,11 @@ dr_profile_shape <- function(shape, frame, sm, intake, proc, method,
     s <- try(shape$respecify(cand[i, , drop = FALSE]), silent = TRUE)
     if (inherits(s, "try-error")) next
     f <- try(suppressWarnings(
-      dr_fit(frame, sm = sm, intake = intake, proc = proc, method = method,
+      dr_fit(frame, sm = sm, intake = intake, proc = "1stage", method = "ml",
              covariance = covariance, method.smd = method.smd, shape = s)),
       silent = TRUE)
     if (inherits(f, "try-error")) next
+    if (isFALSE(f$converged)) next
     ll <- dr_try_num(stats::logLik(f))
     if (is.finite(ll) && ll > best_ll) {
       best_ll <- ll

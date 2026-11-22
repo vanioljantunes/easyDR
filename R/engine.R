@@ -11,10 +11,20 @@
 #' @noRd
 dr_covariance <- function(intake, sm, covariance) {
   if (!is.null(covariance)) {
-    allowed <- c("gl", "h", "md", "smd", "indep", "user")
+    # The approximations a binary table can carry. The mean-difference ones
+    # are chosen from `sm` for a continuous outcome and never given by name:
+    # easydr() refuses `covariance` with sm = "MD" or "SMD", and a binary fit
+    # asked for "md" used to reach the engine, which then failed on a
+    # missing argument (audit F18).
+    allowed <- if (identical(intake, "continuous")) {
+      c("md", "smd")
+    } else {
+      c("gl", "h", "indep", "user")
+    }
     if (!covariance %in% allowed) {
       stop("easydr: covariance must be one of ",
-           paste(dQuote(allowed), collapse = ", "), ".", call. = FALSE)
+           paste(dQuote(setdiff(allowed, "user")), collapse = ", "),
+           " for this outcome.", call. = FALSE)
     }
     return(covariance)
   }

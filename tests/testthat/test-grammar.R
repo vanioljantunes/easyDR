@@ -34,8 +34,11 @@ test_that("the grammar is the one meta users already know", {
 })
 
 test_that("a standard table fits with data as the only supplied argument", {
-  # SC-001: one call, no reshaping. sm keeps its default.
-  tab <- crc_table("counts")
+  # SC-001: one call, no reshaping. sm keeps its default. The alcohol and
+  # cardiovascular table reports its effects, so the default risk ratio
+  # names the scale; a person-time table of counts would need sm = "IRR"
+  # (audit F4), which is tested in test-audit-fixes.R.
+  tab <- cvd_table()
   fit <- easydrbin(tab)
   expect_s3_class(fit, "easydr_result")
   expect_equal(fit$sm, "RR")

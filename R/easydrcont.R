@@ -27,11 +27,14 @@ easydrcont <- function(data,
                        dose.unit = NULL,
                        level = 0.95,
                        random = TRUE,
-                       common = FALSE) {
+                       common = FALSE,
+                       reference = NULL) {
   call <- match.call()
   sm <- match.arg(sm, c("MD", "SMD"))
   method.smd <- match.arg(method.smd, c("cohens", "hedges", "glass"))
 
+  # `reference` is set by dr_refit() only: the dose a sensitivity refit
+  # measures its contrasts against, inherited from the full fit (audit F7).
   dr_entry("cont", data, call,
            roles_args = list(dose = dose, studlab = studlab,
                              mean.e = mean.e, sd.e = sd.e, n.e = n.e,
@@ -41,5 +44,5 @@ easydrcont <- function(data,
            shape = shape, knots = knots, powers = powers,
            ed50 = ed50, steepness = steepness, grid = grid,
            at = at, dose.unit = dose.unit, level = level, common = common,
-           random = random)
+           random = random, reference = reference)
 }

@@ -19,6 +19,10 @@ dr_refit_shape <- function(f, shape, knots = NULL) {
   args$shape  <- shape
   args$knots  <- knots
   args$powers <- NULL
+  # The fixed Emax parameters belong to the shape that was fitted, not to
+  # the one being tried.
+  args$ed50      <- NULL
+  args$steepness <- NULL
   out <- try(suppressWarnings(
     do.call(inh$entry, c(list(data = inh$data), args))), silent = TRUE)
   if (inherits(out, "try-error")) NULL else out
