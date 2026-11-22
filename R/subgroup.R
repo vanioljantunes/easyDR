@@ -7,7 +7,7 @@
 # re-derived any of those would print cleanly and answer a different question.
 #
 # Each level keeps its own tau, the way meta's subgroup analysis does. The
-# test for subgroup differences is not a comparison of those separate fits:
+# test for subgroup interaction is not a comparison of those separate fits:
 # it is the meta-regression of Berlin, Longnecker and Greenland (1993), the
 # whole model fitted once with the subgroup column as a moderator and the
 # moderator terms tested jointly by a Wald test. That is how the Crippa group
@@ -49,11 +49,12 @@ dr_subgroup_fits <- function(object, var) {
     if (!is.null(lv)) lv <- unname(codes[tolower(trimws(lv))])
   }
   # A factor sets the order the levels are drawn in, as a published figure
-  # may list them; anything else is sorted.
+  # may list them; anything else is sorted in the C locale, so the order
+  # does not change between machines (audit F17).
   levels_in_order <- if (!is.null(lv)) {
     intersect(lv, value)
   } else {
-    unique(value[order(value)])
+    sort(unique(value), method = "radix")
   }
 
   fits <- vector("list", length(levels_in_order))
@@ -105,7 +106,7 @@ dr_subgroup_fits <- function(object, var) {
   out
 }
 
-#' The test for subgroup differences
+#' The test for subgroup interaction (dose terms by subgroup, a meta-regression)
 #'
 #' Berlin, Longnecker and Greenland (1993): the inherited model fitted once
 #' with the subgroup column as a study-level moderator, through the engine,
@@ -127,7 +128,7 @@ dr_subgroup_difference <- function(object, var) {
   m$test
 }
 
-#' The test for subgroup differences, as one line of a figure
+#' The test for subgroup interaction, as one line of a figure
 #'
 #' Written the way the linearity test is, so the two read as a pair.
 #'
@@ -136,9 +137,9 @@ dr_subgroup_difference <- function(object, var) {
 dr_subgroup_test_note <- function(sg) {
   t <- sg$test
   if (is.null(t) || !isTRUE(t$estimable)) {
-    return("Test of subgroup differences: not available")
+    return("Test for subgroup interaction: not available")
   }
-  paste0("Test of subgroup differences: X2 = ",
+  paste0("Test for subgroup interaction: X2 = ",
          formatC(t$chi2, format = "f", digits = 2), " (df = ", t$df, "), ",
          dr_p_lab(t$p))
 }

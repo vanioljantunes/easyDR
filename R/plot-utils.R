@@ -903,13 +903,13 @@ dr_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
       paste0("adjusted R\u00b2 = ", formatC(g$r2adj, format = "f", digits = 2), ";")
     } else "adjusted R\u00b2 not available;")
   }
-  # A curve drawn by subgroup carries the test for subgroup differences
+  # A curve drawn by subgroup carries the test for subgroup interaction
   # (Berlin, 1993), the comparison its several lines invite.
   if (isTRUE(subgroup)) {
     t <- x$subgroup$test
     rest <- c(rest, if (!is.null(t) && isTRUE(t$estimable)) {
-      paste0("test of subgroup differences ", pv(t$p), ";")
-    } else "test of subgroup differences not available;")
+      paste0("test for subgroup interaction ", pv(t$p), ";")
+    } else "test for subgroup interaction not available;")
   }
   # The last clause ends the sentence.
   rest[length(rest)] <- sub(";$", ".", rest[length(rest)])

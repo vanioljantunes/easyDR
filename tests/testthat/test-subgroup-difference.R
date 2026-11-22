@@ -1,4 +1,4 @@
-# The test for subgroup differences is the moderator Wald test of Berlin,
+# The test for subgroup interaction is the moderator Wald test of Berlin,
 # Longnecker and Greenland (1993), run on the overall fit.
 
 red_design_fit <- function(method.tau) {
@@ -28,7 +28,7 @@ test_that("the subgroup test is the moderator Wald test of the overall fit", {
 test_that("the forest and curve notes write the test", {
   fit <- red_design_fit("reml")
   expect_match(dr_subgroup_test_note(fit$subgroup),
-               "^Test of subgroup differences: X2 = [0-9.]+ \\(df = 1\\), p = ")
+               "^Test for subgroup interaction: X2 = [0-9.]+ \\(df = 1\\), p = ")
   expect_identical(dr_subgroup_test_note(list(test = list(estimable = FALSE))),
-                   "Test of subgroup differences: not available")
+                   "Test for subgroup interaction: not available")
 })

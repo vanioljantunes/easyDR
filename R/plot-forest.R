@@ -187,7 +187,7 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
   # The deviance and linearity tests of the overall fit sit under its I2.
   dev_y    <- -1
   lin_y    <- -2
-  # A subgroup forest adds the test for subgroup differences under them.
+  # A subgroup forest adds the test for subgroup interaction under them.
   sub_y    <- if (use_sub) -3 else lin_y
   ylim     <- c(sub_y - 0.5, header_y + 0.5)
   # Each subtotal with its tests, and the overall row with its tests, sit in
