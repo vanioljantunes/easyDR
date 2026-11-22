@@ -95,7 +95,7 @@ test_that("every analysis of feature 003 is reached on both entry points", {
 
     # The comparison quantity follows the shape, never the entry point.
     expect_identical(l$quantity,
-                     if (identical(k$shape, "linear")) "slope" else "predicted")
+                     if (identical(k$shape, "linear")) "slope" else "trend")
   }
 
   # Moderators need a study-level covariate, which only the binary table

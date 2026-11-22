@@ -57,19 +57,28 @@ test_that("the refits themselves come back so a row can be inspected", {
   expect_equal(one$counts$studies, length(cvd_studies) - 1L)
 })
 
-test_that("a curve is compared at a named dose and never given a slope", {
+test_that("a curve is compared on its trend per increment, or at a named dose", {
   cv <- easydrbin(alcohol_cvd, sm = "RR", dose.unit = "g/day",
                   shape = "quadratic", at = c(10, 25))
-  l  <- easydr_loo(cv, at = 25, quiet = TRUE)
+  l  <- easydr_loo(cv, at = 25, quiet = TRUE, plot = FALSE)
 
-  expect_identical(l$quantity, "predicted")
-  expect_equal(l$dose, 25)
+  # An increment on a curve is the linear trend of the same studies.
+  expect_identical(l$quantity, "trend")
+  expect_match(l$label, "^Per 25 g/day increase$")
   expect_equal(nrow(l$table), length(cvd_studies))
   expect_true(all(l$table$status == "fitted"))
+  expect_true(all(is.finite(l$table$p_effect)))
+  out <- paste(capture.output(print(l)), collapse = "
+")
+  expect_match(out, "the linear trend")
+  header <- grep("^ omitted", strsplit(out, "
+")[[1]], value = TRUE)
+  expect_false(grepl("shift", header))
 
-  out <- paste(capture.output(print(l)), collapse = "\n")
-  expect_match(out, "predicted RR at 25 g/day")
-  expect_false(grepl("the slope, because this shape has one term", out))
+  # A named dose against the reference stays a contrast on the curve.
+  l2 <- easydr_loo(cv, at = c(25, 0), quiet = TRUE, plot = FALSE)
+  expect_identical(l2$quantity, "predicted")
+  expect_equal(l2$dose, 25)
 })
 
 test_that("a curve refit keeps the knots of the full fit on every row", {

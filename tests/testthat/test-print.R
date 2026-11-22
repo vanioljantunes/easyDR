@@ -17,7 +17,7 @@ test_that("one print carries every block of the contract layout", {
   expect_match(out, "Reference dose: 0 g/day")
   expect_match(out, "Departure from linearity")
   expect_match(out, "Heterogeneity: Q =")
-  expect_match(out, "I-squared")
+  expect_match(out, "I2 = ")
   expect_match(out, "Predicted IRR")
   expect_match(out, "95% CI")
   expect_match(out, "95% PI")

@@ -8,7 +8,7 @@ Departure from linearity: not estimable
   a linear fit has one term, so there is nothing to test it against
   5 of 5 studies have three or more dose levels
 
-Heterogeneity: Q = 2.85 (df = 4), p = 0.583; I-squared = 0%
+Heterogeneity: Q = 2.85 (df = 4), p = 0.583; I2 = 0%
 
 Predicted SMD
  dose (mg/day) SMD       95% CI         95% PI        

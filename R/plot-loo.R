@@ -84,85 +84,135 @@ dr_loo_plot <- function(out, object, main = NULL, xlab = NULL, ylab = NULL,
     p + ggplot2::scale_y_continuous(limits = ylim)
   }
 
-  # The table under the figure. The bold last row is the fit with nothing
-  # omitted, so every row above it reads as a departure from it.
+  # The rows under the figure are drawn as a forest: one row per omission
+  # with its interval on the effect axis, the fit with nothing omitted as a
+  # diamond at the foot, and the statistics in columns either side.
   fmt <- function(v) ifelse(is.na(v), "-",
                             format(round(v, digits), nsmall = digits))
+  pct <- function(v) ifelse(is.na(v), "-",
+                            paste0(format(round(v, 1), nsmall = 1), "%"))
+  r2f <- function(v) ifelse(is.na(v), "-", format(round(v, 2), nsmall = 2))
   shift <- ifelse(is.na(tab$shift), "-",
                   paste0(ifelse(tab$shift >= 0, "+", ""),
                          format(round(tab$shift, digits), nsmall = digits)))
-  pct <- function(v) ifelse(is.na(v), "-",
-                            paste0(format(round(v, 1), nsmall = 1), "%"))
+  full_fit <- out$full$fit
+  if (is.null(full_fit)) full_fit <- base
   full_i2 <- if (isTRUE(base$heterogeneity$estimable)) {
     pct(base$heterogeneity$i2)
   } else {
     "-"
   }
 
-  cell <- data.frame(
-    ` `         = c(ifelse(is.na(tab$key), "", tab$key), ""),
-    Omitting    = c(tab$label, "Overall"),
-    est         = c(fmt(tab$estimate), fmt(out$full$est)),
-    `95% CI`    = c(ifelse(is.na(tab$lb), "-",
-                           paste0(fmt(tab$lb), " to ", fmt(tab$ub))),
-                    paste0(fmt(out$full$lb), " to ", fmt(out$full$ub))),
-    Shift       = c(shift, "-"),
-    `I-squared` = c(pct(tab$i2), full_i2),
-    check.names = FALSE, stringsAsFactors = FALSE)
-  names(cell)[3L] <- out$label
+  n     <- nrow(tab)
+  ypos  <- c(rev(seq_len(n)) + 1, 0.6)
+  face  <- c(rep("plain", n), "bold")
+  hdr_y <- n + 2
+  ylim  <- c(0.2, hdr_y + 0.5)
+  zebra <- dr_zebra(ypos[seq_len(n)])
 
-  tg <- dr_stats_grob(cell)
-  # Embolden the final row, the one nothing was left out of.
-  last <- nrow(cell) + 1L
-  for (i in seq_len(ncol(cell))) {
-    idx <- which(tg$layout$t == last & tg$layout$l == i &
-                   grepl("core-fg", tg$layout$name))
-    # tableGrob already stores the face as `font`; setting `fontface` beside
-    # it makes grid refuse to draw the cell at all.
-    if (length(idx)) {
-      tg$grobs[[idx]]$gp$fontface <- NULL
-      tg$grobs[[idx]]$gp$font <- 2L
-    }
-  }
+  left_cols <- list(` ` = c(ifelse(is.na(tab$key), "", tab$key), ""),
+                    Omitting = c(tab$label, "Overall"))
+  right_cols <- list(
+    x = c(ifelse(is.na(tab$lb), "-",
+                 paste0(fmt(tab$estimate), " (", fmt(tab$lb), " to ",
+                        fmt(tab$ub), ")")),
+          paste0(fmt(out$full$est), " (", fmt(out$full$lb), " to ",
+                 fmt(out$full$ub), ")")),
+    p = c(dr_fmt_p(tab$p_effect), dr_fmt_p(if (is.null(out$full$p)) NA else out$full$p)))
+  names(right_cols)[1L] <- paste0(object$sm, " (", format(100 * out$level), "% CI)")
+  if (isTRUE(out$show_shift)) right_cols$Shift <- c(shift, "-")
+  right_cols <- c(right_cols, list(
+    I2 = c(pct(tab$i2), full_i2),
+    `p non-linearity` = c(dr_fmt_p(tab$p_nonlin),
+                          dr_fmt_p(dr_sens_stat(full_fit$nonlinearity, "estimable", "p"))),
+    `p deviance` = c(dr_fmt_p(tab$p_dev),
+                     dr_fmt_p(dr_sens_stat(full_fit$gof, "available", "p"))),
+    `Adjusted R2` = c(r2f(tab$r2adj),
+                      r2f(dr_sens_stat(full_fit$gof, "available", "r2adj")))))
 
-  # The table under a leave-one-out grows one row per study, so the height is
-  # driven by the table rather than by the panel, and the width by its columns.
+  p_left  <- dr_text_panel(left_cols, c(FALSE, FALSE), ypos = ypos,
+                           face = face, header_y = hdr_y, ylim = ylim,
+                           zebra = zebra)
+  p_right <- dr_text_panel(right_cols, rep(TRUE, length(right_cols)),
+                           ypos = ypos, face = face, header_y = hdr_y,
+                           ylim = ylim, zebra = zebra,
+                           center = rep(TRUE, length(right_cols)))
+
+  tr  <- if (ratio) log else identity
+  est <- tr(c(tab$estimate, out$full$est))
+  lb  <- tr(c(tab$lb, out$full$lb))
+  ub  <- tr(c(tab$ub, out$full$ub))
+  null <- if (ratio) 0 else 0
+  lo  <- min(c(lb, null), na.rm = TRUE); hi <- max(c(ub, null), na.rm = TRUE)
+  pad <- 0.08 * (hi - lo); lo <- lo - pad; hi <- hi + pad
+  rows <- data.frame(y = ypos[seq_len(n)], est = est[seq_len(n)],
+                     lb = lb[seq_len(n)], ub = ub[seq_len(n)])
+  rows <- rows[is.finite(rows$est), , drop = FALSE]
+  dh  <- 0.32
+  dia <- data.frame(x = c(lb[n + 1], est[n + 1], ub[n + 1], est[n + 1]),
+                    y = 0.6 + c(0, dh, 0, -dh))
+  ticks <- dr_plot_ticks(lo, hi, ratio)
+  keep  <- ticks$at >= lo & ticks$at <= hi
+  xlab_f <- out$label
+  p_eff <- ggplot2::ggplot(rows, ggplot2::aes(x = .data$est, y = .data$y)) +
+    zebra +
+    ggplot2::annotate("segment", x = null, xend = null, y = 0.2,
+                      yend = hdr_y - 0.5, colour = "grey25", linewidth = 0.4) +
+    ggplot2::annotate("segment", x = est[n + 1], xend = est[n + 1], y = 0.2,
+                      yend = hdr_y - 0.5, linetype = "dashed",
+                      colour = "grey40", linewidth = 0.4) +
+    ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$lb, xmax = .data$ub),
+                           width = 0.26, orientation = "y", linewidth = 0.45) +
+    ggplot2::geom_point(shape = 15L, size = 2.2) +
+    ggplot2::geom_polygon(data = dia, inherit.aes = FALSE,
+                          ggplot2::aes(x = .data$x, y = .data$y),
+                          fill = "black") +
+    ggplot2::scale_x_continuous(breaks = ticks$at[keep],
+                                labels = ticks$labels[keep]) +
+    ggplot2::coord_cartesian(xlim = c(lo, hi), ylim = ylim) +
+    ggplot2::labs(x = xlab_f) +
+    dr_gg_theme(axis = TRUE) +
+    ggplot2::theme(axis.title.x = ggplot2::element_text(face = "bold", size = 9,
+                                                        margin = ggplot2::margin(t = 4)))
+
+  row_in  <- 0.24
+  lw <- dr_panel_width(left_cols); rw <- dr_panel_width(right_cols)
+  ew <- 2.6
+  fg <- gridExtra::arrangeGrob(
+    ggplot2::ggplotGrob(p_left), ggplot2::ggplotGrob(p_eff),
+    ggplot2::ggplotGrob(p_right), ncol = 3,
+    widths = grid::unit.c(grid::unit(lw, "in"), grid::unit(ew, "in"),
+                          grid::unit(rw, "in")))
+  fw_in <- lw + ew + rw
+  fh_in <- (ylim[2] - ylim[1]) * row_in + 0.5
+
   spec <- dr_file_spec(file.name, filetype, path, width, height,
                        what = "easydr_loo()")
   title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
-  tw_in    <- dr_grob_width_in(tg)
-  th_in    <- dr_height_in(dr_grob_height(tg))
   side     <- position %in% c("left", "right")
   if (side) {
-    # Side by side, the panel keeps a readable width of its own and the
-    # figure is as tall as the longer of the two.
-    w_in <- 6.2 + tw_in + 0.5
-    size <- dr_fig_size(w_in, max(4.2, th_in + 0.4) + title_in + 0.12,
-                        max.w = 20)
+    w_in <- 6.2 + fw_in + 0.3
+    size <- dr_fig_size(w_in, max(4.2, fh_in) + title_in + 0.12, max.w = 22)
   } else {
-    w_in <- max(7.6, tw_in + 0.5)
-    size <- dr_fig_size(w_in,
-                        min(max(0.42 * w_in, 2.9), 4.0) + title_in + th_in +
-                          0.22)
+    w_in <- max(7.6, fw_in + 0.3)
+    size <- dr_fig_size(w_in, 3.8 + title_in + fh_in + 0.2, max.w = 22)
   }
   con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
   on.exit(dr_end_file(con), add = TRUE)
 
-  tbl_w <- grid::unit(tw_in + 0.3, "in")
+  fh <- grid::unit(fh_in, "in")
+  fwu <- grid::unit(fw_in, "in")
   g <- switch(position,
-    top = dr_draw_stack(p, NULL, title = main, footer = tg,
-                        footer_h = dr_grob_height(tg)),
+    top = dr_draw_stack(p, NULL, title = main, footer = fg, footer_h = fh),
     bottom = dr_draw_stack(gridExtra::arrangeGrob(
-      grobs = list(tg, ggplot2::ggplotGrob(p)), ncol = 1,
-      heights = grid::unit.c(dr_grob_height(tg) + grid::unit(10, "pt"),
+      grobs = list(fg, ggplot2::ggplotGrob(p)), ncol = 1,
+      heights = grid::unit.c(fh + grid::unit(10, "pt"),
                              grid::unit(1, "null"))), NULL, title = main),
     left = dr_draw_stack(gridExtra::arrangeGrob(
-      grobs = list(ggplot2::ggplotGrob(p), tg), ncol = 2,
-      widths = grid::unit.c(grid::unit(1, "null"), tbl_w)), NULL,
-      title = main),
+      grobs = list(ggplot2::ggplotGrob(p), fg), ncol = 2,
+      widths = grid::unit.c(grid::unit(1, "null"), fwu)), NULL, title = main),
     right = dr_draw_stack(gridExtra::arrangeGrob(
-      grobs = list(tg, ggplot2::ggplotGrob(p)), ncol = 2,
-      widths = grid::unit.c(tbl_w, grid::unit(1, "null"))), NULL,
-      title = main))
+      grobs = list(fg, ggplot2::ggplotGrob(p)), ncol = 2,
+      widths = grid::unit.c(fwu, grid::unit(1, "null"))), NULL, title = main))
   invisible(list(table = tab, curves = curves, grob = g))
 }

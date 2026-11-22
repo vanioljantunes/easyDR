@@ -12,12 +12,45 @@
 #'
 #' @keywords internal
 #' @noRd
-dr_sens_quantity <- function(fit, at) {
+dr_sens_quantity <- function(fit, at, trend = NULL) {
   back <- if (fit$ratio) exp else identity
+  # An increment asked of a curve is the dose-response trend per that many
+  # units, which is the linear fit of the same studies: the per-increase
+  # effect a forest of trends reports. The curve itself has no single step.
+  if (!is.null(trend)) {
+    p <- dr_pooled_at(trend, at)
+    return(list(kind = "trend", dose = NA_real_, label = p$label,
+                raw = p$est, est = back(p$est), lb = back(p$lb),
+                ub = back(p$ub), p = p$p))
+  }
   p    <- dr_pooled_at(fit, at)
   list(kind = if (is.na(p$at)) "slope" else "predicted", dose = p$at,
        label = p$label, raw = p$est,
-       est = back(p$est), lb = back(p$lb), ub = back(p$ub))
+       est = back(p$est), lb = back(p$lb), ub = back(p$ub), p = p$p)
+}
+
+#' The same studies refitted as a straight line in dose
+#'
+#' Everything else is inherited; only the shape changes, so the trend row and
+#' the curve row of one omission describe the same studies.
+#'
+#' @keywords internal
+#' @noRd
+dr_refit_trend <- function(inh, keep) {
+  sub  <- inh$data[as.character(inh$data[[inh$studlab]]) %in% keep, ,
+                   drop = FALSE]
+  args <- inh$args
+  args$shape <- "linear"
+  args[c("knots", "powers", "ed50", "steepness")] <- NULL
+  args$reference <- inh$reference
+  do.call(inh$entry, c(list(data = sub), args))
+}
+
+#' Whether a comparison asks for a per-increment trend of a curve
+#' @keywords internal
+#' @noRd
+dr_wants_trend <- function(full, dose) {
+  identical(dose$type, "increment") && !identical(full$shape$name, "linear")
 }
 
 #' Refit the inherited model once per subset and tabulate the movement
@@ -29,8 +62,11 @@ dr_sens_quantity <- function(fit, at) {
 #' @keywords internal
 #' @noRd
 dr_sens_loop <- function(inh, subsets, labels, full, at, quiet, kind) {
-  dose <- dr_result_at(full, at)
-  base <- dr_sens_quantity(full, dose)
+  dose  <- dr_result_at(full, at)
+  trend <- dr_wants_trend(full, dose)
+  base  <- dr_sens_quantity(full, dose,
+                            if (trend) dr_refit_trend(inh, inh$studies))
+  base$fit <- full
   n    <- length(subsets)
   rows <- vector("list", n)
   fits <- vector("list", n)
@@ -48,7 +84,9 @@ dr_sens_loop <- function(inh, subsets, labels, full, at, quiet, kind) {
                                conditionMessage(res))
       next
     }
-    q <- tryCatch(dr_sens_quantity(res, dose), error = function(e) e)
+    q <- tryCatch(dr_sens_quantity(res, dose,
+                                   if (trend) dr_refit_trend(inh, keep)),
+                  error = function(e) e)
     if (inherits(q, "error")) {
       rows[[i]] <- dr_sens_row(labels[i], length(keep), NULL, base,
                                conditionMessage(q))
@@ -89,6 +127,24 @@ dr_sens_loop <- function(inh, subsets, labels, full, at, quiet, kind) {
   )
 }
 
+#' A p value as a short string, "-" when there is none
+#' @keywords internal
+#' @noRd
+dr_fmt_p <- function(p) {
+  ifelse(is.na(p), "-", ifelse(p < 0.001, "<0.001", formatC(p, format = "f", digits = 3)))
+}
+
+#' One statistic of a refit, or NA when the fit does not carry it
+#' @keywords internal
+#' @noRd
+dr_sens_stat <- function(block, flag, name) {
+  if (is.list(block) && isTRUE(block[[flag]]) && !is.null(block[[name]])) {
+    as.numeric(block[[name]])
+  } else {
+    NA_real_
+  }
+}
+
 #' One row of a sensitivity table
 #' @keywords internal
 #' @noRd
@@ -99,6 +155,8 @@ dr_sens_row <- function(label, studies, got, base, reason) {
       lb = NA_real_, ub = NA_real_, estimate_raw = NA_real_,
       shift = NA_real_, abs_shift = NA_real_,
       Q = NA_real_, df = NA_integer_, p = NA_real_, i2 = NA_real_,
+      p_effect = NA_real_, p_nonlin = NA_real_, p_dev = NA_real_,
+      r2adj = NA_real_,
       status = "failed", reason = reason, stringsAsFactors = FALSE
     ))
   }
@@ -113,6 +171,10 @@ dr_sens_row <- function(label, studies, got, base, reason) {
     df = if (ok) as.integer(het$df) else NA_integer_,
     p  = if (ok) het$p else NA_real_,
     i2 = if (ok) het$i2 else NA_real_,
+    p_effect = if (is.null(q$p)) NA_real_ else q$p,
+    p_nonlin = dr_sens_stat(got$fit$nonlinearity, "estimable", "p"),
+    p_dev    = dr_sens_stat(got$fit$gof, "available", "p"),
+    r2adj    = dr_sens_stat(got$fit$gof, "available", "r2adj"),
     status = "fitted", reason = NA_character_, stringsAsFactors = FALSE
   )
 }
@@ -150,7 +212,9 @@ dr_sens_row <- function(label, studies, got, base, reason) {
 #' @param at what each refit is compared on. `NULL` (the default) uses the
 #'   `result.at` given to [easydr()], per unit of dose unless set there;
 #'   one number (an increment of dose) or `c(numerator, denominator)` overrides
-#'   it.
+#'   it. An increment asked of a curve is read as the linear trend per that
+#'   increment, from a linear fit of the same studies, because a curve has no
+#'   single step per unit; its p value is reported beside the interval.
 #' @param quiet `FALSE`, the default, prints one line per refit.
 #' @param plot `TRUE`, the default, draws the dose-response once per omitted
 #'   study over the pooled one, letters each curve, and puts the table
@@ -160,6 +224,9 @@ dr_sens_row <- function(label, studies, got, base, reason) {
 #'   title; the rest default to the fit's own labels.
 #' @param digits digits after the decimal point in the plot's table, 3 by
 #'   default.
+#' @param shift `FALSE`, the default, leaves the shift column out of the
+#'   figure and the printed table; `TRUE` adds it. The rows are ordered by the
+#'   shift either way.
 #' @param position where the curves sit against their table: `"top"` (the
 #'   default, table underneath), `"bottom"`, `"left"` or `"right"`.
 #'
@@ -194,7 +261,7 @@ dr_sens_row <- function(label, studies, got, base, reason) {
 #' @export
 easydr_loo <- function(object, at = NULL, quiet = FALSE, plot = TRUE,
                        main = NULL, xlab = NULL, ylab = NULL, ylim = NULL,
-                       digits = 3,
+                       digits = 3, shift = FALSE,
                        position = c("top", "bottom", "left", "right"),
                        filetype = c("png", "pdf", "tiff"),
                        path = NULL, file.name = NULL,
@@ -213,6 +280,7 @@ easydr_loo <- function(object, at = NULL, quiet = FALSE, plot = TRUE,
   out$table  <- out$table[ord, , drop = FALSE]
   out$refits <- out$refits[ord]
   rownames(out$table) <- NULL
+  out$show_shift <- isTRUE(shift)
   out$call <- match.call()
   # The picture is the point of a leave-one-out: a table of six near-identical
   # numbers hides the one curve that moved. Drawing it returns invisibly, so
@@ -262,6 +330,8 @@ print.easydr_sensitivity <- function(x, digits = 4, ...) {
 
   quantity <- if (identical(x$quantity, "slope")) {
     paste0("the slope, ", x$sm, " per 1 ", unit)
+  } else if (identical(x$quantity, "trend")) {
+    paste0("the linear trend, ", x$sm, " ", tolower(x$label))
   } else if (is.finite(x$dose) &&
              (!grepl(" vs ", x$label) || startsWith(x$label, "At "))) {
     paste0("the predicted ", x$sm, " at ", x$dose, " ", unit)
@@ -288,14 +358,20 @@ print.easydr_sensitivity <- function(x, digits = 4, ...) {
     est = fmt(tab$estimate),
     ci = ifelse(is.na(tab$lb), "not estimable",
                 paste0(fmt(tab$lb), " to ", fmt(tab$ub))),
+    p = dr_fmt_p(tab$p_effect),
     shift = ifelse(is.na(tab$shift), "",
                    sprintf("%+.*f", digits, tab$shift)),
     i2 = ifelse(is.na(tab$i2), "not estimable",
                 paste0(format(round(tab$i2, 1), nsmall = 1), "%")),
+    nl = dr_fmt_p(tab$p_nonlin),
+    dev = dr_fmt_p(tab$p_dev),
+    r2 = ifelse(is.na(tab$r2adj), "-", format(round(tab$r2adj, 2), nsmall = 2)),
     stringsAsFactors = FALSE
   )
   names(body) <- c(if (loo) "omitted" else "step and study", "n", x$sm,
-                   paste0(format(100 * x$level), "% CI"), "shift", "I-squared")
+                   paste0(format(100 * x$level), "% CI"), "p", "shift", "I2",
+                   "p non-linearity", "p deviance", "adjusted R2")
+  if (!isTRUE(x$show_shift)) body$shift <- NULL
   print(body, row.names = FALSE, right = FALSE)
 
   failed <- tab[tab$status == "failed", , drop = FALSE]
@@ -323,6 +399,10 @@ dr_sens_defaults <- function(x) {
   unit <- if (is.null(x$dose_unit)) "dose unit" else x$dose_unit
   out <- if (identical(x$quantity, "slope")) {
     "comparison quantity: the slope, because this shape has one term"
+  } else if (identical(x$quantity, "trend")) {
+    paste0("comparison quantity: ", tolower(x$label), " from a linear fit of ",
+           "the same studies, because a curve has no single step per unit; ",
+           "the curves, I2, non-linearity, deviance and R2 are the curve's own")
   } else if (is.finite(x$dose) &&
              (!grepl(" vs ", x$label) || startsWith(x$label, "At "))) {
     paste0("comparison quantity: the predicted effect at ", x$dose, " ", unit,

@@ -191,7 +191,7 @@ test_that("F7: leave-one-out rows are contrasts against the full fit's reference
   d <- cvd_shifted_refs()
   f <- suppressWarnings(easydr(d, sm = "RR", shape = "quadratic"))
   expect_equal(f$reference$curve, 0)
-  l <- suppressWarnings(easydr_loo(f, plot = FALSE, quiet = TRUE))
+  l <- suppressWarnings(easydr_loo(f, at = c(1, 0), plot = FALSE, quiet = TRUE))
   for (nm in names(l$refits)) {
     r <- l$refits[[nm]]
     if (is.null(r)) next

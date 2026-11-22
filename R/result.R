@@ -316,7 +316,7 @@ print.easydr_result <- function(x, digits = 3, ...) {
   if (isTRUE(x$heterogeneity$estimable)) {
     cat("Heterogeneity: Q = ", round(x$heterogeneity$Q, 2), " (df = ",
         x$heterogeneity$df, "), p = ",
-        format.pval(x$heterogeneity$p, digits = 3), "; I-squared = ",
+        format.pval(x$heterogeneity$p, digits = 3), "; I2 = ",
         round(x$heterogeneity$i2, 1), "%\n", sep = "")
   } else {
     cat("Heterogeneity: not estimable (", x$heterogeneity$reason, ")\n", sep = "")
