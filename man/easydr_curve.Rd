@@ -22,6 +22,7 @@ easydr_curve(
   knot.lines = TRUE,
   grid = FALSE,
   subtitle = TRUE,
+  footer = TRUE,
   results.table = NULL,
   result = TRUE,
   result.at = NULL,
@@ -119,6 +120,10 @@ heterogeneity with the Q test p value, the linearity and deviance
 tests as p values, and the adjusted R-squared (see \code{wald}, \code{deviance}
 and \code{r2adj}). With subgroups drawn it
 reports the overall fit.}
+
+\item{footer}{\code{TRUE}, the default, writes the line under the panel that
+explains the band and the points. \code{FALSE} leaves it out, for small
+tiles where it cannot be read.}
 
 \item{results.table}{the doses to report in the table under the figure,
 each against the reference, such as \code{results.table = c(2, 4, 6)}. They

@@ -114,6 +114,9 @@
 #' @param digits digits for the numbers in that table.
 #' @param col,fill.ci,fill.pi colours for the curve, the confidence band and
 #'   the prediction band.
+#' @param footer `TRUE`, the default, writes the line under the panel that
+#'   explains the band and the points. `FALSE` leaves it out, for small
+#'   tiles where it cannot be read.
 #' @param legend optional free text drawn under the figure, one line per
 #'   element.
 #'
@@ -161,7 +164,8 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          prediction = FALSE, points = TRUE, studies = TRUE,
                          ref.shape = TRUE, studlab = FALSE, reference = TRUE,
                          rug = NULL, knot.lines = TRUE, grid = FALSE,
-                         subtitle = TRUE, results.table = NULL,
+                         subtitle = TRUE, footer = TRUE,
+                         results.table = NULL,
                          result = TRUE, result.at = NULL,
                          table = "horizontal", target = TRUE,
                          wald = TRUE, deviance = TRUE, r2 = FALSE,
@@ -212,6 +216,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     round = round, prediction = prediction, points = points,
     studies = studies, ref.shape = ref.shape, studlab = studlab,
     reference = reference, mark.doses = rt,
+    axis_in = if (is.null(width)) 7.2 else width,
     rug = rug, knot.lines = knot.lines, grid = grid,
     subgroup = subgroup, col = col, fill.ci = fill.ci,
     fill.pi = fill.pi, legend = legend, target = target,
@@ -219,7 +224,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                  aic = aic, bic = bic))
   p       <- dr_centre_legend(built$plot)
   marg    <- attr(p, "panel_margins")
-  foot    <- built$foot
+  foot    <- if (isTRUE(footer)) built$foot else NULL
   tab     <- built$tab
   use_sub <- built$use_sub
   main    <- built$main
@@ -259,7 +264,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   foot_x <- grid::unit(4, "pt")
   if (length(marg) == 2L && all(is.finite(marg))) {
     foot_x <- grid::unit(marg[["left"]], "cm")
-    foot <- dr_wrap_text(foot, dev_w * 2.54 - sum(marg), 9)
+    if (length(foot)) foot <- dr_wrap_text(foot, dev_w * 2.54 - sum(marg), 9)
   }
   fs <- if (is.null(tg)) NULL else dr_footer_stack(foot, tg, text_x = foot_x)
 
@@ -316,6 +321,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                            ref.shape = TRUE, studlab = FALSE,
                            reference = TRUE, rug = NULL,
                            knot.lines = TRUE, grid = FALSE, mark.doses = NULL,
+                           axis_in = 7.2,
                            subgroup = NULL, col = "#1F2A44",
                            fill.ci = "grey75", fill.pi = "grey90",
                            legend = NULL, target = TRUE,
@@ -626,14 +632,25 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                      size = 8, hjust = if (use_sub) 0 else 0.5),
                    plot.margin = ggplot2::margin(6, 10, 2, 6))
   p <- if (x$ratio) {
-    p + ggplot2::scale_y_log10(limits = ylim)
+    # Plain numbers on the log axis: 1000, not 1e+03.
+    p + ggplot2::scale_y_log10(limits = ylim,
+                               labels = function(b) dr_num_lab(signif(b, 3)))
   } else {
     p + ggplot2::scale_y_continuous(limits = ylim)
   }
   # The dose axis is labelled where the figure has something to say: the
   # lowest and highest observed doses, the knots, and the doses reported in
   # the table.
-  br <- sort(unique(signif(c(range(x$frame$dose), knots, mark.doses), 6)))
+  # Labels closer than about a third of an inch run into each other, so the
+  # breaks are kept in that order of importance and a later one is dropped
+  # when it would sit too close to one already kept. Its knot line still
+  # shows where it is.
+  cand <- unique(signif(c(range(x$frame$dose), knots, mark.doses), 6))
+  span <- diff(range(cand))
+  gap  <- if (span > 0) span * 0.32 / max(axis_in - 1, 1) else 0
+  br <- numeric(0)
+  for (b in cand) if (all(abs(b - br) >= gap)) br <- c(br, b)
+  br <- sort(br)
   if (length(br) > 1L) {
     p <- p + ggplot2::scale_x_continuous(breaks = br,
                                          labels = dr_num_lab(signif(br, 3)))
