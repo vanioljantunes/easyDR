@@ -86,6 +86,9 @@ easydr_residual <- function(x, shapes = x$shape$name, main = NULL,
     ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
                    strip.background = ggplot2::element_blank(),
                    strip.text = ggplot2::element_text(size = 10, face = "bold"),
+                   # Room between panels, so the last dose label of one panel
+                   # does not run into the first of the next.
+                   panel.spacing.x = grid::unit(1.6, "lines"),
                    plot.margin = ggplot2::margin(6, 10, 2, 6))
   if (isTRUE(smooth)) {
     sm <- do.call(rbind, lapply(split(rows, rows$panel, drop = TRUE), function(d) {
