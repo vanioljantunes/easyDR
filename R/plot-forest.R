@@ -60,6 +60,8 @@
 #' @param row.height height of one study row, in inches. Fixed rather than
 #'   stretched, so a forest of six studies and one of thirty print with the
 #'   same spacing.
+#' @param header.line `TRUE`, the default, draws a black line under the
+#'   column labels, across the whole figure.
 #' @param effect.width width of the interval panel, in inches. The two text
 #'   panels take the width their characters need and this takes the rest, so
 #'   the figure has one width whatever the device is.
@@ -96,7 +98,7 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
                           subgroup = NULL, digits = 3, legend = NULL,
                           just = "center", smlab = NULL,
                           columns = TRUE, ref.dose = TRUE,
-                          row.height = 0.26,
+                          row.height = 0.26, header.line = TRUE,
                           effect.width = 3.1,
                           filetype = c("png", "pdf", "tiff"),
                           path = NULL, file.name = NULL,
@@ -182,14 +184,18 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
   # under the last row.
   n        <- nrow(plan)
   plan$y   <- rev(seq_len(n))
-  header_y <- n + 1
+  # The column labels sit on a line half a row above the first study, bottom
+  # aligned so a one-line label and a two-line one share a baseline. The
+  # header grows to hold two lines when a label had to be broken.
+  rule_y   <- n + 0.5
+  header_y <- rule_y + 0.22
   het_y    <- 0
   # The deviance and linearity tests of the overall fit sit under its I2.
   dev_y    <- -1
   lin_y    <- -2
   # A subgroup forest adds the test for subgroup interaction under them.
   sub_y    <- if (use_sub) -3 else lin_y
-  ylim     <- c(sub_y - 0.5, header_y + 0.5)
+  ylim     <- c(sub_y - 0.5, rule_y + 1)
   # Each subtotal with its tests, and the overall row with its tests, sit in
   # an outlined box in a subgroup forest.
   boxes <- NULL
@@ -238,6 +244,9 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
       lab_right <- c(lab_right, TRUE)
     }
   }
+  # A label longer than its cells goes onto two lines, so the column is as
+  # wide as its numbers and the table leaves the forest more room.
+  names(lab_cols) <- dr_wrap_headers(lab_cols)
 
   het      <- e$heterogeneity
   het_text <- het_line(het)
@@ -251,19 +260,27 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
     list(list(y = lin_y, label = dr_linearity_note(x, lead = ""))),
     if (use_sub) list(list(y = sub_y, label = dr_subgroup_test_note(x$subgroup))))
 
+  val_cols <- list(`x` = vals, Weight = wts)
+  names(val_cols)[1L] <- paste0(x$sm, " (", lvl, "% CI)")
+  names(val_cols) <- dr_wrap_headers(val_cols)
+  # Two-line labels need a taller header row.
+  if (any(grepl("\n", c(names(lab_cols), names(val_cols)), fixed = TRUE))) {
+    ylim[2] <- rule_y + 1.55
+  }
+  rule <- if (isTRUE(header.line)) rule_y else NULL
+
   centered <- identical(just, "center")
   p_labels <- dr_text_panel(
     lab_cols, lab_right, ypos = plan$y, face = plan$face,
     header_y = header_y, ylim = ylim, zebra = zebra, notes = notes,
-    center = c(FALSE, rep(centered, length(lab_cols) - 1L))) + box_layers(left = TRUE)
-
-  val_cols <- list(`x` = vals, Weight = wts)
-  names(val_cols)[1L] <- paste0(x$sm, " (", lvl, "% CI)")
+    center = c(FALSE, rep(centered, length(lab_cols) - 1L)),
+    header_vjust = 0, rule = rule) + box_layers(left = TRUE)
   p_values <- dr_text_panel(
     val_cols, c(identical(just, "right"), !identical(just, "left")),
     ypos = plan$y, face = plan$face,
     header_y = header_y, ylim = ylim, zebra = zebra,
-    center = rep(centered, 2L)) + box_layers(right = TRUE)
+    center = rep(centered, 2L), header_vjust = 0,
+    rule = rule) + box_layers(right = TRUE)
 
   # The effect panel. Squares have area proportional to weight, which is what
   # a reader reads off a square, and a diamond spans a pooled interval.
@@ -309,10 +326,10 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
     # Both lines stop at the bottom of the header row, so they never run up
     # through the column labels.
     ggplot2::annotate("segment", x = e$pooled$est, xend = e$pooled$est,
-                      y = axis_y, yend = header_y - 0.5, linetype = "dashed",
+                      y = axis_y, yend = rule_y, linetype = "dashed",
                       colour = "grey40", linewidth = 0.4) +
     ggplot2::annotate("segment", x = 0, xend = 0, y = axis_y,
-                      yend = header_y - 0.5, colour = "grey25",
+                      yend = rule_y, colour = "grey25",
                       linewidth = 0.4) +
     # The axis is drawn here rather than by the theme, so it can sit under the
     # diamond: the line, its ticks, the labels and the title, bold.
@@ -330,7 +347,10 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
     # where meta's smlab sits.
     ggplot2::annotate("text", x = (lo + hi) / 2, y = header_y,
                       label = if (is.null(smlab)) paste0(dr_shape_title(x$shape$name), " curve model") else smlab,
-                      fontface = "bold", size = 3.2) +
+                      fontface = "bold", size = 3.2, vjust = 0) +
+    (if (isTRUE(header.line)) ggplot2::annotate(
+      "segment", x = -Inf, xend = Inf, y = rule_y, yend = rule_y,
+      colour = "black", linewidth = 0.5)) +
     ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$lb, xmax = .data$ub),
                            width = 0.26, orientation = "y", linewidth = 0.45) +
     ggplot2::geom_point(ggplot2::aes(size = .data$size), shape = 15L) +

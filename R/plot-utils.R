@@ -275,21 +275,67 @@ dr_zebra <- function(ypos) {
     fill = "grey92")
 }
 
+#' Width in characters of the longest line of a header or a cell
+#' @keywords internal
+#' @noRd
+dr_text_chars <- function(x) {
+  x <- as.character(x)
+  x <- x[!is.na(x)]
+  if (!length(x)) return(0)
+  max(nchar(unlist(strsplit(x, "\n", fixed = TRUE))), 0)
+}
+
+#' Break a column label onto two lines when it is wider than its cells
+#'
+#' A header such as "Dose range (cups/day)" over cells such as "0 to 4.5"
+#' made the column three times wider than its numbers. A header longer than
+#' every cell is split at the space that leaves the shorter longest line, so
+#' the column follows its cells. A header with no space, or one no longer
+#' than its cells, is left alone.
+#'
+#' @keywords internal
+#' @noRd
+dr_wrap_headers <- function(cols) {
+  vapply(seq_along(cols), function(i) {
+    h <- names(cols)[i]
+    if (grepl("\n", h, fixed = TRUE) ||
+        nchar(h) <= dr_text_chars(cols[[i]])) return(h)
+    sp <- gregexpr(" ", h, fixed = TRUE)[[1]]
+    if (sp[1] < 0) return(h)
+    longest <- vapply(sp, function(k)
+      max(k - 1L, nchar(h) - k), numeric(1))
+    k <- sp[which.min(longest)]
+    paste0(substr(h, 1L, k - 1L), "\n", substr(h, k + 1L, nchar(h)))
+  }, character(1))
+}
+
 #' A panel of text columns, headed in bold
 #'
 #' Column positions come from character widths, so a long study label cannot
 #' push a numeric column off the panel. Numeric columns are right-aligned
 #' against their own edge and text columns left-aligned against their start.
+#' A header may hold two lines; its width is its longest line. `rule` draws a
+#' black line across the whole panel at that height, the line under the
+#' column labels.
 #'
 #' @keywords internal
 #' @noRd
 dr_text_panel <- function(cols, right, ypos, face, header_y, ylim, zebra,
                           notes = NULL, cell = 3.0, hdr = 3.2, xlab = " ",
-                          center = rep(FALSE, length(cols))) {
+                          center = rep(FALSE, length(cols)),
+                          header_vjust = 0.5, rule = NULL) {
   w <- vapply(seq_along(cols), function(i)
-    max(nchar(c(names(cols)[i], as.character(cols[[i]]))), na.rm = TRUE) +
+    max(1.12 * dr_text_chars(names(cols)[i]), dr_text_chars(cols[[i]])) +
       if (right[i]) 1.5 else 2.5, numeric(1))
-  edge  <- cumsum(w) / sum(w)
+  # A note wider than the columns widens the panel (see dr_panel_width()).
+  # The columns stay packed at their own widths on the left rather than
+  # spreading out to fill it.
+  room  <- sum(w)
+  if (length(notes) > 0L) {
+    room <- max(room, max(nchar(vapply(notes, function(n) n$label,
+                                       character(1)))) + 2)
+  }
+  edge  <- cumsum(w) / room
   start <- c(0, utils::head(edge, -1))
   xs    <- ifelse(center, (start + edge) / 2, ifelse(right, edge, start))
   hj    <- ifelse(center, 0.5, ifelse(right, 1, 0))
@@ -309,7 +355,13 @@ dr_text_panel <- function(cols, right, ypos, face, header_y, ylim, zebra,
     ggplot2::geom_text(data = heads,
                        ggplot2::aes(x = .data$x, label = .data$label,
                                     hjust = .data$hjust),
-                       fontface = "bold", size = hdr)
+                       fontface = "bold", size = hdr, vjust = header_vjust,
+                       lineheight = 0.95)
+  if (!is.null(rule)) {
+    p <- p + ggplot2::annotate("segment", x = -Inf, xend = Inf, y = rule,
+                               yend = rule, colour = "black",
+                               linewidth = 0.5)
+  }
   for (n in notes) {
     p <- p + ggplot2::annotate("text", x = 0, y = n$y, label = n$label,
                                hjust = 0, size = cell)
@@ -324,9 +376,9 @@ dr_text_panel <- function(cols, right, ypos, face, header_y, ylim, zebra,
 #' @keywords internal
 #' @noRd
 dr_panel_width <- function(cols, per_char = 0.070, min_in = 1.2,
-                           notes = NULL) {
+                           notes = NULL, pad = 2) {
   chars <- sum(vapply(seq_along(cols), function(i)
-    max(nchar(c(names(cols)[i], as.character(cols[[i]]))), na.rm = TRUE) + 2,
+    max(1.12 * dr_text_chars(names(cols)[i]), dr_text_chars(cols[[i]])) + pad,
     numeric(1)))
   # A note is written across the whole panel, so a long one sets the width on
   # its own rather than running off the edge.
