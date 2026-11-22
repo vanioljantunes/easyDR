@@ -20,17 +20,38 @@ dr_refit_shape <- function(f, shape, knots = NULL) {
                         ed50 = NULL, steepness = NULL))
 }
 
+#' Colours and line types for overlaid curves, keyed by label
+#'
+#' The panel and the table under it draw the same curves, so both take their
+#' colour and line type from this one lookup, by name. The table is sorted by
+#' AIC and the panel by the order the shapes were given, and matching by
+#' position would give a row another curve's line.
+#'
+#' @keywords internal
+#' @noRd
+dr_overlay_style <- function(labels) {
+  pal <- c("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00",
+           "#56B4E9", "#444444", "#8C564B", "#7F3C8D", "#B8860B")
+  lty <- c("solid", "dashed", "dotdash", "longdash", "twodash", "dotted")
+  n <- length(labels)
+  list(colour   = stats::setNames(rep_len(pal, n), labels),
+       linetype = stats::setNames(rep_len(lty, n), labels))
+}
+
 #' Overlay several fitted curves on one panel
 #'
 #' The panels of `mult.curves` answer "what does each shape look like". This
 #' answers "how far apart are they", which needs them on the same axes and in
 #' the same panel, and is the right panel of Crippa and Orsini's figure 3.
+#' The table under the panel is the legend, so the panel draws none unless
+#' asked to (`legend = TRUE`, for a figure drawn without its table).
 #'
 #' @keywords internal
 #' @noRd
 dr_overlay_panel <- function(fits, labels, ratio, sm_label, unit,
                              xlab = NULL, ylab = NULL,
-                             legend.title = "Model") {
+                             legend.title = "Model", style = NULL,
+                             legend = FALSE) {
   rows <- do.call(rbind, lapply(seq_along(fits), function(i) {
     d <- fits[[i]]$curve
     data.frame(dose = d$dose, est = d$est,
@@ -39,25 +60,62 @@ dr_overlay_panel <- function(fits, labels, ratio, sm_label, unit,
   }))
   if (is.null(xlab)) xlab <- paste0("Dose (", unit, ")")
   if (is.null(ylab)) ylab <- sm_label
+  if (is.null(style)) style <- dr_overlay_style(labels)
 
   p <- ggplot2::ggplot(rows, ggplot2::aes(x = .data$dose, y = .data$est,
                                           colour = .data$model,
                                           linetype = .data$model)) +
     ggplot2::geom_hline(yintercept = if (isTRUE(ratio)) 1 else 0,
-                        linetype = "dashed", colour = "grey55") +
-    ggplot2::geom_line(linewidth = 0.8) +
-    ggplot2::labs(x = xlab, y = ylab, colour = legend.title,
-                  linetype = legend.title) +
+                        linetype = "dashed", colour = "grey55",
+                        linewidth = 0.5) +
+    ggplot2::geom_line(linewidth = 1.1) +
+    ggplot2::scale_colour_manual(values = style$colour, breaks = labels,
+                                 name = legend.title) +
+    ggplot2::scale_linetype_manual(values = style$linetype, breaks = labels,
+                                   name = legend.title) +
+    ggplot2::labs(x = xlab, y = ylab) +
     ggplot2::theme_bw() +
     ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
-                   legend.position = "top",
-                   legend.direction = "horizontal",
-                   legend.justification = "left",
+                   panel.grid.major = ggplot2::element_line(colour = "grey92"),
+                   axis.text = ggplot2::element_text(colour = "black"),
+                   legend.position = if (isTRUE(legend)) "right" else "none",
+                   legend.key.width = grid::unit(26, "pt"),
                    legend.text = ggplot2::element_text(size = 8),
                    legend.title = ggplot2::element_text(size = 8),
-                   plot.margin = ggplot2::margin(6, 10, 2, 6))
+                   plot.margin = ggplot2::margin(6, 10, 4, 6))
   if (isTRUE(ratio)) p <- p + ggplot2::scale_y_log10()
   p
+}
+
+#' The table under an overlay, which is also its legend
+#'
+#' Each row carries the line of its curve beside the name. The note goes
+#' under the table, inside the table's own columns, so it lines up with the
+#' names and nothing sits between the panel and the table but the table's
+#' thin top rule.
+#'
+#' @keywords internal
+#' @noRd
+dr_overlay_table <- function(df, style, best = integer(0), note = NULL,
+                             base_size = 12) {
+  nm <- as.character(df[[1L]])
+  tg <- dr_stats_grob(df, base_size = base_size,
+                      key = list(colour = unname(style$colour[nm]),
+                                 linetype = unname(style$linetype[nm])),
+                      bold_rows = best)
+  if (is.null(note)) return(tg)
+  # Wrapped to the table's own width, so a long note never runs past it.
+  note <- strwrap(paste(note, collapse = " "),
+                  width = max(40L, floor(dr_grob_width_in(tg) / 0.07)))
+  tg <- gtable::gtable_add_rows(tg, grid::unit(13 * length(note) + 10,
+                                               "points"))
+  gtable::gtable_add_grob(
+    tg, grid::textGrob(paste(note, collapse = "\n"), x = grid::unit(5, "pt"),
+                       y = grid::unit(1, "npc") - grid::unit(6, "pt"),
+                       hjust = 0, vjust = 1,
+                       gp = grid::gpar(fontsize = 9, col = "grey30",
+                                       lineheight = 1.2)),
+    t = nrow(tg), l = 1, r = ncol(tg), name = "note", clip = "off")
 }
 
 #' Draw an overlay with its table underneath, and save it if asked
@@ -71,27 +129,28 @@ dr_overlay_draw <- function(p, tg, main, foot, spec) {
   }
   title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
   w_in <- max(7.6, dr_grob_width_in(tg) + 0.5)
-  # Wrapped to the width the figure will actually have, and only then
-  # measured: a footer wrapped after its height is counted loses its last
-  # lines off the bottom, and one not wrapped at all runs off the right.
-  foot <- strwrap(paste(foot, collapse = " "),
-                  width = max(40L, floor(w_in / 0.068)))
-  # With result = FALSE there is no table, so the footer is the text alone
-  # and dr_draw_stack measures it the way every other figure's footer is
-  # measured. Handing a NULL table to the stacker fails inside gtable.
-  fs <- if (is.null(tg)) NULL else dr_footer_stack(foot, tg)
-  foot_in <- dr_footer_in(foot, fs)
-  size <- dr_fig_size(w_in,
-                      min(max(0.46 * w_in, 3.2), 4.6) + title_in +
-                        foot_in + 0.2)
+  panel_in <- min(max(0.46 * w_in, 3.2), 4.6)
+  if (is.null(tg)) {
+    # No table: the note is the footer, wrapped to the figure's width and
+    # measured the way every other figure's footer is.
+    foot <- strwrap(paste(foot, collapse = " "),
+                    width = max(40L, floor(w_in / 0.068)))
+    size <- dr_fig_size(w_in, panel_in + title_in +
+                          dr_footer_in(foot, NULL) + 0.1)
+    con <- dr_begin_file(spec, size[["width"]], size[["height"]])
+    on.exit(dr_end_file(con), add = TRUE)
+    return(invisible(dr_draw_stack(p, NULL, title = main, footer = foot,
+                                   title_hjust = 0.5)))
+  }
+  # The table sits flush under the panel at its own height. Padding here
+  # would open a band of white between the two; the few points kept are
+  # what holds the note off the bottom edge of a saved file.
+  th <- dr_grob_height(tg, pad = 6)
+  size <- dr_fig_size(w_in, panel_in + title_in + dr_height_in(th))
   con <- dr_begin_file(spec, size[["width"]], size[["height"]])
   on.exit(dr_end_file(con), add = TRUE)
-  if (is.null(fs)) {
-    dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5)
-  } else {
-    dr_draw_stack(p, NULL, title = main, footer = fs$grob,
-                  footer_h = fs$height, title_hjust = 0.5)
-  }
+  invisible(dr_draw_stack(p, NULL, title = main, footer = tg, footer_h = th,
+                          title_hjust = 0.5))
 }
 
 #' Fit the candidate shapes and compare them
@@ -180,16 +239,23 @@ easydr_compare_shapes <- function(x,
     unit <- if (is.null(x$dose_unit)) "dose" else x$dose_unit
     if (is.null(main)) main <- "Candidate shapes"
     if (identical(main, FALSE)) main <- NULL
-    p  <- dr_overlay_panel(fits, dr_shape_title(names(fits)), x$ratio,
-                           x$sm_label, unit, legend.title = "Shape")
+    labs  <- dr_shape_title(names(fits))
+    style <- dr_overlay_style(labs)
+    p  <- dr_overlay_panel(fits, labs, x$ratio, x$sm_label, unit,
+                           legend.title = "Shape", style = style,
+                           legend = !isTRUE(result))
     # The table is the point of this figure, so it is set larger than the
-    # summary tables under a single curve.
+    # summary tables under a single curve. It is also the legend, and its
+    # first row, the lowest AIC, is set in bold.
     shown <- dr_test_columns(tab, wald, deviance, r2, r2adj, aic, delta.aic,
                              bic, deviance.value)
     shown$Shape <- dr_shape_title(shown$Shape)
-    tg <- if (isTRUE(result)) dr_stats_grob(shown, base_size = 12) else NULL
     foot <- paste0("Ranked by AIC. Reference ", x$reference$curve, " ",
                    unit, ".")
+    best <- if (is.finite(tab$AIC[1L])) 1L else integer(0)
+    tg <- if (isTRUE(result)) {
+      dr_overlay_table(shown, style, best = best, note = foot)
+    } else NULL
     spec <- dr_file_spec(file.name, filetype, path, width, height,
                          what = "easydr_compare_shapes()")
     dr_overlay_draw(p, tg, main, foot, spec)
@@ -330,11 +396,10 @@ easydr_knot_sensitivity <- function(x,
     unit <- if (is.null(x$dose_unit)) "dose" else x$dose_unit
     if (is.null(main)) main <- "The same spline, at every knot placement"
     if (identical(main, FALSE)) main <- NULL
+    style <- dr_overlay_style(labs)
     p  <- dr_overlay_panel(fits, labs, x$ratio, x$sm_label, unit,
-                           legend.title = "Knots")
-    # The table is the point of this figure, so it is set larger than the
-    # summary tables under a single curve.
-    tg <- if (isTRUE(result)) dr_stats_grob(tab, base_size = 12) else NULL
+                           legend.title = "Knots", style = style,
+                           legend = !isTRUE(result))
     what <- if (given) {
       paste0(length(fits), " of the ", length(sets), " knot sets given. ")
     } else {
@@ -345,6 +410,13 @@ easydr_knot_sensitivity <- function(x,
     }
     foot <- paste0(what, "Curves that lie together say the result ",
                    "is the data; curves that fan apart say it is the knots.")
+    # The table is the point of this figure, so it is set larger than the
+    # summary tables under a single curve. It is also the legend, and the
+    # knot set with the lowest AIC is set in bold.
+    best <- if (any(is.finite(tab$AIC))) which.min(tab$AIC) else integer(0)
+    tg <- if (isTRUE(result)) {
+      dr_overlay_table(tab, style, best = best, note = foot)
+    } else NULL
     spec <- dr_file_spec(file.name, filetype, path, width, height,
                          what = "easydr_knot_sensitivity()")
     dr_overlay_draw(p, tg, main, foot, spec)
