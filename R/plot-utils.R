@@ -397,6 +397,19 @@ dr_panel_width <- function(cols, per_char = 0.070, min_in = 1.2,
 #'
 #' @keywords internal
 #' @noRd
+#' Column labels in standard notation for figure tables
+#'
+#' The data frames keep plain ASCII names (the console print uses them); the
+#' figures show the usual notation.
+#' @noRd
+dr_display_names <- function(x) {
+  map <- c("R-squared adj" = "Adjusted R²", "R-squared" = "R²",
+           "Delta AIC" = "ΔAIC", "p nonlinearity" = "p non-linearity")
+  hit <- x %in% names(map)
+  x[hit] <- map[x[hit]]
+  x
+}
+
 dr_stats_grob <- function(df, base_size = 9, key = NULL, bold_rows = integer(0)) {
   # One table style for every figure: a white ground, bold column labels over
   # a thin rule, light lines between rows, names left and numbers right. A
@@ -405,7 +418,7 @@ dr_stats_grob <- function(df, base_size = 9, key = NULL, bold_rows = integer(0))
   df[] <- lapply(df, function(v) ifelse(is.na(v), "", as.character(v)))
   nr  <- nrow(df)
   nc  <- ncol(df)
-  hdr <- names(df)
+  hdr <- dr_display_names(names(df))
   txt_w <- function(x, face) {
     if (!length(x)) return(0)
     max(vapply(x, function(s) dr_measure(grid::convertWidth(

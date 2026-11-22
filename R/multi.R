@@ -348,7 +348,7 @@ dr_curve_multi <- function(x, mult.curves = FALSE, curve.panels = NULL,
     built <- dr_curve_panel(fits[[s]], main = FALSE,
                             xlim = lims$xlim, ylim = lims$ylim, ...)
     lin <- dr_linearity_note(fits[[s]], lead = "")
-    lin <- sub("^Linearity test: ", "", lin)
+    lin <- sub("^Non-linearity test: ", "", lin)
     lin <- sub("^not applicable.*$", "linearity test not applicable", lin)
     if (!grepl("^linearity", lin)) lin <- paste0("Linearity: ", lin)
     built$plot +

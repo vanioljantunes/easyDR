@@ -26,7 +26,7 @@ test_that("the subtitle reports the tests as p values only", {
   txt <- paste(unlist(lapply(tok, function(g)
     vapply(g, `[[`, character(1), "text"))), collapse = " ")
   expect_match(txt, "Q test p")
-  expect_match(txt, "Linearity p")
+  expect_match(txt, "Non-linearity p")
   expect_match(txt, "Deviance p")
   expect_match(txt, "Restricted cubic spline")
   expect_match(txt, "studies")

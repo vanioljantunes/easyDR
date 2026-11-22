@@ -37,7 +37,7 @@ easydr_curve(
   subgroup = NULL,
   digits = 3,
   col = "#1F2A44",
-  fill.ci = "grey75",
+  fill.ci = "#8C9AB3",
   fill.pi = "grey90",
   legend = NULL,
   filetype = c("png", "pdf", "tiff"),
@@ -56,7 +56,7 @@ easydr_curve(
 none.}
 
 \item{xlab, ylab}{axis labels. \code{NULL} writes them from the dose unit and the
-summary measure, such as "Risk Ratio (RR)".}
+summary measure, such as "Risk ratio (RR)".}
 
 \item{xlim, ylim}{axis limits on the reported scale, for example
 \code{ylim = c(0.8, 2)}. \code{NULL} fits them to whatever is drawn.}
@@ -83,9 +83,9 @@ so where they meet the curve stays readable. With several panels
 the small panels.}
 
 \item{ref.shape}{\code{TRUE}, the default, gives the study points one shape per
-reference dose (circle, square, triangle, star, diamond, inverted
-triangle), with a "Study reference dose" key beside the panel listing
-each value. A study's effects are measured against its own reference, so
+reference dose (circle, square, triangle, diamond, inverted triangle,
+star), with a "Study reference dose (unit)" key in one row under the
+panel listing each value. A study's effects are measured against its own reference, so
 a point is read against that dose, not the curve's. \code{FALSE} draws every
 point as a circle. It is ignored when subgroup curves are drawn, which use
 shape for the levels, with more than six reference doses, which run out
@@ -112,14 +112,18 @@ shapes without knots.}
 \item{grid}{\code{FALSE}, the default, draws the panel without grid lines.
 \code{TRUE} adds the major grid.}
 
-\item{subtitle}{\code{TRUE}, the default, writes the headline result under the
-title, wrapped to the width of the panel: the effect per increment of
-dose (in bold red) with its confidence interval and p value, the
-reference dose, the number of studies and dose comparisons, the
-heterogeneity with the Q test p value, the linearity and deviance
-tests as p values, and the adjusted R-squared (see \code{wald}, \code{deviance}
-and \code{r2adj}). With subgroups drawn it
-reports the overall fit.}
+\item{subtitle}{\code{TRUE}, the default, writes three lines under the title,
+items separated by " · ": the shape, the number of studies and of
+participants and person-years; the headline effect in bold with its
+confidence interval and p value; and the model's performance (I², the
+Q test, the linearity and deviance tests as p values, and the adjusted
+R², see \code{wald}, \code{deviance} and \code{r2adj}). For an increment of dose the
+headline is the effect per that increment: the slope of a linear shape,
+and for any other shape the linear trend of the same studies, refitted
+as a straight line the way \code{\link[=easydr_loo]{easydr_loo()}} does, labelled "(linear
+trend)". For a dose contrast, \code{result.at = c(a, b)}, it is the curve's
+own effect at \code{a} against \code{b}. With subgroups drawn it reports the
+overall fit.}
 
 \item{footer}{\code{TRUE}, the default, writes the line under the panel that
 explains the band and the points. \code{FALSE} leaves it out, for small

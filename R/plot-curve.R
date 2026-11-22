@@ -455,8 +455,8 @@ dr_curve_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
   if (isTRUE(wald) && !identical(x$shape$name, "linear")) {
     nl <- x$nonlinearity
     perf <- c(perf, if (!is.null(nl) && isTRUE(nl$estimable)) {
-      paste("Linearity", pv(nl$p))
-    } else "Linearity test not available")
+      paste("Non-linearity", pv(nl$p))
+    } else "Non-linearity test not available")
   }
   g  <- x$gof
   ok <- !is.null(g) && !identical(g$available, FALSE)
@@ -922,12 +922,12 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
 dr_linearity_note <- function(x, lead = ".  ") {
   nl <- x$nonlinearity
   if (identical(x$shape$name, "linear")) {
-    return(paste0(lead, "Linearity test: not applicable to a linear shape"))
+    return(paste0(lead, "Non-linearity test: not applicable to a linear shape"))
   }
   if (is.null(nl) || !isTRUE(nl$estimable)) {
-    return(paste0(lead, "Linearity test: not available for this shape"))
+    return(paste0(lead, "Non-linearity test: not available for this shape"))
   }
-  paste0(lead, "Linearity test: X2 = ", formatC(nl$statistic, format = "f", digits = 2),
+  paste0(lead, "Non-linearity test: X2 = ", formatC(nl$statistic, format = "f", digits = 2),
          " (df = ", nl$df, "), ", dr_p_lab(nl$p))
 }
 
