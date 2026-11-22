@@ -297,6 +297,11 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
   ticks <- dr_plot_ticks(lo, hi, e$ratio)
   keep  <- ticks$at >= lo & ticks$at <= hi
   if (is.null(xlab)) xlab <- e$label
+  # The effect axis sits half a row under the last result row, the overall
+  # diamond, and the reference lines end on it. The test lines below are text
+  # in the label panel, so the axis has no reason to sit under them.
+  axis_y <- min(plan$y) - 0.5
+  tick_h <- 0.18
 
   p_effect <- ggplot2::ggplot(pts, ggplot2::aes(x = .data$est,
                                                 y = .data$ypos)) +
@@ -304,11 +309,23 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
     # Both lines stop at the bottom of the header row, so they never run up
     # through the column labels.
     ggplot2::annotate("segment", x = e$pooled$est, xend = e$pooled$est,
-                      y = ylim[1L], yend = header_y - 0.5, linetype = "dashed",
+                      y = axis_y, yend = header_y - 0.5, linetype = "dashed",
                       colour = "grey40", linewidth = 0.4) +
-    ggplot2::annotate("segment", x = 0, xend = 0, y = ylim[1L],
+    ggplot2::annotate("segment", x = 0, xend = 0, y = axis_y,
                       yend = header_y - 0.5, colour = "grey25",
                       linewidth = 0.4) +
+    # The axis is drawn here rather than by the theme, so it can sit under the
+    # diamond: the line, its ticks, the labels and the title, bold.
+    ggplot2::annotate("segment", x = lo, xend = hi, y = axis_y, yend = axis_y,
+                      colour = "black", linewidth = 0.4) +
+    ggplot2::annotate("segment", x = ticks$at[keep], xend = ticks$at[keep],
+                      y = axis_y, yend = axis_y - tick_h,
+                      colour = "black", linewidth = 0.4) +
+    ggplot2::annotate("text", x = ticks$at[keep], y = axis_y - tick_h - 0.12,
+                      label = ticks$labels[keep], vjust = 1, size = 8 / ggplot2::.pt) +
+    ggplot2::annotate("text", x = (lo + hi) / 2, y = axis_y - tick_h - 0.95,
+                      label = xlab, vjust = 1, fontface = "bold",
+                      size = 9 / ggplot2::.pt) +
     # The curve the per-study effects were read from, over the effect column
     # where meta's smlab sits.
     ggplot2::annotate("text", x = (lo + hi) / 2, y = header_y,
@@ -326,7 +343,7 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
                                 labels = ticks$labels[keep]) +
     ggplot2::coord_cartesian(xlim = c(lo, hi), ylim = ylim) +
     ggplot2::labs(x = xlab) +
-    dr_gg_theme(axis = TRUE) +
+    dr_gg_theme(axis = FALSE) +
     box_layers()
 
   if (is.null(main)) {
