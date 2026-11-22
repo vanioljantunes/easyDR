@@ -345,16 +345,71 @@ dr_panel_width <- function(cols, per_char = 0.070, min_in = 1.2,
 #'
 #' @keywords internal
 #' @noRd
-dr_stats_grob <- function(df, base_size = 9) {
-  tt <- gridExtra::ttheme_minimal(
-    base_size = base_size,
-    core    = list(fg_params = list(hjust = 0.5, x = 0.5),
-                   bg_params = list(fill = c("white", "grey97"),
-                                    col = "grey60", lwd = 0.6)),
-    colhead = list(fg_params = list(fontface = "bold", hjust = 0.5, x = 0.5),
-                   bg_params = list(fill = "grey90", col = "grey60",
-                                    lwd = 0.6)))
-  gridExtra::tableGrob(df, rows = NULL, theme = tt)
+dr_stats_grob <- function(df, base_size = 9, key = NULL, bold_rows = integer(0)) {
+  # One table style for every figure: a white ground, bold column labels over
+  # a thin rule, light lines between rows, names left and numbers right. A
+  # comparison of curves passes `key` (colour and line type per row), which
+  # draws the line beside each name so the table is the legend.
+  df[] <- lapply(df, function(v) ifelse(is.na(v), "", as.character(v)))
+  nr  <- nrow(df)
+  nc  <- ncol(df)
+  hdr <- names(df)
+  txt_w <- function(x, face) {
+    if (!length(x)) return(0)
+    max(vapply(x, function(s) dr_measure(grid::convertWidth(
+      grid::grobWidth(grid::textGrob(s, gp = grid::gpar(fontsize = base_size,
+                                                        fontface = face))),
+      "in", valueOnly = TRUE)), numeric(1)))
+  }
+  col_w <- vapply(seq_len(nc), function(j) {
+    max(txt_w(hdr[j], "bold"), txt_w(df[[j]], "bold")) + 0.26
+  }, numeric(1))
+  key_w  <- if (is.null(key)) numeric(0) else 0.5
+  widths <- c(key_w, col_w)
+  row_h  <- 1.95 * base_size
+  gt <- gtable::gtable(widths = grid::unit(widths, "in"),
+                       heights = grid::unit(rep(row_h, nr + 1L), "points"))
+  off <- length(key_w)
+  ncl <- off + nc
+  rule <- function(y, col, lwd) grid::segmentsGrob(
+    x0 = grid::unit(0, "npc"), x1 = grid::unit(1, "npc"),
+    y0 = grid::unit(y, "npc"), y1 = grid::unit(y, "npc"),
+    gp = grid::gpar(col = col, lwd = lwd))
+  cell <- function(label, j, face) {
+    left <- j == 1L
+    grid::textGrob(label,
+                   x = if (left) grid::unit(5, "pt") else grid::unit(1, "npc") - grid::unit(7, "pt"),
+                   hjust = if (left) 0 else 1,
+                   gp = grid::gpar(fontsize = base_size, fontface = face))
+  }
+  for (j in seq_len(nc)) {
+    gt <- gtable::gtable_add_grob(gt, cell(hdr[j], j, "bold"), t = 1, l = off + j,
+                                  name = paste0("hd-", j), clip = "off")
+  }
+  for (i in seq_len(nr)) {
+    face <- if (i %in% bold_rows) "bold" else "plain"
+    for (j in seq_len(nc)) {
+      gt <- gtable::gtable_add_grob(gt, cell(df[[j]][i], j, face), t = i + 1L,
+                                    l = off + j, name = paste0("c-", i, "-", j),
+                                    clip = "off")
+    }
+    if (!is.null(key)) {
+      seg <- grid::segmentsGrob(
+        x0 = grid::unit(0.12, "npc"), x1 = grid::unit(0.88, "npc"),
+        y0 = grid::unit(0.5, "npc"), y1 = grid::unit(0.5, "npc"),
+        gp = grid::gpar(col = key$colour[i], lty = key$linetype[i], lwd = 2.2,
+                        lineend = "butt"))
+      gt <- gtable::gtable_add_grob(gt, seg, t = i + 1L, l = 1,
+                                    name = paste0("k-", i))
+    }
+    gt <- gtable::gtable_add_grob(gt, rule(0, "grey85", 0.6), t = i + 1L, l = 1,
+                                  r = ncl, name = paste0("r-", i))
+  }
+  gt <- gtable::gtable_add_grob(gt, rule(0, "black", 0.9), t = 1, l = 1,
+                                r = ncl, name = "hd-rule")
+  gt <- gtable::gtable_add_grob(gt, rule(1, "grey70", 0.6), t = 1, l = 1,
+                                r = ncl, name = "top-rule")
+  gt
 }
 
 #' How tall a grob actually is, in points
