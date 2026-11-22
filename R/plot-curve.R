@@ -27,7 +27,7 @@
 #' @param main plot title. `NULL` writes one naming the shape; `FALSE` draws
 #'   none.
 #' @param xlab,ylab axis labels. `NULL` writes them from the dose unit and the
-#'   summary measure, such as "Risk Ratio (RR)".
+#'   summary measure, such as "Risk ratio (RR)".
 #' @param xlim,ylim axis limits on the reported scale, for example
 #'   `ylim = c(0.8, 2)`. `NULL` fits them to whatever is drawn.
 #' @param round digits for the labels printed beside the marked doses. `NULL`
@@ -48,9 +48,9 @@
 #'   (`mult.curves = TRUE`) the default is `FALSE`, because the points crowd
 #'   the small panels.
 #' @param ref.shape `TRUE`, the default, gives the study points one shape per
-#'   reference dose (circle, square, triangle, star, diamond, inverted
-#'   triangle), with a "Study reference dose" key beside the panel listing
-#'   each value. A study's effects are measured against its own reference, so
+#'   reference dose (circle, square, triangle, diamond, inverted triangle,
+#'   star), with a "Study reference dose (unit)" key in one row under the
+#'   panel listing each value. A study's effects are measured against its own reference, so
 #'   a point is read against that dose, not the curve's. `FALSE` draws every
 #'   point as a circle. It is ignored when subgroup curves are drawn, which use
 #'   shape for the levels, with more than six reference doses, which run out
@@ -71,14 +71,18 @@
 #'   shapes without knots.
 #' @param grid `FALSE`, the default, draws the panel without grid lines.
 #'   `TRUE` adds the major grid.
-#' @param subtitle `TRUE`, the default, writes the headline result under the
-#'   title, wrapped to the width of the panel: the effect per increment of
-#'   dose (in bold red) with its confidence interval and p value, the
-#'   reference dose, the number of studies and dose comparisons, the
-#'   heterogeneity with the Q test p value, the linearity and deviance
-#'   tests as p values, and the adjusted R-squared (see `wald`, `deviance`
-#'   and `r2adj`). With subgroups drawn it
-#'   reports the overall fit.
+#' @param subtitle `TRUE`, the default, writes three lines under the title,
+#'   items separated by " · ": the shape, the number of studies and of
+#'   participants and person-years; the headline effect in bold with its
+#'   confidence interval and p value; and the model's performance (I², the
+#'   Q test, the linearity and deviance tests as p values, and the adjusted
+#'   R², see `wald`, `deviance` and `r2adj`). For an increment of dose the
+#'   headline is the effect per that increment: the slope of a linear shape,
+#'   and for any other shape the linear trend of the same studies, refitted
+#'   as a straight line the way [easydr_loo()] does, labelled "(linear
+#'   trend)". For a dose contrast, `result.at = c(a, b)`, it is the curve's
+#'   own effect at `a` against `b`. With subgroups drawn it reports the
+#'   overall fit.
 #' @param results.table the doses to report in the table under the figure,
 #'   each against the reference, such as `results.table = c(2, 4, 6)`. They
 #'   are also marked on the curve and labelled on the dose axis. A dose above
@@ -171,7 +175,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                          wald = TRUE, deviance = TRUE, r2 = FALSE,
                          r2adj = TRUE, aic = FALSE, bic = FALSE,
                          subgroup = NULL, digits = 3, col = "#1F2A44",
-                         fill.ci = "grey75", fill.pi = "grey90",
+                         fill.ci = "#8C9AB3", fill.pi = "grey90",
                          legend = NULL,
                          filetype = c("png", "pdf", "tiff"),
                          path = NULL, file.name = NULL,
@@ -246,7 +250,11 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
       dt <- cbind(data.frame(` ` = names(dt)[-1L], check.names = FALSE,
                              stringsAsFactors = FALSE), m)
     }
-    dr_stats_grob(dt)
+    g <- dr_stats_grob(dt)
+    keep <- g$layout$name != "top-rule"
+    g$grobs  <- g$grobs[keep]
+    g$layout <- g$layout[keep, , drop = FALSE]
+    g
   } else {
     NULL
   }
@@ -262,26 +270,31 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     dr_fig_size(w_in, 1)[["width"]]
   }
   foot_x <- grid::unit(4, "pt")
+  foot_r <- grid::unit(4, "pt")
+  panel_cm <- dev_w * 2.54 * 0.8
   if (length(marg) == 2L && all(is.finite(marg))) {
-    foot_x <- grid::unit(marg[["left"]], "cm")
-    if (length(foot)) foot <- dr_wrap_text(foot, dev_w * 2.54 - sum(marg), 9)
+    foot_x   <- grid::unit(marg[["left"]], "cm")
+    foot_r   <- grid::unit(marg[["right"]], "cm")
+    panel_cm <- dev_w * 2.54 - sum(marg)
+    if (length(foot)) foot <- dr_wrap_text(foot, panel_cm, 8.5)
   }
-  fs <- if (is.null(tg)) NULL else dr_footer_stack(foot, tg, text_x = foot_x)
+  # Caption, a thin rule, then the table: one block under the panel, so the
+  # numbers read as part of the figure rather than as a second one.
+  fs <- dr_curve_footer(foot, tg, text_x = foot_x, right = foot_r)
 
   # The panel is the figure here, and the band under it is whatever the
   # footer needs. The width follows the summary table when there is one,
   # because a subgroup table with four columns is wider than a plot of a
   # single curve wants to be.
-  foot_in  <- dr_footer_in(foot, fs)
+  foot_in  <- if (is.null(fs)) 0 else dr_height_in(fs$height)
   sub_g    <- if (isTRUE(subtitle)) {
-    panel_cm <- if (length(marg) == 2L && all(is.finite(marg))) {
-      dev_w * 2.54 - sum(marg)
-    } else {
-      dev_w * 2.54 * 0.8
-    }
-    dr_subtitle_grob(dr_subtitle_wrap(
-      dr_subtitle_tokens(x, result.at, digits, wald = wald,
-                         deviance = deviance, subgroup = use_sub, r2adj = r2adj), panel_cm))
+    dr_subtitle_grob(
+      dr_subtitle_wrap(
+        dr_curve_subtitle_tokens(x, result.at, digits, wald = wald,
+                                 deviance = deviance, subgroup = use_sub,
+                                 r2adj = r2adj),
+        panel_cm, size = 9),
+      size = 9, col = "grey25", strong_col = "black")
   } else {
     NULL
   }
@@ -293,14 +306,185 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
   on.exit(dr_end_file(con), add = TRUE)
 
-  if (is.null(fs)) {
-    dr_draw_stack(p, NULL, title = main, footer = foot, title_hjust = 0.5,
-                  footer_x = foot_x, subtitle = sub_g)
-  } else {
-    dr_draw_stack(p, NULL, title = main, footer = fs$grob,
-                  footer_h = fs$height, title_hjust = 0.5, subtitle = sub_g)
-  }
+  dr_draw_stack(p, NULL, title = main,
+                footer = if (is.null(fs)) NULL else fs$grob,
+                footer_h = if (is.null(fs)) NULL else fs$height,
+                title_hjust = 0.5, subtitle = sub_g)
   invisible(tab)
+}
+
+#' The block under a curve: caption, a thin rule, and the results table
+#'
+#' The caption is small and grey, because it explains marks rather than
+#' reporting results. The rule spans the panel, not the device, so the table
+#' reads as belonging to the plot above it, and the table follows with only a
+#' few points of space.
+#'
+#' @keywords internal
+#' @noRd
+dr_curve_footer <- function(text, table_grob, size = 8.5,
+                            text_x = grid::unit(4, "pt"),
+                            right = grid::unit(4, "pt")) {
+  if (!length(text) && is.null(table_grob)) return(NULL)
+  grobs   <- list()
+  heights <- list()
+  if (length(text)) {
+    n <- length(strsplit(paste(text, collapse = "\n"), "\n", fixed = TRUE)[[1]])
+    grobs <- c(grobs, list(grid::textGrob(
+      paste(text, collapse = "\n"), x = text_x, y = grid::unit(1, "npc") -
+        grid::unit(3, "pt"), hjust = 0, vjust = 1,
+      gp = grid::gpar(fontsize = size, lineheight = 1.2, col = "grey35"))))
+    heights <- c(heights, list(grid::unit(
+      1.2 * size * n + if (is.null(table_grob)) 10 else 7, "points")))
+  }
+  if (!is.null(table_grob)) {
+    rule <- grid::segmentsGrob(
+      x0 = text_x, x1 = grid::unit(1, "npc") - right,
+      y0 = grid::unit(0.5, "npc"), y1 = grid::unit(0.5, "npc"),
+      gp = grid::gpar(col = "grey80", lwd = 0.6))
+    grobs   <- c(grobs, list(rule, table_grob))
+    heights <- c(heights, list(grid::unit(6, "points"),
+                               dr_grob_height(table_grob, pad = 10)))
+  }
+  hv <- do.call(grid::unit.c, heights)
+  list(grob = gridExtra::arrangeGrob(grobs = grobs, ncol = 1, heights = hv),
+       height = sum(hv))
+}
+
+#' The axis title for a summary measure, in sentence case
+#'
+#' "Risk ratio (RR)", the way a journal writes it, rather than the title case
+#' the other figures use.
+#'
+#' @keywords internal
+#' @noRd
+dr_curve_ylab <- function(sm) {
+  lab <- dr_sm_label(sm)
+  if (identical(lab, sm)) return(sm)
+  paste0(toupper(substring(lab, 1, 1)), substring(lab, 2), " (", sm, ")")
+}
+
+#' The effect line the curve's subtitle leads with
+#'
+#' A straight line has one slope, so an increment of dose reports it. A curve
+#' has none, so an increment asked of a curve is answered with the linear
+#' trend of the same studies, refitted the way easydr_loo() does it, and the
+#' label says so. A dose contrast is the curve's own prediction at the first
+#' dose against the second. When the fit cannot be refitted (a result made
+#' before refitting was supported) the curve's own contrast is reported.
+#'
+#' @keywords internal
+#' @noRd
+dr_curve_headline <- function(x, at = NULL, digits = 3) {
+  spec <- dr_result_at(x, at)
+  unit <- if (is.null(x$dose_unit)) "dose unit" else x$dose_unit
+  src  <- x
+  lab  <- NULL
+  if (dr_wants_trend(x, spec)) {
+    trend <- tryCatch({
+      inh <- dr_inherited(x)
+      res <- NULL
+      utils::capture.output(res <- suppressMessages(suppressWarnings(
+        dr_refit_trend(inh, inh$studies))))
+      res
+    }, error = function(e) NULL)
+    if (!is.null(trend)) {
+      src <- trend
+      lab <- paste0(dr_label(x$dose_unit, spec$value), " (linear trend)")
+    }
+  }
+  p <- dr_pooled_at(src, spec)
+  if (is.null(lab)) {
+    lab <- if (identical(spec$type, "pair")) {
+      paste0(format(spec$value[1L]), " vs ", format(spec$value[2L]), " ", unit)
+    } else {
+      p$label
+    }
+  }
+  back <- if (x$ratio) exp else identity
+  fmt  <- function(v) format(round(back(v), digits), nsmall = digits)
+  lvl  <- format(100 * x$provenance$level)
+  list(label = lab,
+       effect = paste0(x$sm, " ", fmt(p$est), " (", lvl, "% CI ", fmt(p$lb),
+                       " to ", fmt(p$ub), ", ", dr_p_lab(p$p), ")"),
+       pooled = p, trend = !identical(src, x))
+}
+
+#' The subtitle under a curve's title, as tokens
+#'
+#' Three lines: what the curve is and what it rests on, the headline effect
+#' in bold, and the model's performance (heterogeneity and the tests, each as
+#' its p value). Items are separated by " · " and kept whole when a line
+#' wraps, so a test never splits from its p value.
+#'
+#' @keywords internal
+#' @noRd
+dr_curve_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
+                                     deviance = TRUE, subgroup = FALSE,
+                                     r2adj = FALSE) {
+  pv  <- dr_p_lab
+  sep <- function(items) lapply(seq_along(items), function(i) list(
+    text = if (i == 1L) items[i] else paste0("· ", items[i]),
+    space = TRUE))
+  # What the curve is and what it rests on. Counts of people and of
+  # person-time are different things, so a fit mixing incidence-rate studies
+  # with the others reports both rather than adding them up.
+  fr  <- x$frame
+  big <- function(v) if (v >= 1e6) {
+    paste0(formatC(v / 1e6, format = "fg", digits = 3), "M")
+  } else {
+    format(round(v), big.mark = ",", scientific = FALSE, trim = TRUE)
+  }
+  is_pt <- fr$type %in% "ir"
+  nm <- sub(",.*$", "", x$shape$label)
+  nm <- paste0(toupper(substring(nm, 1, 1)), substring(nm, 2))
+  info <- c(nm, paste(x$counts$studies, "studies"),
+            if (any(!is_pt) && all(is.finite(fr$n[!is_pt])))
+              paste(big(sum(fr$n[!is_pt])), "participants"),
+            if (any(is_pt) && all(is.finite(fr$n[is_pt])))
+              paste(big(sum(fr$n[is_pt])), "person-years"))
+
+  hl <- dr_curve_headline(x, at, digits)
+
+  het  <- x$heterogeneity
+  perf <- if (isTRUE(het$estimable)) {
+    c(sprintf("I² = %.1f%%", het$i2), paste("Q test", pv(het$p)))
+  } else {
+    "I² not estimable"
+  }
+  if (isTRUE(wald) && !identical(x$shape$name, "linear")) {
+    nl <- x$nonlinearity
+    perf <- c(perf, if (!is.null(nl) && isTRUE(nl$estimable)) {
+      paste("Linearity", pv(nl$p))
+    } else "Linearity test not available")
+  }
+  g  <- x$gof
+  ok <- !is.null(g) && !identical(g$available, FALSE)
+  if (isTRUE(deviance)) {
+    perf <- c(perf, if (ok && !is.null(g$p) && is.finite(g$p)) {
+      paste("Deviance", pv(g$p))
+    } else "Deviance test not available")
+  }
+  # Adjusted R-squared (Discacciati, 2017): how much of the variation in the
+  # reported effects the curve explains, charged for its number of terms.
+  if (isTRUE(r2adj)) {
+    perf <- c(perf, if (ok && !is.null(g$r2adj) && is.finite(g$r2adj)) {
+      paste0("Adjusted R² = ", formatC(g$r2adj, format = "f", digits = 2))
+    } else "Adjusted R² not available")
+  }
+  # A curve drawn by subgroup carries the test for subgroup interaction
+  # (Berlin, 1993), the comparison its several lines invite.
+  if (isTRUE(subgroup)) {
+    t <- x$subgroup$test
+    perf <- c(perf, if (!is.null(t) && isTRUE(t$estimable)) {
+      paste("Subgroup interaction", pv(t$p))
+    } else "Subgroup interaction test not available")
+  }
+
+  list(sep(info),
+       list(list(text = paste0(hl$label, ":"), space = FALSE),
+            list(text = hl$effect, strong = TRUE, space = TRUE)),
+       sep(perf))
 }
 
 #' Build the curve panel, without drawing it
@@ -319,7 +503,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                            knot.lines = TRUE, grid = FALSE, mark.doses = NULL,
                            axis_in = 7.2,
                            subgroup = NULL, col = "#1F2A44",
-                           fill.ci = "grey75", fill.pi = "grey90",
+                           fill.ci = "#8C9AB3", fill.pi = "grey90",
                            legend = NULL, target = TRUE,
                            tests = list(wald = TRUE)) {
   use_sub <- dr_use_subgroups(x, subgroup, "easydr_curve()")
@@ -350,7 +534,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   }
 
   if (is.null(xlab)) xlab <- paste0("Dose (", unit, ")")
-  if (is.null(ylab)) ylab <- dr_sm_axis(x$sm)
+  if (is.null(ylab)) ylab <- dr_curve_ylab(x$sm)
   if (is.null(main)) main <- paste0("Dose-response: ", x$shape$label)
   if (identical(main, FALSE)) main <- NULL
   # The studies behind the curve. A ratio measure already carries each category
@@ -425,14 +609,17 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   edge    <- tab_in[which.max(tab_in$dose), , drop = FALSE]
   tab_out <- tab[!inside & tab$dose > obs_rng[2L], , drop = FALSE]
   if (nrow(tab_out)) tab_out <- rbind(edge, tab_out)
+  # The band is light and slightly transparent, so the study points and the
+  # knot lines behind it stay visible.
   p <- p + ggplot2::geom_ribbon(
     data = tab_in,
-    ggplot2::aes(ymin = .data$ci.lb, ymax = .data$ci.ub), fill = fill.ci)
+    ggplot2::aes(ymin = .data$ci.lb, ymax = .data$ci.ub), fill = fill.ci,
+    alpha = 0.4)
   if (nrow(tab_out)) {
     p <- p + ggplot2::geom_ribbon(
       data = tab_out,
       ggplot2::aes(ymin = .data$ci.lb, ymax = .data$ci.ub), fill = fill.ci,
-      alpha = 0.35)
+      alpha = 0.18)
   }
 
   # A spline's knots are where its pieces join, so they are drawn as lines
@@ -441,22 +628,28 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   show_knots <- isTRUE(knot.lines) && length(knots) > 0L
   if (is.null(rug)) rug <- !show_knots
   if (show_knots) {
-    p <- p + ggplot2::geom_vline(xintercept = knots, linetype = "longdash",
-                                 colour = "grey55", linewidth = 0.4)
+    p <- p + ggplot2::geom_vline(xintercept = knots, linetype = "dashed",
+                                 colour = "grey78", linewidth = 0.3)
   }
 
   if (isTRUE(reference)) {
-    p <- p +
-      ggplot2::geom_hline(yintercept = null_v, linetype = "dashed",
-                          colour = "grey35", linewidth = 0.4) +
-      ggplot2::geom_vline(xintercept = x$reference$curve, linetype = "dotted",
-                          colour = "grey45", linewidth = 0.4)
+    p <- p + ggplot2::geom_hline(yintercept = null_v, linetype = "dashed",
+                                 colour = "grey50", linewidth = 0.35)
+    # The reference dose is marked only when it sits inside the panel: at the
+    # lowest dose it would only double the axis edge.
+    if (x$reference$curve > xlim[1L] + 1e-9) {
+      p <- p + ggplot2::geom_vline(xintercept = x$reference$curve,
+                                   linetype = "dotted", colour = "grey65",
+                                   linewidth = 0.3)
+    }
   }
   # Shapes for the reference doses, in the order a reader names them. A
   # subgroup figure already spends shape on its levels, and a seventh
   # reference would have to reuse one, so both fall back to circles.
-  ref_shapes <- c(21L, 22L, 24L, 8L, 23L, 25L)
-  key_title <- "Study reference dose"
+  # The five fillable shapes come first, so they share one fill and one
+  # outline; the star, which has no fill, is the sixth.
+  ref_shapes <- c(21L, 22L, 24L, 23L, 25L, 8L)
+  key_title <- paste0("Study reference dose (", unit, ")")
   ref_levels <- if (is.null(obs)) numeric(0) else sort(unique(obs$ref_dose))
   # One reference dose for every study tells the reader nothing a key could
   # add, so the key appears only when the references differ.
@@ -469,8 +662,8 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
             "study point is drawn as a circle.", call. = FALSE)
   }
   if (!is.null(obs)) {
-    pt_fill <- grDevices::adjustcolor(col, alpha.f = 0.25)
-    pt_line <- grDevices::adjustcolor(col, alpha.f = 0.6)
+    pt_fill <- grDevices::adjustcolor(col, alpha.f = 0.18)
+    pt_line <- grDevices::adjustcolor(col, alpha.f = 0.55)
     # By subgroup, each study's circles take the colour of its level's curve,
     # so a reader can tell which points a curve was fitted to. A study whose
     # level could not be fitted keeps the overall colour.
@@ -480,8 +673,8 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
       lv_col <- dr_subgroup_style(drawn_lv)$colour
       pt_lv  <- unname(x$subgroup$by_study[as.character(obs$studlab)])
       base   <- ifelse(pt_lv %in% drawn_lv, lv_col[pt_lv], col)
-      pt_fill <- grDevices::adjustcolor(base, alpha.f = 0.25)
-      pt_line <- grDevices::adjustcolor(base, alpha.f = 0.6)
+      pt_fill <- grDevices::adjustcolor(base, alpha.f = 0.18)
+      pt_line <- grDevices::adjustcolor(base, alpha.f = 0.55)
     }
     if (shape_key) {
       labs_ref <- dr_num_lab(ref_levels)
@@ -491,16 +684,18 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
           data = obs, inherit.aes = FALSE,
           ggplot2::aes(x = .data$dose, y = .data$est, shape = .data$ref_lab,
                        size = .data$size_n),
-          colour = pt_line, fill = pt_fill, stroke = 0.6) +
+          colour = pt_line, fill = pt_fill, stroke = 0.5) +
         ggplot2::scale_shape_manual(
           values = stats::setNames(ref_shapes[seq_along(labs_ref)], labs_ref),
           name = key_title, drop = FALSE,
-          guide = ggplot2::guide_legend(override.aes = list(size = 3)))
+          guide = ggplot2::guide_legend(
+            title.position = "left", nrow = 1L,
+            override.aes = list(size = 2.8, stroke = 0.5)))
     } else {
       p <- p + ggplot2::geom_point(
         data = obs, inherit.aes = FALSE,
         ggplot2::aes(x = .data$dose, y = .data$est, size = .data$size_n),
-        shape = 21L, colour = pt_line, fill = pt_fill, stroke = 0.6)
+        shape = 21L, colour = pt_line, fill = pt_fill, stroke = 0.5)
     }
     p <- p + ggplot2::scale_size(range = c(1, 7), guide = "none")
     if (isTRUE(studlab)) {
@@ -523,10 +718,11 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   }
 
   p <- p + ggplot2::geom_line(data = tab_in, ggplot2::aes(y = .data$est),
-                              colour = col, linewidth = 0.9)
+                              colour = col, linewidth = 1.3,
+                              lineend = "round")
   if (nrow(tab_out)) {
     p <- p + ggplot2::geom_line(data = tab_out, ggplot2::aes(y = .data$est),
-                                colour = col, linewidth = 0.9,
+                                colour = col, linewidth = 1.1,
                                 linetype = "dashed")
   }
 
@@ -580,8 +776,8 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     obs <- data.frame(dose = sort(unique(x$predicted$dose)))
     p <- p + ggplot2::geom_rug(data = obs, inherit.aes = FALSE,
                                ggplot2::aes(x = .data$dose), sides = "b",
-                               colour = "grey25", linewidth = 0.5,
-                               length = grid::unit(0.035, "npc"))
+                               colour = "grey55", linewidth = 0.4,
+                               length = grid::unit(0.025, "npc"))
   }
   marks <- if (length(mark.doses)) {
     m <- dr_predicted(x$fit, sort(unique(c(xref, mark.doses))), xref,
@@ -612,20 +808,38 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     ggplot2::labs(x = xlab, y = ylab) +
     ggplot2::theme_bw() +
     ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
-                   axis.text = ggplot2::element_text(colour = "black"),
+                   panel.border = ggplot2::element_rect(
+                     colour = "grey60", fill = NA, linewidth = 0.4),
+                   axis.ticks = ggplot2::element_line(colour = "grey60",
+                                                      linewidth = 0.3),
+                   axis.text = ggplot2::element_text(colour = "grey20",
+                                                     size = 9),
+                   axis.title = ggplot2::element_text(colour = "grey10",
+                                                      size = 10),
                    panel.grid.major = if (isTRUE(grid))
-                     ggplot2::element_line(colour = "grey92") else
+                     ggplot2::element_line(colour = "grey94",
+                                           linewidth = 0.3) else
                        ggplot2::element_blank(),
+                   # The reference-dose key runs in one row under the axis,
+                   # so it takes no width from the panel.
                    legend.position = if (use_sub) "top" else
-                     if (shape_key) "right" else "none",
-                   legend.direction = if (use_sub) "horizontal" else "vertical",
+                     if (shape_key) "bottom" else "none",
+                   legend.direction = "horizontal",
+                   legend.box.spacing = grid::unit(if (use_sub) 11 else 4,
+                                                   "pt"),
                    legend.justification = if (use_sub) "left" else "center",
-                   legend.margin = ggplot2::margin(0, 0, 2, 0),
-                   legend.key.width = grid::unit(22, "pt"),
-                   legend.key.height = grid::unit(10, "pt"),
-                   legend.text = ggplot2::element_text(size = 8),
+                   legend.margin = ggplot2::margin(if (use_sub) 0 else 2, 0,
+                                                   2, 0),
+                   legend.key.width = grid::unit(if (use_sub) 22 else 12, "pt"),
+                   legend.key.height = grid::unit(if (use_sub) 10 else 12, "pt"),
+                   legend.key.spacing.x = grid::unit(if (use_sub) 5.5 else 8,
+                                                     "pt"),
+                   legend.text = ggplot2::element_text(
+                     size = 8, colour = "grey20",
+                     margin = ggplot2::margin(l = 2)),
                    legend.title = ggplot2::element_text(
-                     size = 8, hjust = if (use_sub) 0 else 0.5),
+                     size = 8, colour = "grey20", hjust = 0, vjust = 0.5,
+                     margin = ggplot2::margin(r = if (use_sub) 5.5 else 8)),
                    plot.margin = ggplot2::margin(6, 10, 2, 6))
   p <- if (x$ratio) {
     # Plain numbers on the log axis: 1000, not 1e+03.
@@ -653,20 +867,22 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   }
   p <- p + ggplot2::coord_cartesian(xlim = xlim)
 
-  bands <- paste0(format(100 * x$provenance$level), "% CI")
-  if (show_pi) {
-    bands <- paste0(bands, " and ", format(100 * x$provenance$level), "% PI")
+  lvl <- format(100 * x$provenance$level)
+  bands <- if (show_pi) {
+    paste0("Shaded bands: ", lvl, "% CI (darker) and ", lvl, "% PI (lighter).")
+  } else {
+    paste0("Shaded band: ", lvl, "% CI.")
   }
   # Under the figure only what explains its marks; the result and the tests
   # are in the subtitle.
   extra <- tests[setdiff(names(tests), c("wald", "deviance", "r2adj"))]
-  # Band and points read as one legend, so they share a row.
-  foot <- c(paste0("Band: ", bands, ".",
+  # Band and symbols read as one legend, so they share a row.
+  foot <- c(paste0(bands,
                    if (isTRUE(studies))
-                     "  Points: each study's effects against its own reference dose.",
-                   if (use_sub) "  The dark line and the band are the overall fit.",
+                     " Symbols: each study's estimates against its own reference dose.",
+                   if (use_sub) " The dark line and the band are the overall fit.",
                    if (nrow(tab_out))
-                     "  Dashed: beyond the highest observed dose."),
+                     " Dashed: beyond the highest observed dose."),
             if (length(extra))
               do.call(dr_test_notes, c(list(x, wald = FALSE), extra)),
             legend)
