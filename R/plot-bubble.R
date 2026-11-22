@@ -43,7 +43,7 @@ easydr_bubble <- function(x, mod = NULL, main = NULL, xlab = NULL,
 
   back       <- if (x$ratio) exp else identity
   continuous <- identical(unname(x$types[[mod]]), "continuous")
-  if (is.null(ylab)) ylab <- dr_label(x$sm, x$dose_unit)
+  if (is.null(ylab)) ylab <- dr_label(x$dose_unit)
   if (is.null(xlab)) xlab <- mod
   if (is.null(main)) main <- paste0("Dose-response trend against ", mod)
   if (identical(main, FALSE)) main <- NULL

@@ -76,12 +76,21 @@ dr_require_single <- function(x, what) {
 dr_refit_ml <- function(f) {
   if (identical(f$provenance$method, "ml") &&
       identical(f$provenance$proc, "1stage")) return(f)
+  dr_refit_with(f, list(method.tau = "ML", proc = "1stage", shape = f$shape))
+}
+
+#' Refit a result with some of its arguments changed, on the same table
+#'
+#' Everything not named in `changes` is inherited. A `NULL` in `changes`
+#' clears that argument. Returns `NULL` when the refit cannot be made.
+#'
+#' @keywords internal
+#' @noRd
+dr_refit_with <- function(f, changes) {
   inh <- try(dr_inherited(f), silent = TRUE)
   if (inherits(inh, "try-error")) return(NULL)
   args <- inh$args
-  args$method.tau <- "ML"
-  args$proc <- "1stage"
-  args$shape <- f$shape
+  args[names(changes)] <- changes
   out <- try(suppressWarnings(
     do.call(inh$entry, c(list(data = inh$data), args))), silent = TRUE)
   if (inherits(out, "try-error")) NULL else out
@@ -381,11 +390,7 @@ dr_curve_multi <- function(x, mult.curves = FALSE, curve.panels = NULL,
   spec <- dr_file_spec(file.name, filetype, path, width, height,
                        what = "easydr_curve(mult.curves = TRUE)")
   title_in <- if (is.null(main)) 0 else 1.9 * 12 / 72
-  foot_in  <- if (is.null(fs)) {
-    (1.35 * 9 * length(foot) + 8) / 72
-  } else {
-    dr_height_in(fs$height)
-  }
+  foot_in  <- dr_footer_in(foot, fs)
   w_in     <- max(3.6 * grid_spec$ncol, dr_grob_width_in(tg) + 0.5)
   size <- dr_fig_size(w_in, 2.9 * grid_spec$nrow + title_in + foot_in + 0.2,
                       max.w = 18, max.h = 24)

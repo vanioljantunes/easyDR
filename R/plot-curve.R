@@ -272,11 +272,7 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # footer needs. The width follows the summary table when there is one,
   # because a subgroup table with four columns is wider than a plot of a
   # single curve wants to be.
-  foot_in  <- if (is.null(fs)) {
-    (1.35 * 9 * length(foot) + 8) / 72
-  } else {
-    dr_height_in(fs$height)
-  }
+  foot_in  <- dr_footer_in(foot, fs)
   sub_g    <- if (isTRUE(subtitle)) {
     panel_cm <- if (length(marg) == 2L && all(is.finite(marg))) {
       dev_w * 2.54 - sum(marg)

@@ -37,16 +37,6 @@ dr_mvn_draw <- function(mu, sigma) {
   as.numeric(mu + e$vectors %*% (sqrt(v) * stats::rnorm(p)))
 }
 
-#' The design matrix a shape puts on a set of doses
-#' @keywords internal
-#' @noRd
-dr_design <- function(shape, dose) {
-  if (is.null(shape) || identical(shape$name, "linear")) {
-    return(cbind(dose = dose))
-  }
-  as.matrix(shape$basis(dose))
-}
-
 #' Refit the whole model on a parametric draw of the reported contrasts
 #'
 #' The draw is taken from the fitted model, not from the observed contrasts.
@@ -89,9 +79,7 @@ dr_boot_once <- function(x, reprofile) {
     ref <- which(frame$id == ids[k] & frame$is_ref)
     if (!length(ref)) next
     base <- frame$y[ref[1L]]
-    xr <- as.numeric(dr_design(x$shape, frame$dose[ref[1L]]))
-    D  <- dr_design(x$shape, frame$dose[rows])
-    D  <- sweep(D, 2L, xr, "-")
+    D  <- dr_contrast(x$shape, frame$dose[rows], frame$dose[ref[1L]])
     mu <- base + as.numeric(D %*% b)
     frame$y[rows] <- dr_mvn_draw(mu, S + D %*% Psi %*% t(D))
   }
@@ -128,7 +116,12 @@ dr_boot_once <- function(x, reprofile) {
   list(fit = fit, shape = shape)
 }
 
-#' The effect at a set of doses, against the reference, for one draw
+#' The fitted effect at a set of doses, against the reference, on the model
+#' scale
+#'
+#' `d` is anything carrying `fit` and `shape`: a result, or one bootstrap
+#' draw.
+#'
 #' @keywords internal
 #' @noRd
 dr_boot_predict <- function(d, doses, xref) {

@@ -99,5 +99,8 @@ test_that("bad arguments are refused with a readable message", {
                "method.tau")
   expect_error(easydrbin(crc_table(), sm = "IRR", covariance = "wrong"),
                "covariance must be")
+  # "user" is an engine code, not an easydr one: no matrix can be supplied.
+  expect_error(easydrbin(crc_table(), sm = "IRR", covariance = "user"),
+               "covariance must be")
   expect_error(easydrbin(as.list(crc_table()), sm = "IRR"), "data frame")
 })

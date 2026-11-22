@@ -409,17 +409,7 @@ dr_study_frame <- function(data, roles, rows, iref, study, sm, design, prov) {
     cases <- as.numeric(data[[roles$event.e]][rows])
     total <- as.numeric(data[[roles$n.e]][rows])
 
-    # V5: counts must be coherent. Only a person-time denominator may be
-    # smaller than the case count; for people, case-control included, the
-    # denominator is the whole category.
-    bad <- which(is.na(cases) | is.na(total) | cases < 0 | total <= 0 |
-                   (!identical(design, "ir") & cases > total))
-    if (length(bad) > 0L) {
-      stop("easydr: study ", study, " has impossible counts in rows ",
-           paste(rows[bad], collapse = ", "),
-           ". Cases must be present, non-negative, and no larger than the ",
-           "denominator.", call. = FALSE)
-    }
+    dr_check_counts(cases, total, design, study, rows)
 
     # V6: a zero cell needs a correction, and the reviewer is told which. The
     # correction has to reach the counts handed to the engine as well, because
@@ -449,11 +439,13 @@ dr_study_frame <- function(data, roles, rows, iref, study, sm, design, prov) {
     lo <- as.numeric(data[[roles$lower]][rows])
     hi <- as.numeric(data[[roles$upper]][rows])
 
-    # V8: limits present for every non-reference row, or for none.
-    missing_limits <- setdiff(which(is.na(lo) | is.na(hi)), iref)
+    # V8: effect and limits present for every non-reference row, or for none.
+    # A missing effect beside its limits went to the engine as log(NA) and
+    # failed there with an unreadable subscript error.
+    missing_limits <- setdiff(which(is.na(te) | is.na(lo) | is.na(hi)), iref)
     if (length(missing_limits) > 0L && length(missing_limits) < n - 1L) {
-      stop("easydr: study ", study, " reports confidence limits for some dose ",
-           "categories but not others (rows ",
+      stop("easydr: study ", study, " reports an effect with confidence ",
+           "limits for some dose categories but not others (rows ",
            paste(rows[missing_limits], collapse = ", "),
            "). Supply limits for every non-reference category, or none.",
            call. = FALSE)
@@ -499,14 +491,7 @@ dr_study_frame <- function(data, roles, rows, iref, study, sm, design, prov) {
         # impossible count or a zero cell failed inside the engine with an
         # unreadable message (audit F9). The same coherence check and the
         # same zero-cell correction as the counts path apply.
-        bad <- which(cases < 0 | total <= 0 |
-                       (!identical(design, "ir") & cases > total))
-        if (length(bad) > 0L) {
-          stop("easydr: study ", study, " has impossible counts in rows ",
-               paste(rows[bad], collapse = ", "),
-               ". Cases must be non-negative and no larger than the ",
-               "denominator.", call. = FALSE)
-        }
+        dr_check_counts(cases, total, design, study, rows)
         if (any(cases == 0)) {
           adj <- dr_zero_adjust(cases, total, design)
           msg <- paste0("study ", study, " has a dose category with zero ",
@@ -570,7 +555,6 @@ dr_study_frame <- function(data, roles, rows, iref, study, sm, design, prov) {
 #' @keywords internal
 #' @noRd
 dr_escalc_counts <- function(cases, total, iref, sm, design) {
-  measure <- switch(sm, "OR" = "OR", "IRR" = "IRR", "RR" = "RR", "RR")
   n <- length(cases)
   y <- rep(NA_real_, n)
   v <- rep(NA_real_, n)
@@ -579,16 +563,12 @@ dr_escalc_counts <- function(cases, total, iref, sm, design) {
   add <- if (any(cases == 0)) 1 / 2 else 0
   for (i in seq_len(n)) {
     if (i == iref) next
-    es <- if (identical(measure, "IRR")) {
+    es <- if (identical(sm, "IRR")) {
       metafor::escalc(measure = "IRR", x1i = cases[i], x2i = cases[iref],
                       t1i = total[i], t2i = total[iref],
                       add = add, to = "all")
-    } else if (identical(measure, "OR")) {
-      metafor::escalc(measure = "OR", ai = cases[i], bi = total[i] - cases[i],
-                      ci = cases[iref], di = total[iref] - cases[iref],
-                      add = add, to = "all")
     } else {
-      metafor::escalc(measure = "RR", ai = cases[i], bi = total[i] - cases[i],
+      metafor::escalc(measure = sm, ai = cases[i], bi = total[i] - cases[i],
                       ci = cases[iref], di = total[iref] - cases[iref],
                       add = add, to = "all")
     }
@@ -596,6 +576,25 @@ dr_escalc_counts <- function(cases, total, iref, sm, design) {
     v[i] <- as.numeric(es$vi)
   }
   list(y = y, v = v)
+}
+
+#' Rule V5: the counts of one study must be coherent
+#'
+#' Only a person-time denominator may be smaller than the case count; for
+#' people, case-control included, the denominator is the whole category.
+#'
+#' @keywords internal
+#' @noRd
+dr_check_counts <- function(cases, total, design, study, rows) {
+  bad <- which(is.na(cases) | is.na(total) | cases < 0 | total <= 0 |
+                 (!identical(design, "ir") & cases > total))
+  if (length(bad) > 0L) {
+    stop("easydr: study ", study, " has impossible counts in rows ",
+         paste(rows[bad], collapse = ", "),
+         ". Cases must be present, non-negative, and no larger than the ",
+         "denominator.", call. = FALSE)
+  }
+  invisible(TRUE)
 }
 
 #' The counts after escalc's add = 1/2, to = "all" correction

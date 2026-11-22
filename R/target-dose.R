@@ -83,17 +83,6 @@ dr_check_gamma <- function(gamma) {
   invisible(NULL)
 }
 
-#' The fitted effect at any doses, on the model scale
-#' @keywords internal
-#' @noRd
-dr_curve_at <- function(x, doses) {
-  b    <- as.numeric(stats::coef(x$fit))
-  xref <- x$reference$curve
-  vapply(doses, function(d) {
-    as.numeric(dr_contrast(x$shape, d, xref) %*% b)
-  }, numeric(1))
-}
-
 #' The dose reaching a fraction of the maximum effect
 #'
 #' `ed_gamma()` reads one number off a fitted curve: the smallest dose at
@@ -139,7 +128,8 @@ ed_gamma <- function(x, gamma = c(0.5, 0.8)) {
   dr_require_single(x, "ed_gamma()")
   dr_check_gamma(gamma)
   grid <- dr_ed_grid(x)
-  out  <- dr_ed_from_curve(grid, dr_curve_at(x, grid), gamma)
+  out  <- dr_ed_from_curve(grid, dr_boot_predict(x, grid, x$reference$curve),
+                           gamma)
   if (is.null(out)) {
     # A condition of its own, so the caller that folds target doses into a
     # result can catch this case and nothing else (audit F14).

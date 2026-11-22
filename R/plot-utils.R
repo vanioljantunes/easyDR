@@ -478,34 +478,15 @@ dr_result_column <- function(x, at = NULL, digits = 3) {
     as.character(x$counts$studies))
 }
 
-#' The summary table that sits under a figure
+#' Height in inches of the band under a figure
 #'
-#' The first column names the quantity, one column follows per subgroup level,
-#' and the last column is the overall fit. Without subgroups it is two columns.
-#' A level that could not be fitted keeps its column and says so, rather than
-#' being dropped and leaving the reader to wonder where it went.
+#' The footer text alone when there is no table (`fs` is `NULL`), else the
+#' measured height of the stacked text and table from `dr_footer_stack()`.
 #'
 #' @keywords internal
 #' @noRd
-dr_summary_table <- function(x, at = NULL, digits = 3, use_sub = FALSE) {
-  quant <- c(dr_pooled_at(x, at)$label,
-             paste0(format(100 * x$provenance$level), "% CI"),
-             "p value", "I2", "Q (df, p)", "Studies")
-  out <- data.frame(quant, check.names = FALSE, stringsAsFactors = FALSE)
-  names(out) <- " "
-  if (isTRUE(use_sub)) {
-    for (lv in x$subgroup$levels) {
-      f <- x$subgroup$fits[[lv]]
-      out[[lv]] <- if (is.null(f)) {
-        c("not fitted", "-", "-", "-", "-",
-          as.character(x$subgroup$table$studies[x$subgroup$table$level == lv]))
-      } else {
-        dr_result_column(f, at, digits)
-      }
-    }
-  }
-  out[["Overall"]] <- dr_result_column(x, at, digits)
-  out
+dr_footer_in <- function(foot, fs) {
+  if (is.null(fs)) (1.35 * 9 * length(foot) + 8) / 72 else dr_height_in(fs$height)
 }
 
 #' Footer text with a table under it, as one grob
@@ -809,13 +790,13 @@ dr_effect_contrast <- function(x, spec) {
     k <- spec$value
     if (identical(x$shape$name, "linear")) {
       return(list(cvec = matrix(k, nrow = 1L, ncol = 1L),
-                  label = dr_label(x$sm, x$dose_unit, k), at = NA_real_))
+                  label = dr_label(x$dose_unit, k), at = NA_real_))
     }
     # A curve has no single slope, so its per-increment effect is the
     # reference plus the increment against the reference. It is labelled as
     # an increment all the same, so every plot of a fit reads alike.
     return(list(cvec = dr_contrast(x$shape, xref + k, xref),
-                label = dr_label(x$sm, x$dose_unit, k), at = xref + k))
+                label = dr_label(x$dose_unit, k), at = xref + k))
   }
   num <- spec$value[1L]
   den <- spec$value[2L]
@@ -866,10 +847,7 @@ dr_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
                                subgroup = FALSE, r2adj = FALSE) {
   col  <- dr_result_column(x, at, digits)
   lab  <- dr_pooled_at(x, at)$label
-  pv   <- function(p) {
-    p <- dr_p(p)
-    if (startsWith(p, "<")) paste("p", p) else paste("p =", p)
-  }
+  pv   <- dr_p_lab
   lvl  <- format(100 * x$provenance$level)
   unit <- if (is.null(x$dose_unit)) "" else paste0(" ", x$dose_unit)
   eff  <- paste0(x$sm, " ", col[1L], " (", lvl, "% CI ", col[2L], ", ",

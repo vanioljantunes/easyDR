@@ -6,7 +6,6 @@ test_that("easydr(result.at) sets the effect the tables report", {
   expect_equal(f2$result_at, list(type = "increment", value = 20))
   expect_match(easyDR:::dr_pooled_at(f1)$label, "Per 1 g/day increase")
   expect_match(easyDR:::dr_pooled_at(f2)$label, "Per 20 g/day increase")
-  expect_match(easyDR:::dr_summary_table(f2, NULL)[1, 1], "Per 20")
   # A plot can still override the fit's setting.
   expect_match(easyDR:::dr_pooled_at(f2, "per.unit")$label, "Per 1 g/day")
 })

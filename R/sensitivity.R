@@ -20,18 +20,6 @@ dr_sens_quantity <- function(fit, at) {
        est = back(p$est), lb = back(p$lb), ub = back(p$ub))
 }
 
-#' Pick the comparison dose for a curve
-#'
-#' The fitted result's own reported doses come first, because those are the
-#' doses the reviewer already chose to look at. Failing that, the middle of the
-#' curve grid, which is the least arbitrary single dose available.
-#'
-#' @keywords internal
-#' @noRd
-dr_sens_dose <- function(fit, at) {
-  dr_result_at(fit, at)
-}
-
 #' Refit the inherited model once per subset and tabulate the movement
 #'
 #' A refit that fails records its reason on its own row and the loop carries on
@@ -41,7 +29,7 @@ dr_sens_dose <- function(fit, at) {
 #' @keywords internal
 #' @noRd
 dr_sens_loop <- function(inh, subsets, labels, full, at, quiet, kind) {
-  dose <- dr_sens_dose(full, at)
+  dose <- dr_result_at(full, at)
   base <- dr_sens_quantity(full, dose)
   n    <- length(subsets)
   rows <- vector("list", n)

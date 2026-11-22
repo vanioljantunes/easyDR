@@ -26,7 +26,7 @@
 #' @keywords internal
 #' @noRd
 dr_prediction_interval <- function(fit, doses, xref, level = 0.95,
-                                   single_study = FALSE, shape = NULL) {
+                                   single_study = FALSE, shape) {
   b <- as.numeric(coef(fit))
   k <- length(unique(fit$id))
   p <- length(b)
@@ -54,13 +54,9 @@ dr_prediction_interval <- function(fit, doses, xref, level = 0.95,
                 lb = rep(NA_real_, length(doses)),
                 ub = rep(NA_real_, length(doses))))
   }
-  # The contrast against the reference dose, in basis space: a scalar for a
-  # linear fit, a row per dose for a curve.
-  X <- if (is.null(shape) || identical(shape$name, "linear")) {
-    matrix(doses - xref, ncol = 1L)
-  } else {
-    dr_contrast(shape, doses, xref)
-  }
+  # The contrast against the reference dose, in basis space: one row per
+  # dose, one column per term.
+  X <- dr_contrast(shape, doses, xref)
 
   Vb <- as.matrix(vcov(fit))
   Psi <- as.matrix(fit$Psi)

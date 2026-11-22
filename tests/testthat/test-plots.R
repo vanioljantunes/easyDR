@@ -496,27 +496,6 @@ test_that("the plots group when asked and refuse when there is nothing to group"
   expect_gt(b$height, a$height)
 })
 
-test_that("the summary table carries one column per level and an overall", {
-  fit <- sub_fit()
-  tab <- dr_summary_table(fit, NULL, 3, use_sub = TRUE)
-  expect_equal(names(tab), c(" ", "case-control", "cumulative incidence",
-                             "Overall"))
-  expect_equal(nrow(tab), 6L)
-  expect_equal(tab[[" "]][6], "Studies")
-  expect_equal(tab[["case-control"]][6], "4")
-  expect_equal(tab[["cumulative incidence"]][6], "2")
-  expect_equal(tab[["Overall"]][6], "6")
-
-  # Each column is that fit's own numbers, not the overall repeated.
-  expect_false(tab[["case-control"]][1] == tab[["Overall"]][1])
-
-  # Without subgroups it is the quantity names and one column.
-  plain <- easydr(alcohol_cancer, sm = "RR", shape = "linear",
-                  dose.unit = "g/day")
-  expect_equal(names(dr_summary_table(plain, NULL, 3, FALSE)),
-               c(" ", "Overall"))
-})
-
 test_that("each level is told apart by colour, line type and shape", {
   sty <- easyDR:::dr_subgroup_style(c("a", "b", "c"))
   expect_equal(length(unique(sty$colour)), 3L)
@@ -539,7 +518,10 @@ test_that("knots given as proportions are percentiles of the doses", {
 test_that("the summary table lies either way, under one Summary header", {
   local_null_device()
   f <- easydr(alcohol_cvd, shape = "rcs", dose.unit = "g/day")
-  tab <- easyDR:::dr_summary_table(f)
+  tab <- data.frame(` ` = c("Per 1 g/day increase", "95% CI", "p value",
+                            "I2", "Q (df, p)", "Studies"),
+                    Overall = easyDR:::dr_result_column(f),
+                    check.names = FALSE, stringsAsFactors = FALSE)
   h <- easyDR:::dr_summary_grob(tab, "horizontal")
   v <- easyDR:::dr_summary_grob(tab, "vertical")
   expect_equal(nrow(h), 3L)                  # Summary, headers, values

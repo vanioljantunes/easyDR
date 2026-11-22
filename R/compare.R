@@ -14,18 +14,10 @@
 #' @keywords internal
 #' @noRd
 dr_refit_shape <- function(f, shape, knots = NULL) {
-  inh  <- dr_inherited(f)
-  args <- inh$args
-  args$shape  <- shape
-  args$knots  <- knots
-  args$powers <- NULL
-  # The fixed Emax parameters belong to the shape that was fitted, not to
-  # the one being tried.
-  args$ed50      <- NULL
-  args$steepness <- NULL
-  out <- try(suppressWarnings(
-    do.call(inh$entry, c(list(data = inh$data), args))), silent = TRUE)
-  if (inherits(out, "try-error")) NULL else out
+  # The powers and the fixed Emax parameters belong to the shape that was
+  # fitted, not to the one being tried.
+  dr_refit_with(f, list(shape = shape, knots = knots, powers = NULL,
+                        ed50 = NULL, steepness = NULL))
 }
 
 #' Overlay several fitted curves on one panel
@@ -88,11 +80,7 @@ dr_overlay_draw <- function(p, tg, main, foot, spec) {
   # and dr_draw_stack measures it the way every other figure's footer is
   # measured. Handing a NULL table to the stacker fails inside gtable.
   fs <- if (is.null(tg)) NULL else dr_footer_stack(foot, tg)
-  foot_in <- if (is.null(fs)) {
-    (1.35 * 9 * length(foot) + 8) / 72
-  } else {
-    dr_height_in(fs$height)
-  }
+  foot_in <- dr_footer_in(foot, fs)
   size <- dr_fig_size(w_in,
                       min(max(0.46 * w_in, 3.2), 4.6) + title_in +
                         foot_in + 0.2)

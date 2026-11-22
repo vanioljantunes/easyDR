@@ -5,9 +5,8 @@
 #' @keywords internal
 #' @noRd
 dr_result <- function(fit, prep, sm, dose_unit, at, level, proc, method, call,
-                      shape = NULL, grid = NULL, data = NULL, entry = NULL,
+                      shape, grid = NULL, data = NULL, entry = NULL,
                       args = NULL, reference = NULL) {
-  if (is.null(shape)) shape <- dr_shape_linear()
   curved <- shape$terms > 1L
   frame <- prep$frame
   prov  <- prep$provenance
@@ -58,7 +57,7 @@ dr_result <- function(fit, prep, sm, dose_unit, at, level, proc, method, call,
     lab <- if (!is.null(shape$slope_label)) {
       shape$slope_label
     } else {
-      dr_label(sm, dose_unit)
+      dr_label(dose_unit)
     }
     list(label = lab, estimate = b, se = se,
          lb = b - zcrit * se, ub = b + zcrit * se,
@@ -163,25 +162,15 @@ dr_fmt <- function(v, digits, na = NULL) {
 #'
 #' @keywords internal
 #' @noRd
-dr_predicted <- function(fit, doses, xref, level, sm, single_study,
-                         shape = NULL, observed = NULL) {
-  if (is.null(shape)) shape <- dr_shape_linear()
-
+dr_predicted <- function(fit, doses, xref, level, sm, single_study, shape,
+                         observed = NULL) {
   # The basis is rebuilt from the shape stored parameters, never re-derived
   # from this grid, or the model would change between fitting and prediction
   # (research decision D4).
-  newdata <- if (identical(shape$name, "linear")) {
-    data.frame(dose = doses)
-  } else {
-    as.data.frame(shape$basis(doses))
-  }
+  newdata <- as.data.frame(shape$basis(doses))
   # The reference dose is always one of the predicted doses, so its basis value
   # is read from the grid rather than from a separate one-value basis call.
-  xref_row <- if (identical(shape$name, "linear")) {
-    xref
-  } else {
-    as.numeric(newdata[[1L]][match(xref, doses)])
-  }
+  xref_row <- as.numeric(newdata[[1L]][match(xref, doses)])
 
   ci <- stats::predict(fit, newdata = newdata, xref = xref_row,
                        expo = FALSE, ci.level = level)

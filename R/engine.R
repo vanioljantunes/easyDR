@@ -19,11 +19,11 @@ dr_covariance <- function(intake, sm, covariance) {
     allowed <- if (identical(intake, "continuous")) {
       c("md", "smd")
     } else {
-      c("gl", "h", "indep", "user")
+      c("gl", "h", "indep")
     }
     if (!covariance %in% allowed) {
       stop("easydr: covariance must be one of ",
-           paste(dQuote(setdiff(allowed, "user")), collapse = ", "),
+           paste(dQuote(allowed), collapse = ", "),
            " for this outcome.", call. = FALSE)
     }
     return(covariance)
@@ -51,7 +51,6 @@ dr_covariance_label <- function(x, n_indep = 0L) {
          md          = "mean differences",
          smd         = "standardised mean differences",
          indep       = "independent contrasts, because no denominators were supplied",
-         user        = "user supplied",
          x)
 }
 
@@ -65,7 +64,7 @@ dr_covariance_label <- function(x, n_indep = 0L) {
 #'
 #' @keywords internal
 #' @noRd
-dr_label <- function(sm, dose_unit, increment = 1) {
+dr_label <- function(dose_unit, increment = 1) {
   unit <- if (is.null(dose_unit)) "dose unit" else dose_unit
   paste0("Per ", format(increment), " ", unit, " increase")
 }
@@ -96,24 +95,19 @@ dr_is_ratio <- function(sm) sm %in% c("RR", "OR", "IRR")
 #' @keywords internal
 #' @noRd
 dr_fit <- function(frame, sm, intake, proc, method, covariance, method.smd,
-                   shape = NULL, mod = NULL, mod_data = NULL) {
+                   shape, mod = NULL, mod_data = NULL) {
   if (!proc %in% c("2stage", "1stage")) {
     stop("easydr: proc must be ", dQuote("2stage"), " or ", dQuote("1stage"),
          ".", call. = FALSE)
   }
   cov_code <- dr_covariance(intake, sm, covariance)
 
-  if (is.null(shape) || identical(shape$name, "linear")) {
-    # The feature 001 path, untouched: one term, named dose.
-    dat <- data.frame(y = frame$y, dose = frame$dose, id = frame$id,
-                      v = frame$v, stringsAsFactors = FALSE)
-    form <- y ~ dose
-  } else {
-    design <- as.data.frame(shape$basis(frame$dose))
-    dat <- data.frame(y = frame$y, id = frame$id, v = frame$v, design,
-                      stringsAsFactors = FALSE)
-    form <- stats::reformulate(colnames(design), response = "y")
-  }
+  # The design columns come from the shape's own basis, the straight line
+  # included (its one column is named dose), so one path serves every shape.
+  design <- as.data.frame(shape$basis(frame$dose))
+  dat <- data.frame(y = frame$y, id = frame$id, v = frame$v, design,
+                    stringsAsFactors = FALSE)
+  form <- stats::reformulate(colnames(design), response = "y")
 
   # A moderator is a study-level covariate, so its columns ride along on the
   # analysis frame and the engine regresses the dose-response coefficients on
@@ -135,6 +129,8 @@ dr_fit <- function(frame, sm, intake, proc, method, covariance, method.smd,
   # zero: Crippa 2018 prints 1.01 (0.97, 1.06) for the cohort red meat studies.
   if (identical(method, "mm")) args$control <- c(args$control, list(set.negeigen = 0))
 
+  # The studies fitted with independent contrasts, set on the count paths.
+  indep_studies <- NULL
   if (identical(intake, "continuous")) {
     # The engine derives the covariance of the mean differences from the
     # standard deviations and group sizes, so no variance is supplied.
@@ -142,7 +138,7 @@ dr_fit <- function(frame, sm, intake, proc, method, covariance, method.smd,
     args$n  <- frame$n
     if (identical(cov_code, "smd")) args$method.smd <- method.smd
   } else if (cov_code %in% c("gl", "h")) {
-    args$v     <- dat$v
+    args$v <- dat$v
     if (all(is.na(frame$cases)) || all(is.na(frame$n))) {
       stop("easydr: covariance = ", dQuote(cov_code), " needs the event counts ",
            "and their denominators. Supply event.e and n.e, or let easydr ",
@@ -185,9 +181,7 @@ dr_fit <- function(frame, sm, intake, proc, method, covariance, method.smd,
          conditionMessage(attr(fit, "condition")), call. = FALSE)
   }
   attr(fit, "easydr_covariance") <- cov_code
-  if (exists("indep_studies", inherits = FALSE)) {
-    attr(fit, "easydr_indep_studies") <- indep_studies
-  }
+  if (!is.null(indep_studies)) attr(fit, "easydr_indep_studies") <- indep_studies
   fit
 }
 

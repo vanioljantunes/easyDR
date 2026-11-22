@@ -68,6 +68,13 @@ test_that("V8 stops when limits are present for some rows of a study only", {
   err <- tryCatch(easydrbin(tab, sm = "IRR"), error = conditionMessage)
   expect_match(err, "some dose")
   expect_match(err, "atm")
+  # A blank effect beside its limits is the same hole, and used to reach the
+  # engine as log(NA).
+  tab <- crc_table("effect")
+  tab$TE[3] <- NA_real_
+  err <- tryCatch(easydrbin(tab, sm = "IRR"), error = conditionMessage)
+  expect_match(err, "some dose")
+  expect_match(err, "rows 3")
 })
 
 test_that("V9 warns when per-study dose ranges differ wildly", {

@@ -281,17 +281,16 @@ easydr <- function(data,
            paste(unique(shape[duplicated(shape)]), collapse = ", "),
            " more than once. Each shape is fitted once.", call. = FALSE)
     }
-    cl  <- match.call()
     # The caller's frame, captured before lapply, because inside the loop
     # parent.frame() is lapply's own and the data argument would not resolve.
     env <- parent.frame()
     fits <- lapply(shape, function(s) {
-      one <- cl
+      one <- call
       one$shape <- s
       eval(one, env)
     })
     names(fits) <- shape
-    return(dr_multi(fits, shape, cl))
+    return(dr_multi(fits, shape, call))
   }
 
   # An argument that belongs to the other kind of outcome is an error, not a
