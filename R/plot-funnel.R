@@ -31,11 +31,13 @@
 #' @param main plot title. `NULL` writes one; `FALSE` draws none.
 #' @param table `"horizontal"` (the default) puts the statistics across the
 #'   top of the table under the funnel, `"vertical"` puts them down its first
-#'   column. Either way the table is headed "Summary".
+#'   column. Either way the table is headed "Egger's regression test".
 #' @param xlab,ylab axis labels. `NULL` writes them from the fit.
-#' @param levels the pseudo confidence regions to shade, as percentages,
+#' @param levels the significance contours to shade, as percentages,
 #'   outermost first.
-#' @param shade fill colours for those regions, outermost first.
+#' @param shade fill colours for those regions, outermost first. The default
+#'   greys get lighter outwards and stay pale, so the innermost region does
+#'   not swamp the points.
 #' @param labels `TRUE` writes the study labels beside the points.
 #' @param digits digits for the table under the plot.
 #'
@@ -72,7 +74,7 @@
 #' @export
 easydr_funnel <- function(x, at = NULL, main = NULL, xlab = NULL, ylab = NULL,
                           levels = c(99, 95, 90),
-                          shade = c("white", "grey85", "grey70"),
+                          shade = c("grey96", "grey90", "grey83"),
                           labels = FALSE, digits = 4, table = "horizontal",
                           filetype = c("png", "pdf", "tiff"),
                           path = NULL, file.name = NULL,
@@ -110,6 +112,8 @@ easydr_funnel <- function(x, at = NULL, main = NULL, xlab = NULL, ylab = NULL,
                stringsAsFactors = FALSE)
   }))
   fills <- stats::setNames(shade[ord], as.character(levels[ord]))
+  # The legend reads from the narrowest contour outwards: 90%, 95%, 99%.
+  brk <- as.character(sort(levels))
 
   if (is.null(main)) main <- "Funnel plot of the study trends"
   if (identical(main, FALSE)) main <- NULL
@@ -125,9 +129,10 @@ easydr_funnel <- function(x, at = NULL, main = NULL, xlab = NULL, ylab = NULL,
     ggplot2::geom_polygon(data = wedges,
                           ggplot2::aes(x = .data$xx, y = .data$yy,
                                        fill = .data$grp, group = .data$grp),
-                          colour = "grey45", linewidth = 0.3) +
-    ggplot2::scale_fill_manual(values = fills, name = "Pseudo-CI",
-                               labels = paste0(levels[ord], "%")) +
+                          colour = "grey60", linewidth = 0.25) +
+    ggplot2::scale_fill_manual(values = fills, breaks = brk,
+                               labels = paste0(brk, "%"),
+                               name = "Significance contours:") +
     ggplot2::geom_vline(xintercept = ctr, linetype = "dashed",
                         colour = "black", linewidth = 0.45) +
     ggplot2::geom_point(data = pts,
@@ -148,15 +153,22 @@ easydr_funnel <- function(x, at = NULL, main = NULL, xlab = NULL, ylab = NULL,
     ggplot2::scale_y_reverse(limits = c(se_max, 0)) +
     ggplot2::coord_cartesian(xlim = c(lo, hi)) +
     ggplot2::labs(x = xlab, y = ylab) +
-    ggplot2::theme_bw() +
-    ggplot2::theme(panel.grid = ggplot2::element_blank(),
+    ggplot2::guides(fill = ggplot2::guide_legend(
+      override.aes = list(colour = "grey60", linewidth = 0.25))) +
+    ggplot2::theme_bw(base_family = "sans") +
+    ggplot2::theme(panel.grid.major = ggplot2::element_line(colour = "grey93",
+                                                            linewidth = 0.3),
+                   panel.grid.minor = ggplot2::element_blank(),
                    legend.position = "top",
                    legend.direction = "horizontal",
                    legend.justification = "left",
-                   legend.margin = ggplot2::margin(0, 0, 2, 0),
+                   legend.margin = ggplot2::margin(0, 0, 0, 0),
+                   legend.box.spacing = grid::unit(4, "pt"),
                    legend.key.size = grid::unit(10, "pt"),
-                   legend.text = ggplot2::element_text(size = 8),
-                   legend.title = ggplot2::element_text(size = 8),
+                   legend.text = ggplot2::element_text(
+                     size = 8, margin = ggplot2::margin(l = 3, r = 8)),
+                   legend.title = ggplot2::element_text(
+                     size = 8, margin = ggplot2::margin(r = 6)),
                    plot.subtitle = ggplot2::element_text(size = 8,
                                                          lineheight = 1.3,
                                                          colour = "grey25"),
@@ -193,7 +205,8 @@ easydr_funnel <- function(x, at = NULL, main = NULL, xlab = NULL, ylab = NULL,
   # thing under it. Two stacked bands beneath one figure is one too many:
   # whichever grob measures short lets the other one land on top of it.
   p  <- p + ggplot2::labs(subtitle = paste(note, collapse = "\n"))
-  tg <- dr_summary_grob(stats_df, table)
+  tab_g <- dr_funnel_table(stats_df, table)
+  tg    <- dr_funnel_footer(tab_g)
 
   # A funnel is read as a shape, so its panel stays close to square. The
   # subtitle carries the caveats and is drawn inside the panel, so it is
@@ -205,16 +218,65 @@ easydr_funnel <- function(x, at = NULL, main = NULL, xlab = NULL, ylab = NULL,
   # and both take their space from it. Counting only the subtitle pushed the
   # last row of the table off the bottom of the page.
   note_in  <- (1.35 * 11 * length(note) + 10) / 72 + 0.40
-  w_in     <- max(7.0, dr_grob_width_in(tg) + 0.5)
+  w_in     <- max(7.0, dr_grob_width_in(tab_g) + 0.5)
   size <- dr_fig_size(w_in,
                       min(max(0.52 * w_in, 3.3), 4.6) + note_in + title_in +
-                        dr_height_in(dr_grob_height(tg)) + 0.25)
+                        dr_height_in(attr(tg, "height")) + 0.25)
   con  <- dr_begin_file(spec, size[["width"]], size[["height"]])
   on.exit(dr_end_file(con), add = TRUE)
 
   g  <- dr_draw_stack(p, NULL, title = main, footer = tg,
-                      footer_h = dr_grob_height(tg))
+                      footer_h = attr(tg, "height"))
 
   invisible(list(table = tab, pooled = e$pooled, egger = eg, label = e$label,
                  at = e$at, grob = g))
+}
+
+#' Egger's test as the table under the funnel
+#'
+#' The shared table style (bold labels over a thin rule, light row lines) with
+#' the test's name as a plain bold caption in place of a grey header cell.
+#'
+#' @keywords internal
+#' @noRd
+dr_funnel_table <- function(stats_df, table = "horizontal", base_size = 9) {
+  table <- match.arg(table, c("horizontal", "vertical"))
+  if (identical(table, "horizontal")) {
+    m <- as.data.frame(t(stats_df$Value), stringsAsFactors = FALSE)
+    names(m) <- stats_df$Statistic
+  } else {
+    m <- stats_df
+  }
+  g <- dr_stats_grob(m, base_size)
+  # The rule above the column labels would double the separator drawn across
+  # the whole footer, so it goes.
+  keep <- g$layout$name != "top-rule"
+  g$grobs  <- g$grobs[keep]
+  g$layout <- g$layout[keep, , drop = FALSE]
+  g <- gtable::gtable_add_rows(g, grid::unit(2.1 * base_size, "points"),
+                               pos = 0)
+  gtable::gtable_add_grob(
+    g, grid::textGrob("Egger\u2019s regression test", x = grid::unit(5, "pt"),
+                      hjust = 0,
+                      gp = grid::gpar(fontsize = base_size + 1,
+                                      fontface = "bold")),
+    t = 1, l = 1, r = ncol(g), name = "egger-title", clip = "off")
+}
+
+#' The footer band: a light rule across the figure, the table just under it
+#' @keywords internal
+#' @noRd
+dr_funnel_footer <- function(tab_g, gap = 4, pad = 8) {
+  th <- grid::convertHeight(sum(tab_g$heights), "points", valueOnly = TRUE)
+  tab_g$vp <- grid::viewport(x = grid::unit(6, "pt"),
+                             y = grid::unit(1, "npc") - grid::unit(gap, "pt"),
+                             just = c("left", "top"), width = sum(tab_g$widths),
+                             height = grid::unit(th, "points"))
+  rule <- grid::segmentsGrob(
+    x0 = grid::unit(6, "pt"), x1 = grid::unit(1, "npc") - grid::unit(10, "pt"),
+    y0 = grid::unit(1, "npc"), y1 = grid::unit(1, "npc"),
+    gp = grid::gpar(col = "grey75", lwd = 0.6))
+  g <- grid::grobTree(rule, tab_g, name = "egger-footer")
+  attr(g, "height") <- grid::unit(th + gap + pad, "points")
+  g
 }
