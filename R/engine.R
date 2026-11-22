@@ -241,6 +241,25 @@ dr_nonlinearity_test <- function(fit, shape, prov = NULL) {
       studies = if (is.null(prov$dose_levels)) 0L else length(prov$dose_levels)))
   }
   terms_tested <- 2:shape$terms
+  # Setting terms to zero leaves a straight line only when the term kept is
+  # the dose itself. A fractional polynomial keeps its power-1 term and tests
+  # the other; with no power of 1 there is no straight line inside it
+  # (Crippa and Orsini, 2016).
+  if (identical(shape$name, "fp")) {
+    p <- shape$powers
+    one <- which(p == 1)
+    if (length(one) == 1L || (length(one) == 2L && one[1L] == 1L)) {
+      terms_tested <- setdiff(seq_along(p), one[1L])
+    } else {
+      return(list(
+        estimable = FALSE,
+        reason = paste0("the fractional polynomial has powers ",
+                        paste(p, collapse = ", "), ", none of them 1, so no ",
+                        "straight line sits inside it to test against"),
+        studies_with_three_levels = if (is.null(prov$n_with_three)) 0L else prov$n_with_three,
+        studies = if (is.null(prov$dose_levels)) 0L else length(prov$dose_levels)))
+    }
+  }
   w <- try(dosresmeta::waldtest(b = coef(fit), Sigma = vcov(fit),
                                 Terms = terms_tested), silent = TRUE)
   if (inherits(w, "try-error")) {

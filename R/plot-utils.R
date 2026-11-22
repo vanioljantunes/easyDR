@@ -792,11 +792,13 @@ dr_effect_contrast <- function(x, spec) {
       return(list(cvec = matrix(k, nrow = 1L, ncol = 1L),
                   label = dr_label(x$dose_unit, k), at = NA_real_))
     }
-    # A curve has no single slope, so its per-increment effect is the
-    # reference plus the increment against the reference. It is labelled as
-    # an increment all the same, so every plot of a fit reads alike.
+    # A curve has no single slope, so its effect is the reference plus the
+    # increment against the reference, and it is labelled as that contrast:
+    # "per 1 unit increase" would claim a constant step the curve does not have.
     return(list(cvec = dr_contrast(x$shape, xref + k, xref),
-                label = dr_label(x$dose_unit, k), at = xref + k))
+                label = paste0("At ", format(xref + k), " ", unit, " vs ",
+                               format(xref)),
+                at = xref + k))
   }
   num <- spec$value[1L]
   den <- spec$value[2L]

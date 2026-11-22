@@ -422,3 +422,27 @@ test_that("F18: a covariance that belongs to the other outcome is refused by nam
   expect_s3_class(easydrbin(alcohol_cvd, sm = "RR", shape = "linear",
                             covariance = "h"), "easydr_result")
 })
+
+test_that("fp: linearity is tested only against a straight line inside the model", {
+  f <- suppressMessages(easydr(alcohol_cvd, sm = "RR", shape = "fp",
+                               powers = c(0, 2), dose.unit = "g/day"))
+  expect_false(f$nonlinearity$estimable)
+  expect_match(f$nonlinearity$reason, "none of them 1")
+  g <- suppressMessages(easydr(alcohol_cvd, sm = "RR", shape = "fp",
+                               powers = c(-2, 1), dose.unit = "g/day"))
+  expect_true(g$nonlinearity$estimable)
+  expect_equal(g$nonlinearity$terms, 1L)
+  w <- dosresmeta::waldtest(b = coef(g$fit), Sigma = vcov(g$fit), Terms = 1)
+  expect_equal(g$nonlinearity$p, as.numeric(w$chitest["P"]))
+})
+
+test_that("a curve's effect is labelled as the contrast it is", {
+  f <- suppressMessages(easydr(alcohol_cvd, sm = "RR", shape = "rcs",
+                               dose.unit = "g/day"))
+  ct <- dr_effect_contrast(f, list(type = "increment", value = 1))
+  expect_match(ct$label, "^At 1 g/day vs 0$")
+  l <- suppressMessages(easydr(alcohol_cvd, sm = "RR", shape = "linear",
+                               dose.unit = "g/day"))
+  expect_match(dr_effect_contrast(l, list(type = "increment", value = 1))$label,
+               "^Per 1 g/day increase$")
+})

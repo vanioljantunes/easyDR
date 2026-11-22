@@ -38,6 +38,11 @@ test_that("every multi-term shape reports a test, and one-term shapes do not", {
   # SC-002.
   for (s in c("rcs", "fp", "quadratic")) {
     fit <- easydrbin(crc_table(), sm = "IRR", shape = s)
+    # An fp holds a straight line only when one of its powers is 1.
+    if (identical(s, "fp") && !any(fit$shape$powers == 1)) {
+      expect_false(fit$nonlinearity$estimable, info = s)
+      next
+    }
     expect_true(fit$nonlinearity$estimable, info = s)
     out <- paste(capture.output(print(fit)), collapse = " ")
     expect_match(out, "Departure from linearity: X2 =", info = s)

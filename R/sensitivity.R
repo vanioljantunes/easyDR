@@ -262,7 +262,8 @@ print.easydr_sensitivity <- function(x, digits = 4, ...) {
 
   quantity <- if (identical(x$quantity, "slope")) {
     paste0("the slope, ", x$sm, " per 1 ", unit)
-  } else if (is.finite(x$dose) && !grepl(" vs ", x$label)) {
+  } else if (is.finite(x$dose) &&
+             (!grepl(" vs ", x$label) || startsWith(x$label, "At "))) {
     paste0("the predicted ", x$sm, " at ", x$dose, " ", unit)
   } else {
     x$label
@@ -322,7 +323,8 @@ dr_sens_defaults <- function(x) {
   unit <- if (is.null(x$dose_unit)) "dose unit" else x$dose_unit
   out <- if (identical(x$quantity, "slope")) {
     "comparison quantity: the slope, because this shape has one term"
-  } else if (is.finite(x$dose) && !grepl(" vs ", x$label)) {
+  } else if (is.finite(x$dose) &&
+             (!grepl(" vs ", x$label) || startsWith(x$label, "At "))) {
     paste0("comparison quantity: the predicted effect at ", x$dose, " ", unit,
            ", because a curve has no single slope")
   } else {

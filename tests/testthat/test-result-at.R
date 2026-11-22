@@ -4,10 +4,10 @@ test_that("easydr(result.at) sets the effect the tables report", {
                result.at = 20)
   expect_identical(f1$result_at, list(type = "increment", value = 1))
   expect_equal(f2$result_at, list(type = "increment", value = 20))
-  expect_match(easyDR:::dr_pooled_at(f1)$label, "Per 1 g/day increase")
-  expect_match(easyDR:::dr_pooled_at(f2)$label, "Per 20 g/day increase")
+  expect_match(easyDR:::dr_pooled_at(f1)$label, "^At 1 g/day vs 0$")
+  expect_match(easyDR:::dr_pooled_at(f2)$label, "^At 20 g/day vs 0$")
   # A plot can still override the fit's setting.
-  expect_match(easyDR:::dr_pooled_at(f2, "per.unit")$label, "Per 1 g/day")
+  expect_match(easyDR:::dr_pooled_at(f2, "per.unit")$label, "^At 1 g/day vs 0$")
 })
 
 test_that("the forest stays per unit whatever easydr() was told", {
@@ -41,11 +41,11 @@ test_that("the funnel table lies across and is headed Summary", {
 test_that("leave-one-out follows easydr(result.at)", {
   f <- easydr(alcohol_cvd, sm = "RR", shape = "rcs", dose.unit = "g/day")
   lo <- easydr_loo(f, plot = FALSE, quiet = TRUE)
-  expect_match(lo$label, "Per 1 g/day increase")
+  expect_match(lo$label, "^At 1 g/day vs 0$")
   f2 <- easydr(alcohol_cvd, sm = "RR", shape = "rcs", dose.unit = "g/day",
                result.at = 20)
   lo2 <- easydr_loo(f2, plot = FALSE, quiet = TRUE)
-  expect_match(lo2$label, "Per 20 g/day increase")
+  expect_match(lo2$label, "^At 20 g/day vs 0$")
 })
 
 test_that("overall.per.unit scales a line by the increment and pairs two doses", {
