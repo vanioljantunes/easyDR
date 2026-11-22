@@ -14,3 +14,4 @@
 ^\.tmp$
 ^Rplots\.pdf$
 ^validation$
+^tests/testthat/_problems$

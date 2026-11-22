@@ -9,3 +9,4 @@ book/*_files/
 .quarto/
 .tmp/
 Rplots.pdf
+tests/testthat/_problems/
