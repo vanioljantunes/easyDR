@@ -10,3 +10,7 @@ book/*_files/
 .tmp/
 Rplots.pdf
 tests/testthat/_problems/
+
+# Claude Code files stay local
+.claude/
+CLAUDE.md
