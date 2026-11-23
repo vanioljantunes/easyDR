@@ -226,7 +226,8 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     fill.pi = fill.pi, legend = legend, target = target,
     tests = list(wald = wald, deviance = deviance, r2 = r2, r2adj = r2adj,
                  aic = aic, bic = bic))
-  p       <- dr_centre_legend(built$plot)
+  # The key sits right of the panel, which keeps its place on the left.
+  p       <- dr_centre_legend(built$plot, centre = isTRUE(built$use_sub))
   marg    <- attr(p, "panel_margins")
   foot    <- if (isTRUE(footer)) built$foot else NULL
   tab     <- built$tab
@@ -250,15 +251,31 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
       dt <- cbind(data.frame(` ` = names(dt)[-1L], check.names = FALSE,
                              stringsAsFactors = FALSE), m)
     }
-    g <- dr_stats_grob(dt)
-    keep <- g$layout$name != "top-rule"
-    g$grobs  <- g$grobs[keep]
-    g$layout <- g$layout[keep, , drop = FALSE]
-    g
+    if (identical(match.arg(table, c("horizontal", "vertical")), "vertical")) {
+      g <- dr_stats_grob(dt)
+      keep <- g$layout$name != "top-rule"
+      g$grobs  <- g$grobs[keep]
+      g$layout <- g$layout[keep, , drop = FALSE]
+      g
+    } else {
+      ci_col <- paste0(format(100 * x$provenance$level), "% CI")
+      if (identical(names(dt)[2L], x$sm)) names(dt)[2L] <- dr_curve_ylab(x$sm)
+      if (ci_col %in% names(dt)) {
+        v <- dt[[ci_col]]
+        if (!any(grepl("-", v))) dt[[ci_col]] <- gsub(" to ", "\u2013", v)
+        names(dt)[names(dt) == ci_col] <- paste0(format(100 * x$provenance$level),
+                                                 "% confidence interval")
+      }
+      unit_r <- if (is.null(x$dose_unit)) "" else paste0(" ", x$dose_unit)
+      dr_curve_table_grob(
+        dt, title = paste0("Predicted ", dr_sm_label(x$sm), "s by dose"),
+        note = paste0("Compared with ", dr_num_lab(xref), unit_r))
+    }
   } else {
     NULL
   }
-  w_in <- max(7.2, dr_grob_width_in(tg) + 0.5)
+  w_in <- max(7.2, if (is.null(tg)) 0 else if (!is.null(attr(tg, "natural_in")))
+    attr(tg, "natural_in") else dr_grob_width_in(tg) + 0.5)
 
   # The footer lines start where the panel box starts and wrap at its right
   # edge, so the text reads as belonging to the plot above it.
@@ -276,11 +293,12 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
     foot_x   <- grid::unit(marg[["left"]], "cm")
     foot_r   <- grid::unit(marg[["right"]], "cm")
     panel_cm <- dev_w * 2.54 - sum(marg)
-    if (length(foot)) foot <- dr_wrap_text(foot, panel_cm, 8.5)
+    if (length(foot)) foot <- dr_wrap_text(foot, dev_w * 2.54 - 1.2, 7.5)
   }
   # Caption, a thin rule, then the table: one block under the panel, so the
   # numbers read as part of the figure rather than as a second one.
-  fs <- dr_curve_footer(foot, tg, text_x = foot_x, right = foot_r)
+  fs <- dr_curve_footer(foot, tg, text_x = foot_x, right = foot_r,
+                        centre = TRUE, size = 7.5)
 
   # The panel is the figure here, and the band under it is whatever the
   # footer needs. The width follows the summary table when there is one,
@@ -288,13 +306,17 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # single curve wants to be.
   foot_in  <- if (is.null(fs)) 0 else dr_height_in(fs$height)
   sub_g    <- if (isTRUE(subtitle)) {
-    dr_subtitle_grob(
-      dr_subtitle_wrap(
-        dr_curve_subtitle_tokens(x, result.at, digits, wald = wald,
-                                 deviance = deviance, subgroup = use_sub,
-                                 r2adj = r2adj),
-        panel_cm, size = 9),
-      size = 9, col = "grey25", strong_col = "black")
+    # What the curve rests on, small and grey; then, after a gap, the result
+    # and the tests, the values in bold.
+    st <- function(size, col, gap) list(size = size, col = col,
+                                        strong_col = "black", sep_col = "grey70",
+                                        gap = gap)
+    dr_rich_grob(dr_rich_lines(
+      dr_curve_subtitle_tokens(x, result.at, digits, wald = wald,
+                               deviance = deviance, subgroup = use_sub,
+                               r2adj = r2adj),
+      list(st(7.5, "grey40", 0), st(8.5, "grey20", 6), st(8.5, "grey20", 1)),
+      dev_w * 2.54 - 1))
   } else {
     NULL
   }
@@ -324,18 +346,25 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
 #' @noRd
 dr_curve_footer <- function(text, table_grob, size = 8.5,
                             text_x = grid::unit(4, "pt"),
-                            right = grid::unit(4, "pt")) {
+                            right = grid::unit(4, "pt"), centre = FALSE) {
+  # Centred under the figure, the caption and the table span its width.
+  if (isTRUE(centre)) {
+    text_x <- grid::unit(0.22, "in")
+    right  <- grid::unit(0.22, "in")
+  }
   if (!length(text) && is.null(table_grob)) return(NULL)
   grobs   <- list()
   heights <- list()
   if (length(text)) {
     n <- length(strsplit(paste(text, collapse = "\n"), "\n", fixed = TRUE)[[1]])
     grobs <- c(grobs, list(grid::textGrob(
-      paste(text, collapse = "\n"), x = text_x, y = grid::unit(1, "npc") -
-        grid::unit(3, "pt"), hjust = 0, vjust = 1,
+      paste(text, collapse = "\n"),
+      x = if (isTRUE(centre)) grid::unit(0.5, "npc") else text_x,
+      y = grid::unit(1, "npc") - grid::unit(3, "pt"),
+      hjust = if (isTRUE(centre)) 0.5 else 0, vjust = 1,
       gp = grid::gpar(fontsize = size, lineheight = 1.2, col = "grey35"))))
     heights <- c(heights, list(grid::unit(
-      1.2 * size * n + if (is.null(table_grob)) 10 else 7, "points")))
+      1.2 * size * n + if (is.null(table_grob)) 10 else 14, "points")))
   }
   if (!is.null(table_grob)) {
     rule <- grid::segmentsGrob(
@@ -343,7 +372,7 @@ dr_curve_footer <- function(text, table_grob, size = 8.5,
       y0 = grid::unit(0.5, "npc"), y1 = grid::unit(0.5, "npc"),
       gp = grid::gpar(col = "grey80", lwd = 0.6))
     grobs   <- c(grobs, list(rule, table_grob))
-    heights <- c(heights, list(grid::unit(6, "points"),
+    heights <- c(heights, list(grid::unit(8, "points"),
                                dr_grob_height(table_grob, pad = 10)))
   }
   hv <- do.call(grid::unit.c, heights)
@@ -390,24 +419,53 @@ dr_curve_headline <- function(x, at = NULL, digits = 3) {
     }, error = function(e) NULL)
     if (!is.null(trend)) {
       src <- trend
-      lab <- paste0(dr_label(x$dose_unit, spec$value), " (linear trend)")
+      lab <- paste0(dr_label(dr_unit_one(unit, spec$value), spec$value),
+                    " (linear trend)")
     }
   }
   p <- dr_pooled_at(src, spec)
   if (is.null(lab)) {
     lab <- if (identical(spec$type, "pair")) {
-      paste0(format(spec$value[1L]), " vs ", format(spec$value[2L]), " ", unit)
+      paste0("At ", format(spec$value[1L]), " ",
+             dr_unit_one(unit, spec$value[1L]), " vs ", format(spec$value[2L]))
     } else {
-      p$label
+      dr_label(dr_unit_one(unit, spec$value), spec$value)
     }
   }
   back <- if (x$ratio) exp else identity
   fmt  <- function(v) format(round(back(v), digits), nsmall = digits)
   lvl  <- format(100 * x$provenance$level)
+  lo <- fmt(p$lb)
+  hi <- fmt(p$ub)
+  # An en dash between the limits, as journals print them, unless a limit is
+  # negative, where "-0.2-0.1" would misread.
+  ci <- if (grepl("^-", lo) || grepl("^-", hi)) {
+    paste0(lo, " to ", hi)
+  } else {
+    paste0(lo, "\u2013", hi)
+  }
   list(label = lab,
-       effect = paste0(x$sm, " ", fmt(p$est), " (", lvl, "% CI ", fmt(p$lb),
-                       " to ", fmt(p$ub), ", ", dr_p_lab(p$p), ")"),
+       est = paste0(x$sm, " ", fmt(p$est)),
+       ci = paste0("(", lvl, "% CI ", ci, "),"),
+       p = dr_p_lab(p$p),
+       effect = paste0(x$sm, " ", fmt(p$est), " (", lvl, "% CI ", ci, "), ",
+                       dr_p_lab(p$p)),
        pooled = p, trend = !identical(src, x))
+}
+
+#' A unit written for one of it: "1 cup/day", not "1 cups/day"
+#'
+#' Only the first word before a slash loses a plural "s", and only when the
+#' amount is exactly one.
+#'
+#' @keywords internal
+#' @noRd
+dr_unit_one <- function(unit, value) {
+  if (length(value) && isTRUE(all.equal(value[1L], 1))) {
+    sub("^([A-Za-z]+[^s])s(/|$)", "\\1\\2", unit)
+  } else {
+    unit
+  }
 }
 
 #' The subtitle under a curve's title, as tokens
@@ -423,22 +481,36 @@ dr_curve_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
                                      deviance = TRUE, subgroup = FALSE,
                                      r2adj = FALSE) {
   pv  <- dr_p_lab
-  sep <- function(items) lapply(seq_along(items), function(i) list(
-    text = if (i == 1L) items[i] else paste0("\u00b7 ", items[i]),
-    space = TRUE))
+  # Items are parted by a light dot with room on both sides. An item is a
+  # plain label and, where it has one, a bold value.
+  dot <- list(text = "\u2002\u00b7\u2002", role = "sep", space = FALSE)
+  sep <- function(items) {
+    out <- list()
+    for (i in seq_along(items)) {
+      it <- items[[i]]
+      if (!is.list(it)) it <- list(it)
+      if (i > 1L) out <- c(out, list(dot))
+      out <- c(out, list(list(text = it[[1L]], space = FALSE)))
+      if (length(it) > 1L) {
+        out <- c(out, list(list(text = it[[2L]], strong = TRUE, space = TRUE)))
+      }
+    }
+    out
+  }
   # What the curve is and what it rests on. Counts of people and of
   # person-time are different things, so a fit mixing incidence-rate studies
   # with the others reports both rather than adding them up.
   fr  <- x$frame
   big <- function(v) if (v >= 1e6) {
-    paste0(formatC(v / 1e6, format = "fg", digits = 3), "M")
+    paste0(formatC(v / 1e6, format = "fg", digits = 3), " million")
   } else {
     format(round(v), big.mark = ",", scientific = FALSE, trim = TRUE)
   }
   is_pt <- fr$type %in% "ir"
   nm <- sub(",.*$", "", x$shape$label)
   nm <- paste0(toupper(substring(nm, 1, 1)), substring(nm, 2))
-  info <- c(nm, paste(x$counts$studies, "studies"),
+  info <- c(paste(nm, "dose\u2013response meta-analysis"),
+            paste(x$counts$studies, "studies"),
             if (any(!is_pt) && all(is.finite(fr$n[!is_pt])))
               paste(big(sum(fr$n[!is_pt])), "participants"),
             if (any(is_pt) && all(is.finite(fr$n[is_pt])))
@@ -448,42 +520,44 @@ dr_curve_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
 
   het  <- x$heterogeneity
   perf <- if (isTRUE(het$estimable)) {
-    c(sprintf("I\u00b2 = %.1f%%", het$i2), paste("Q test", pv(het$p)))
+    list(list("I\u00b2 =", sprintf("%.1f%%", het$i2)), list("Q test", pv(het$p)))
   } else {
-    "I\u00b2 not estimable"
+    list("I\u00b2 not estimable")
   }
   if (isTRUE(wald) && !identical(x$shape$name, "linear")) {
     nl <- x$nonlinearity
-    perf <- c(perf, if (!is.null(nl) && isTRUE(nl$estimable)) {
-      paste("Non-linearity", pv(nl$p))
-    } else "Non-linearity test not available")
+    perf <- c(perf, list(if (!is.null(nl) && isTRUE(nl$estimable)) {
+      list("Non-linearity", pv(nl$p))
+    } else "Non-linearity test not available"))
   }
   g  <- x$gof
   ok <- !is.null(g) && !identical(g$available, FALSE)
   if (isTRUE(deviance)) {
-    perf <- c(perf, if (ok && !is.null(g$p) && is.finite(g$p)) {
-      paste("Deviance", pv(g$p))
-    } else "Deviance test not available")
+    perf <- c(perf, list(if (ok && !is.null(g$p) && is.finite(g$p)) {
+      list("Deviance", pv(g$p))
+    } else "Deviance test not available"))
   }
   # Adjusted R-squared (Discacciati, 2017): how much of the variation in the
   # reported effects the curve explains, charged for its number of terms.
   if (isTRUE(r2adj)) {
-    perf <- c(perf, if (ok && !is.null(g$r2adj) && is.finite(g$r2adj)) {
-      paste0("Adjusted R\u00b2 = ", formatC(g$r2adj, format = "f", digits = 2))
-    } else "Adjusted R\u00b2 not available")
+    perf <- c(perf, list(if (ok && !is.null(g$r2adj) && is.finite(g$r2adj)) {
+      list("Adjusted R\u00b2 =", formatC(g$r2adj, format = "f", digits = 2))
+    } else "Adjusted R\u00b2 not available"))
   }
   # A curve drawn by subgroup carries the test for subgroup interaction
   # (Berlin, 1993), the comparison its several lines invite.
   if (isTRUE(subgroup)) {
     t <- x$subgroup$test
-    perf <- c(perf, if (!is.null(t) && isTRUE(t$estimable)) {
-      paste("Subgroup interaction", pv(t$p))
-    } else "Subgroup interaction test not available")
+    perf <- c(perf, list(if (!is.null(t) && isTRUE(t$estimable)) {
+      list("Subgroup interaction", pv(t$p))
+    } else "Subgroup interaction test not available"))
   }
 
-  list(sep(info),
+  list(sep(as.list(info)),
        list(list(text = paste0(hl$label, ":"), space = FALSE),
-            list(text = hl$effect, strong = TRUE, space = TRUE)),
+            list(text = hl$est, strong = TRUE, space = TRUE),
+            list(text = hl$ci, space = TRUE),
+            list(text = hl$p, strong = TRUE, space = TRUE)),
        sep(perf))
 }
 
@@ -627,8 +701,17 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   knots <- if (identical(x$shape$name, "rcs")) x$shape$knots else NULL
   show_knots <- isTRUE(knot.lines) && length(knots) > 0L
   if (is.null(rug)) rug <- !show_knots
-  if (show_knots) {
-    p <- p + ggplot2::geom_vline(xintercept = knots, linetype = "dashed",
+  # A light dashed line at every labelled dose (the knots, the doses in the
+  # table, the highest dose) lets a reader carry a value down to the axis.
+  # The breaks are the ones the axis uses, worked out the same way below.
+  if (show_knots || length(mark.doses)) {
+    cand_v <- unique(signif(c(range(x$frame$dose), knots, mark.doses), 6))
+    span_v <- diff(range(cand_v))
+    gap_v  <- if (span_v > 0) span_v * 0.32 / max(axis_in - 1, 1) else 0
+    br_v <- numeric(0)
+    for (b in cand_v) if (all(abs(b - br_v) >= gap_v)) br_v <- c(br_v, b)
+    br_v <- c(br_v[br_v > min(x$frame$dose)], if (show_knots) knots)
+    p <- p + ggplot2::geom_vline(xintercept = unique(br_v), linetype = "dashed",
                                  colour = "grey78", linewidth = 0.3)
   }
 
@@ -649,7 +732,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # The five fillable shapes come first, so they share one fill and one
   # outline; the star, which has no fill, is the sixth.
   ref_shapes <- c(21L, 22L, 24L, 23L, 25L, 8L)
-  key_title <- paste0("Study reference dose (", unit, ")")
+  key_title <- paste0("Study reference\ndose (", unit, ")")
   ref_levels <- if (is.null(obs)) numeric(0) else sort(unique(obs$ref_dose))
   # One reference dose for every study tells the reader nothing a key could
   # add, so the key appears only when the references differ.
@@ -689,7 +772,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
           values = stats::setNames(ref_shapes[seq_along(labs_ref)], labs_ref),
           name = key_title, drop = FALSE,
           guide = ggplot2::guide_legend(
-            title.position = "left", nrow = 1L,
+            title.position = "top", ncol = 1L,
             override.aes = list(size = 2.8, stroke = 0.5)))
     } else {
       p <- p + ggplot2::geom_point(
@@ -823,11 +906,11 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                    # The reference-dose key runs in one row under the axis,
                    # so it takes no width from the panel.
                    legend.position = if (use_sub) "top" else
-                     if (shape_key) "bottom" else "none",
-                   legend.direction = "horizontal",
+                     if (shape_key) "right" else "none",
+                   legend.direction = if (use_sub) "horizontal" else "vertical",
                    legend.box.spacing = grid::unit(if (use_sub) 11 else 4,
                                                    "pt"),
-                   legend.justification = if (use_sub) "left" else "center",
+                   legend.justification = if (use_sub) "left" else c(0, 1),
                    legend.margin = ggplot2::margin(if (use_sub) 0 else 2, 0,
                                                    2, 0),
                    legend.key.width = grid::unit(if (use_sub) 22 else 12, "pt"),
@@ -839,7 +922,11 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                      margin = ggplot2::margin(l = 2)),
                    legend.title = ggplot2::element_text(
                      size = 8, colour = "grey20", hjust = 0, vjust = 0.5,
-                     margin = ggplot2::margin(r = if (use_sub) 5.5 else 8)),
+                     face = if (use_sub) "plain" else "bold",
+                     lineheight = 1.1,
+                     margin = ggplot2::margin(r = if (use_sub) 5.5 else 0,
+                                              b = if (use_sub) 0 else 5)),
+                   legend.key.spacing.y = grid::unit(3, "pt"),
                    plot.margin = ggplot2::margin(6, 10, 2, 6))
   p <- if (x$ratio) {
     # Plain numbers on the log axis: 1000, not 1e+03.
@@ -869,9 +956,10 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
 
   lvl <- format(100 * x$provenance$level)
   bands <- if (show_pi) {
-    paste0("Shaded bands: ", lvl, "% CI (darker) and ", lvl, "% PI (lighter).")
+    paste0("Shaded bands: ", lvl, "% confidence interval (darker) and ", lvl,
+           "% prediction interval (lighter).")
   } else {
-    paste0("Shaded band: ", lvl, "% CI.")
+    paste0("Shaded band: ", lvl, "% confidence interval.")
   }
   # Under the figure only what explains its marks; the result and the tests
   # are in the subtitle.
@@ -879,7 +967,7 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # Band and symbols read as one legend, so they share a row.
   foot <- c(paste0(bands,
                    if (isTRUE(studies))
-                     " Symbols: each study's estimates against its own reference dose.",
+                     " Symbols: individual study estimates relative to their own reference dose.",
                    if (use_sub) " The dark line and the band are the overall fit.",
                    if (nrow(tab_out))
                      " Dashed: beyond the highest observed dose."),
@@ -951,7 +1039,7 @@ dr_num_lab <- function(v) {
 #'
 #' @keywords internal
 #' @noRd
-dr_centre_legend <- function(p) {
+dr_centre_legend <- function(p, centre = TRUE) {
   g  <- ggplot2::ggplotGrob(p)
   side <- function(g, idx) tryCatch(
     sum(dr_measure(grid::convertWidth(g$widths[idx], "cm", valueOnly = TRUE))),
@@ -963,7 +1051,7 @@ dr_centre_legend <- function(p) {
     c(left = side(g, seq_len(pc - 1L)), right = side(g, (pc + 1L):n))
   }
   at <- which(g$layout$name == "guide-box-right")
-  if (!length(at) || inherits(g$grobs[[at]], "zeroGrob")) {
+  if (!isTRUE(centre) || !length(at) || inherits(g$grobs[[at]], "zeroGrob")) {
     attr(g, "panel_margins") <- margins(g)
     return(g)
   }
@@ -1001,4 +1089,154 @@ dr_centre_legend <- function(p) {
   }
   attr(g, "panel_margins") <- margins(g)
   g
+}
+
+
+#' Wrap subtitle groups, each with its own type size and colours
+#'
+#' A group is one line of the subtitle (what the curve rests on, the result,
+#' the tests); it wraps only when wider than the panel. Each line keeps the
+#' style of its group and the space above it.
+#'
+#' @keywords internal
+#' @noRd
+dr_rich_lines <- function(groups, styles, width_cm) {
+  old <- grDevices::dev.cur()
+  tf  <- tempfile(fileext = ".png")
+  grDevices::png(tf, width = 7, height = 7, units = "in", res = 300)
+  on.exit({
+    grDevices::dev.off()
+    if (old > 1L) grDevices::dev.set(old)
+    unlink(tf)
+  }, add = TRUE)
+  out <- list()
+  for (i in seq_along(groups)) {
+    st <- styles[[i]]
+    lines <- dr_subtitle_wrap1(groups[[i]], width_cm, size = st$size)
+    for (j in seq_along(lines)) {
+      runs <- lines[[j]]
+      # A dot left at either end of a wrapped line parts nothing.
+      while (length(runs) && identical(runs[[1L]]$role, "sep")) runs <- runs[-1L]
+      while (length(runs) && identical(runs[[length(runs)]]$role, "sep")) {
+        runs <- runs[-length(runs)]
+      }
+      if (length(runs)) runs[[1L]]$text <- sub("^ ", "", runs[[1L]]$text)
+      out[[length(out) + 1L]] <- c(st, list(runs = runs,
+                                            gap = if (j == 1L) st$gap else 0))
+    }
+  }
+  out
+}
+
+#' Draw styled subtitle lines, centred, from plain, bold and separator pieces
+#'
+#' Each line is one plotmath expression drawn once per kind of piece, the
+#' other pieces held as invisible phantoms, so the pieces meet exactly while
+#' each kind keeps its own colour.
+#'
+#' @keywords internal
+#' @noRd
+dr_rich_grob <- function(lines, align = 0.5) {
+  kind <- function(r) {
+    if (identical(r$role, "sep")) "sep" else if (isTRUE(r$strong)) "strong" else "plain"
+  }
+  piece <- function(r, show) {
+    e <- if (isTRUE(r$strong)) bquote(bold(.(r$text))) else r$text
+    if (show) e else bquote(phantom(.(e)))
+  }
+  kids <- list()
+  y <- 0
+  for (ln in lines) {
+    lh <- 1.4 * ln$size
+    y  <- y + ln$gap
+    yy <- grid::unit(1, "npc") - grid::unit(y + 0.5 * lh, "points")
+    for (k in c("plain", "strong", "sep")) {
+      if (!any(vapply(ln$runs, kind, character(1)) == k)) next
+      parts <- lapply(ln$runs, function(r) piece(r, kind(r) == k))
+      kids[[length(kids) + 1L]] <- grid::textGrob(
+        as.expression(as.call(c(as.name("paste"), parts))),
+        x = grid::unit(align, "npc"), y = yy, hjust = align,
+        gp = grid::gpar(fontsize = ln$size,
+                        col = switch(k, plain = ln$col, strong = ln$strong_col,
+                                     sep = ln$sep_col)))
+    }
+    y <- y + lh
+  }
+  g <- grid::gTree(children = do.call(grid::gList, kids))
+  attr(g, "height") <- grid::unit(y + 6, "points")
+  g
+}
+
+#' The results table under a curve: a title row, then the table across the
+#' figure
+#'
+#' The title names what the rows are and the note on the right what they are
+#' compared with. The header row is shaded, the first column (the dose) is
+#' bold, and the numbers are right-aligned under their headers.
+#'
+#' @keywords internal
+#' @noRd
+dr_curve_table_grob <- function(dt, title, note, base_size = 8.5,
+                                margin = grid::unit(0.22, "in")) {
+  dt[] <- lapply(dt, function(v) ifelse(is.na(v), "", as.character(v)))
+  nr <- nrow(dt)
+  nc <- ncol(dt)
+  meas <- function(s, face) {
+    if (!length(s)) return(0)
+    max(vapply(s, function(z) dr_measure(grid::convertWidth(grid::grobWidth(
+      grid::textGrob(z, gp = grid::gpar(fontsize = base_size, fontface = face))),
+      "in", valueOnly = TRUE)), numeric(1)))
+  }
+  nat <- vapply(seq_len(nc), function(j) {
+    max(meas(names(dt)[j], "plain"), meas(dt[[j]], if (j == 1L) "bold" else "plain"))
+  }, numeric(1))
+  rel <- nat + mean(nat)
+  row_h <- 2.3 * base_size
+  hdr_h <- 2.1 * base_size
+  ttl_h <- 2.6 * base_size
+  gt <- gtable::gtable(
+    widths = grid::unit.c(margin, grid::unit(rel, "null"), margin),
+    heights = grid::unit(c(ttl_h, hdr_h, rep(row_h, nr)), "points"))
+  pad <- grid::unit(7, "pt")
+  cell <- function(lab, j, face, col, size = base_size) {
+    left <- j == 1L
+    grid::textGrob(lab, x = if (left) pad else grid::unit(1, "npc") - pad,
+                   hjust = if (left) 0 else 1,
+                   gp = grid::gpar(fontsize = size, fontface = face, col = col))
+  }
+  line <- function(y, col) grid::segmentsGrob(
+    x0 = grid::unit(0, "npc"), x1 = grid::unit(1, "npc"),
+    y0 = grid::unit(y, "npc"), y1 = grid::unit(y, "npc"),
+    gp = grid::gpar(col = col, lwd = 0.6))
+  # Title row: the name on the left, what the rows are compared with on the
+  # right, both on the table's edges.
+  gt <- gtable::gtable_add_grob(gt, grid::textGrob(
+    title, x = grid::unit(0, "npc"), hjust = 0,
+    gp = grid::gpar(fontsize = base_size + 1.5, fontface = "bold", col = "grey10")),
+    t = 1, l = 2, r = nc + 1, name = "title")
+  if (length(note) && nzchar(note)) {
+    gt <- gtable::gtable_add_grob(gt, grid::textGrob(
+      note, x = grid::unit(1, "npc"), hjust = 1,
+      gp = grid::gpar(fontsize = base_size - 0.5, col = "grey45")),
+      t = 1, l = 2, r = nc + 1, name = "note")
+  }
+  gt <- gtable::gtable_add_grob(gt, grid::rectGrob(
+    gp = grid::gpar(fill = "grey95", col = NA)), t = 2, l = 2, r = nc + 1,
+    name = "header-fill")
+  for (j in seq_len(nc)) {
+    gt <- gtable::gtable_add_grob(gt, cell(names(dt)[j], j, "plain", "grey30"),
+                                  t = 2, l = j + 1, name = paste0("hdr-", j))
+  }
+  for (i in seq_len(nr)) {
+    gt <- gtable::gtable_add_grob(gt, line(0, "grey88"), t = i + 2, l = 2,
+                                  r = nc + 1, name = paste0("rule-", i))
+    for (j in seq_len(nc)) {
+      gt <- gtable::gtable_add_grob(
+        gt, cell(dt[[j]][i], j, if (j == 1L) "bold" else "plain", "grey10"),
+        t = i + 2, l = j + 1, name = paste0("cell-", i, "-", j))
+    }
+  }
+  attr(gt, "natural_in") <- sum(rel) / sum(rel) * (sum(nat) + nc * 0.4) +
+    2 * grid::convertWidth(margin, "in", valueOnly = TRUE)
+  gt
 }

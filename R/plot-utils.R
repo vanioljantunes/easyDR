@@ -1098,11 +1098,12 @@ dr_subtitle_wrap1 <- function(tokens, width_cm, size = 9.5) {
     for (tk in ln) {
       txt <- paste0(if (isTRUE(tk$space)) " " else "", tk$text)
       st  <- isTRUE(tk$strong)
+      rl  <- if (is.null(tk$role)) "" else tk$role
       n   <- length(runs)
-      if (n && identical(runs[[n]]$strong, st)) {
+      if (n && identical(runs[[n]]$strong, st) && identical(runs[[n]]$role, rl)) {
         runs[[n]]$text <- paste0(runs[[n]]$text, txt)
       } else {
-        runs[[n + 1L]] <- list(text = txt, strong = st)
+        runs[[n + 1L]] <- list(text = txt, strong = st, role = rl)
       }
     }
     runs

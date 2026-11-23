@@ -30,7 +30,7 @@ test_that("the subtitle reports the tests as p values only", {
   expect_match(txt, "Deviance p")
   expect_match(txt, "Restricted cubic spline")
   expect_match(txt, "studies")
-  expect_match(txt, "· ")
+  expect_match(txt, "\u00b7")
   expect_false(grepl("X2 =|deviance =|I-squared", txt))
 })
 
@@ -49,7 +49,7 @@ test_that("a curve's headline per increment is the linear trend of its studies",
   # A dose contrast keeps the curve's own contrast wording.
   hl_pair <- easyDR:::dr_curve_headline(x, c(25, 0))
   expect_false(hl_pair$trend)
-  expect_match(hl_pair$label, "^25 vs 0 g/day$")
+  expect_match(hl_pair$label, "^At 25 g/day vs 0$")
 })
 
 test_that("results.table must be numeric", {
