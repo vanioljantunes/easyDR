@@ -424,7 +424,7 @@ dr_curve_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
                                      r2adj = FALSE) {
   pv  <- dr_p_lab
   sep <- function(items) lapply(seq_along(items), function(i) list(
-    text = if (i == 1L) items[i] else paste0("· ", items[i]),
+    text = if (i == 1L) items[i] else paste0("\u00b7 ", items[i]),
     space = TRUE))
   # What the curve is and what it rests on. Counts of people and of
   # person-time are different things, so a fit mixing incidence-rate studies
@@ -448,9 +448,9 @@ dr_curve_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
 
   het  <- x$heterogeneity
   perf <- if (isTRUE(het$estimable)) {
-    c(sprintf("I² = %.1f%%", het$i2), paste("Q test", pv(het$p)))
+    c(sprintf("I\u00b2 = %.1f%%", het$i2), paste("Q test", pv(het$p)))
   } else {
-    "I² not estimable"
+    "I\u00b2 not estimable"
   }
   if (isTRUE(wald) && !identical(x$shape$name, "linear")) {
     nl <- x$nonlinearity
@@ -469,8 +469,8 @@ dr_curve_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
   # reported effects the curve explains, charged for its number of terms.
   if (isTRUE(r2adj)) {
     perf <- c(perf, if (ok && !is.null(g$r2adj) && is.finite(g$r2adj)) {
-      paste0("Adjusted R² = ", formatC(g$r2adj, format = "f", digits = 2))
-    } else "Adjusted R² not available")
+      paste0("Adjusted R\u00b2 = ", formatC(g$r2adj, format = "f", digits = 2))
+    } else "Adjusted R\u00b2 not available")
   }
   # A curve drawn by subgroup carries the test for subgroup interaction
   # (Berlin, 1993), the comparison its several lines invite.
@@ -927,7 +927,7 @@ dr_linearity_note <- function(x, lead = ".  ") {
   if (is.null(nl) || !isTRUE(nl$estimable)) {
     return(paste0(lead, "Non-linearity test: not available for this shape"))
   }
-  paste0(lead, "Non-linearity test: X2 = ", formatC(nl$statistic, format = "f", digits = 2),
+  paste0(lead, "Non-linearity test: \u03c7\u00b2 = ", formatC(nl$statistic, format = "f", digits = 2),
          " (df = ", nl$df, "), ", dr_p_lab(nl$p))
 }
 

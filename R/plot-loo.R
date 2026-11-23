@@ -122,12 +122,12 @@ dr_loo_plot <- function(out, object, main = NULL, xlab = NULL, ylab = NULL,
   names(right_cols)[1L] <- paste0(object$sm, " (", format(100 * out$level), "% CI)")
   if (isTRUE(out$show_shift)) right_cols$Shift <- c(shift, "-")
   right_cols <- c(right_cols, list(
-    I2 = c(pct(tab$i2), full_i2),
+    "I\u00b2" = c(pct(tab$i2), full_i2),
     `p non-linearity` = c(dr_fmt_p(tab$p_nonlin),
                           dr_fmt_p(dr_sens_stat(full_fit$nonlinearity, "estimable", "p"))),
     `p deviance` = c(dr_fmt_p(tab$p_dev),
                      dr_fmt_p(dr_sens_stat(full_fit$gof, "available", "p"))),
-    `Adjusted R2` = c(r2f(tab$r2adj),
+    "Adjusted R\u00b2" = c(r2f(tab$r2adj),
                       r2f(dr_sens_stat(full_fit$gof, "available", "r2adj")))))
 
   p_left  <- dr_text_panel(left_cols, c(FALSE, FALSE), ypos = ypos,

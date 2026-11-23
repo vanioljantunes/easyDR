@@ -242,6 +242,7 @@ easydr_compare_shapes <- function(x,
     labs  <- dr_shape_title(names(fits))
     style <- dr_overlay_style(labs)
     p  <- dr_overlay_panel(fits, labs, x$ratio, x$sm_label, unit,
+                           ylab = dr_sm_axis(x$sm),
                            legend.title = "Shape", style = style,
                            legend = !isTRUE(result))
     # The table is the point of this figure, so it is set larger than the
@@ -398,6 +399,7 @@ easydr_knot_sensitivity <- function(x,
     if (identical(main, FALSE)) main <- NULL
     style <- dr_overlay_style(labs)
     p  <- dr_overlay_panel(fits, labs, x$ratio, x$sm_label, unit,
+                           ylab = dr_sm_axis(x$sm),
                            legend.title = "Knots", style = style,
                            legend = !isTRUE(result))
     what <- if (given) {

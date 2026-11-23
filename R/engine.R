@@ -326,15 +326,13 @@ dr_heterogeneity <- function(fit, single_study) {
        i2 = 100 * max(0, (Q - df) / Q))
 }
 
-#' Axis title for a summary measure: the name in capitals, then its code
+#' Axis title for a summary measure, in sentence case, then its code
+#'
+#' One spelling for every figure: "Risk ratio (RR)".
 #' @keywords internal
 #' @noRd
 dr_sm_axis <- function(sm) {
-  switch(sm,
-         RR  = "Risk Ratio (RR)",
-         OR  = "Odds Ratio (OR)",
-         IRR = "Incidence Rate Ratio (IRR)",
-         MD  = "Mean Difference (MD)",
-         SMD = "Standardised Mean Difference (SMD)",
-         sm)
+  lab <- dr_sm_label(sm)
+  if (identical(lab, sm)) return(sm)
+  paste0(toupper(substring(lab, 1, 1)), substring(lab, 2), " (", sm, ")")
 }

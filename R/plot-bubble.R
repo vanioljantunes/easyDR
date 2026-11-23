@@ -166,7 +166,7 @@ easydr_bubble <- function(x, mod = NULL, main = NULL, xlab = NULL,
   }
 
   test <- if (isTRUE(x$test$estimable)) {
-    paste0("Between-moderator test: X2 = ", round(x$test$chi2, 2),
+    paste0("Between-moderator test: \u03c7\u00b2 = ", round(x$test$chi2, 2),
            " on ", x$test$df, " df, ", dr_p_lab(x$test$p), ".")
   } else {
     "Between-moderator test: not estimable."

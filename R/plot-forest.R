@@ -140,10 +140,10 @@ easydr_forest <- function(x, at = "per.unit", increment = 1, main = NULL, xlab =
   }
   het_line <- function(h) {
     if (isTRUE(h$estimable)) {
-      sprintf("I2 = %.1f%%, Q = %.2f (df %d), %s",
+      sprintf("I\u00b2 = %.1f%%, Q = %.2f (df %d), %s",
               h$i2, h$Q, h$df, dr_p_lab(h$p))
     } else {
-      paste0("I2: not estimable (", h$reason, ")")
+      paste0("I\u00b2: not estimable (", h$reason, ")")
     }
   }
 
@@ -431,5 +431,5 @@ dr_forest_deviance <- function(g) {
       !is.finite(g$deviance)) {
     return("Deviance: not available for this fit")
   }
-  sprintf("Deviance (deviance = %.2f; %s)", g$deviance, dr_p_lab(g$p))
+  sprintf("Deviance = %.2f, %s", g$deviance, dr_p_lab(g$p))
 }

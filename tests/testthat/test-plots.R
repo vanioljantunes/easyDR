@@ -295,15 +295,15 @@ test_that("the forest names what its columns count", {
   expect_equal(f$table$levels, rep(6L, 8L))
 })
 
-test_that("heterogeneity is written I2, not I-squared", {
+test_that("heterogeneity in a figure is written with a superscript, not I-squared", {
   local_null_device()
   fit <- bin_fit()
   f   <- easydr_forest(fit)
   # The line is built from the fit, so it is checked by rebuilding it.
   het <- f$heterogeneity
-  line <- sprintf("I2 = %.1f%%, Q = %.2f (df %d), %s",
+  line <- sprintf("I\u00b2 = %.1f%%, Q = %.2f (df %d), %s",
                   het$i2, het$Q, het$df, easyDR:::dr_p_lab(het$p))
-  expect_match(line, "^I2 = ")
+  expect_match(line, "^I\u00b2 = ")
   expect_no_match(line, "I-squared")
 })
 

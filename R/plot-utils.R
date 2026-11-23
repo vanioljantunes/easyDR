@@ -403,8 +403,8 @@ dr_panel_width <- function(cols, per_char = 0.070, min_in = 1.2,
 #' figures show the usual notation.
 #' @noRd
 dr_display_names <- function(x) {
-  map <- c("R-squared adj" = "Adjusted R²", "R-squared" = "R²",
-           "Delta AIC" = "ΔAIC", "p nonlinearity" = "p non-linearity")
+  map <- c("R-squared adj" = "Adjusted R\u00b2", "R-squared" = "R\u00b2",
+           "Delta AIC" = "\u0394AIC", "p nonlinearity" = "p non-linearity")
   hit <- x %in% names(map)
   x[hit] <- map[x[hit]]
   x

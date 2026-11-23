@@ -28,7 +28,7 @@ test_that("the subgroup test is the moderator Wald test of the overall fit", {
 test_that("the forest and curve notes write the test", {
   fit <- red_design_fit("reml")
   expect_match(dr_subgroup_test_note(fit$subgroup),
-               "^Test for subgroup interaction: X2 = [0-9.]+ \\(df = 1\\), p = ")
+               "^Test for subgroup interaction: \u03c7\u00b2 = [0-9.]+ \\(df = 1\\), p = ")
   expect_identical(dr_subgroup_test_note(list(test = list(estimable = FALSE))),
                    "Test for subgroup interaction: not available")
 })

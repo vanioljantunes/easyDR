@@ -139,7 +139,7 @@ dr_subgroup_test_note <- function(sg) {
   if (is.null(t) || !isTRUE(t$estimable)) {
     return("Test for subgroup interaction: not available")
   }
-  paste0("Test for subgroup interaction: X2 = ",
+  paste0("Test for subgroup interaction: \u03c7\u00b2 = ",
          formatC(t$chi2, format = "f", digits = 2), " (df = ", t$df, "), ",
          dr_p_lab(t$p))
 }

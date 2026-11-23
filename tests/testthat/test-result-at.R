@@ -67,7 +67,7 @@ test_that("overall.per.unit scales a line by the increment and pairs two doses",
 
 test_that("the forest names its curve and reports the deviance test", {
   expect_equal(easyDR:::dr_forest_deviance(list(available = TRUE, deviance = 24.13, p = 0.17)),
-               "Deviance (deviance = 24.13; p = 0.170)")
+               "Deviance = 24.13, p = 0.170")
   expect_match(easyDR:::dr_forest_deviance(list(available = FALSE)), "not available")
   expect_equal(easyDR:::dr_shape_title("rcs"), "Restricted cubic spline")
 })
