@@ -242,7 +242,13 @@ easydr_curve <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # column, which left nowhere for a subgroup to go.
   # The effects at chosen doses sit under the figure; the effect per
   # increment is in the subtitle above it.
-  tg <- if (isTRUE(result) && length(rt)) {
+  tg <- if (isTRUE(result) && isTRUE(use_sub)) {
+    # By subgroup the table reports what the levels are compared on: the
+    # effect per increment, then heterogeneity and fit, one column per level.
+    dr_curve_table_grob(dr_subgroup_summary(x, result.at, digits),
+                        title = paste0("Results by ", x$subgroup$var),
+                        note = "")
+  } else if (isTRUE(result) && length(rt)) {
     dt <- dr_dose_table(x, rt, digits, use_sub)
     if (identical(match.arg(table, c("horizontal", "vertical")), "vertical")) {
       m <- as.data.frame(t(as.matrix(dt[, -1L, drop = FALSE])),
@@ -508,6 +514,7 @@ dr_curve_subtitle_tokens <- function(x, at = NULL, digits = 3, wald = TRUE,
   }
   is_pt <- fr$type %in% "ir"
   nm <- sub(",.*$", "", x$shape$label)
+  nm <- sub(" in dose$", "", nm)
   nm <- paste0(toupper(substring(nm, 1, 1)), substring(nm, 2))
   info <- c(paste(nm, "dose\u2013response meta-analysis"),
             paste(x$counts$studies, "studies"),
@@ -732,13 +739,13 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # The five fillable shapes come first, so they share one fill and one
   # outline; the star, which has no fill, is the sixth.
   ref_shapes <- c(21L, 22L, 24L, 23L, 25L, 8L)
-  key_title <- paste0("Study reference\ndose (", unit, ")")
+  key_title <- paste0("Study reference dose (", unit, ")")
   ref_levels <- if (is.null(obs)) numeric(0) else sort(unique(obs$ref_dose))
   # One reference dose for every study tells the reader nothing a key could
   # add, so the key appears only when the references differ.
-  shape_key  <- isTRUE(ref.shape) && !is.null(obs) && !use_sub &&
+  shape_key  <- isTRUE(ref.shape) && !is.null(obs) &&
     length(ref_levels) > 1L && length(ref_levels) <= length(ref_shapes)
-  if (isTRUE(ref.shape) && !is.null(obs) && !use_sub &&
+  if (isTRUE(ref.shape) && !is.null(obs) &&
       length(ref_levels) > length(ref_shapes)) {
     warning("easydr: the studies use ", length(ref_levels), " reference ",
             "doses and there are ", length(ref_shapes), " shapes, so every ",
@@ -772,8 +779,10 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
           values = stats::setNames(ref_shapes[seq_along(labs_ref)], labs_ref),
           name = key_title, drop = FALSE,
           guide = ggplot2::guide_legend(
-            title.position = "top", ncol = 1L,
-            override.aes = list(size = 2.8, stroke = 0.5)))
+            title.position = "left", nrow = 1L, order = 2L,
+            override.aes = list(size = 2.8, stroke = 0.5,
+                                colour = grDevices::adjustcolor(col, alpha.f = 0.55),
+                                fill = grDevices::adjustcolor(col, alpha.f = 0.18))))
     } else {
       p <- p + ggplot2::geom_point(
         data = obs, inherit.aes = FALSE,
@@ -839,17 +848,16 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
       sub_marks$level <- factor(sub_marks$level, levels = drawn)
       p <- p + ggplot2::geom_point(
         data = sub_marks, inherit.aes = FALSE,
-        ggplot2::aes(x = .data$dose, y = .data$est, colour = .data$level,
-                     shape = .data$level), fill = "white", size = 2.2,
-        stroke = 0.8)
+        ggplot2::aes(x = .data$dose, y = .data$est, colour = .data$level),
+        shape = 21L, fill = "white", size = 2.2, stroke = 0.8)
     }
     p <- p +
       ggplot2::scale_colour_manual(values = sty$colour, name = x$subgroup$var,
-                                   drop = FALSE) +
+                                   drop = FALSE,
+                                   guide = ggplot2::guide_legend(order = 1L)) +
       ggplot2::scale_linetype_manual(values = sty$linetype,
-                                     name = x$subgroup$var, drop = FALSE) +
-      ggplot2::scale_shape_manual(values = sty$shape, name = x$subgroup$var,
-                                  drop = FALSE)
+                                     name = x$subgroup$var, drop = FALSE,
+                                     guide = ggplot2::guide_legend(order = 1L))
   }
 
   if (isTRUE(rug)) {
@@ -903,16 +911,17 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                      ggplot2::element_line(colour = "grey94",
                                            linewidth = 0.3) else
                        ggplot2::element_blank(),
-                   # The reference-dose key runs in one row under the axis,
-                   # so it takes no width from the panel.
-                   legend.position = if (use_sub) "top" else
-                     if (shape_key) "right" else "none",
-                   legend.direction = if (use_sub) "horizontal" else "vertical",
-                   legend.box.spacing = grid::unit(if (use_sub) 11 else 4,
-                                                   "pt"),
-                   legend.justification = if (use_sub) "left" else c(0, 1),
-                   legend.margin = ggplot2::margin(if (use_sub) 0 else 2, 0,
-                                                   2, 0),
+                   # The keys run in one row above the panel, just under
+                   # the tests, so they take no width from it.
+                   legend.position = if (use_sub || shape_key) "top" else "none",
+                   legend.direction = "horizontal",
+                   legend.box = "horizontal",
+                   legend.box.just = "left",
+                   legend.box.spacing = grid::unit(6, "pt"),
+                   legend.spacing.x = grid::unit(18, "pt"),
+                   legend.justification = "left",
+                   legend.location = "plot",
+                   legend.margin = ggplot2::margin(0, 0, 0, 0),
                    legend.key.width = grid::unit(if (use_sub) 22 else 12, "pt"),
                    legend.key.height = grid::unit(if (use_sub) 10 else 12, "pt"),
                    legend.key.spacing.x = grid::unit(if (use_sub) 5.5 else 8,
@@ -922,10 +931,8 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
                      margin = ggplot2::margin(l = 2)),
                    legend.title = ggplot2::element_text(
                      size = 8, colour = "grey20", hjust = 0, vjust = 0.5,
-                     face = if (use_sub) "plain" else "bold",
-                     lineheight = 1.1,
-                     margin = ggplot2::margin(r = if (use_sub) 5.5 else 0,
-                                              b = if (use_sub) 0 else 5)),
+                     face = "bold", lineheight = 1.1,
+                     margin = ggplot2::margin(r = 8)),
                    legend.key.spacing.y = grid::unit(3, "pt"),
                    plot.margin = ggplot2::margin(6, 10, 2, 6))
   p <- if (x$ratio) {
@@ -965,7 +972,14 @@ dr_curve_panel <- function(x, main = NULL, xlab = NULL, ylab = NULL,
   # are in the subtitle.
   extra <- tests[setdiff(names(tests), c("wald", "deviance", "r2adj"))]
   # Band and symbols read as one legend, so they share a row.
-  foot <- c(paste0(bands,
+  knot_txt <- if (show_knots) {
+    kl <- dr_num_lab(signif(knots, 3))
+    kl <- if (length(kl) > 1L) {
+      paste0(paste(kl[-length(kl)], collapse = ", "), " and ", kl[length(kl)])
+    } else kl
+    paste0(" Knots at ", kl, " ", unit, ".")
+  }
+  foot <- c(paste0(bands, knot_txt,
                    if (isTRUE(studies))
                      " Symbols: individual study estimates relative to their own reference dose.",
                    if (use_sub) " The dark line and the band are the overall fit.",
@@ -1239,4 +1253,59 @@ dr_curve_table_grob <- function(dt, title, note, base_size = 8.5,
   attr(gt, "natural_in") <- sum(rel) / sum(rel) * (sum(nat) + nc * 0.4) +
     2 * grid::convertWidth(margin, "in", valueOnly = TRUE)
   gt
+}
+
+
+#' The table under a curve drawn by subgroup: one column per level and the
+#' overall fit, one row per result
+#'
+#' The first row is the effect per increment (or the dose contrast asked
+#' for) with its interval and p value; then heterogeneity (I2 and the Q
+#' test), the deviance test and the adjusted R2.
+#'
+#' @keywords internal
+#' @noRd
+dr_subgroup_summary <- function(x, at = NULL, digits = 3) {
+  fits <- c(x$subgroup$fits, list(Overall = x))
+  fits <- fits[!vapply(fits, is.null, logical(1))]
+  back <- if (x$ratio) exp else identity
+  fmt  <- function(v) format(round(back(v), digits), nsmall = digits)
+  hl0  <- dr_curve_headline(x, at, digits)
+  eff <- function(f) {
+    h <- dr_curve_headline(f, at, digits)
+    q <- h$pooled
+    lo <- fmt(q$lb)
+    hi <- fmt(q$ub)
+    ci <- if (grepl("^-", lo) || grepl("^-", hi)) paste0(lo, " to ", hi) else
+      paste0(lo, "\u2013", hi)
+    paste0(fmt(q$est), " (", ci, "; ", dr_p_lab(q$p), ")")
+  }
+  het <- function(f) {
+    h <- f$heterogeneity
+    if (isTRUE(h$estimable)) {
+      sprintf("I\u00b2 = %.1f%%; Q test %s", h$i2, dr_p_lab(h$p))
+    } else "I\u00b2 not estimable"
+  }
+  dev <- function(f) {
+    g <- f$gof
+    if (!is.null(g) && !identical(g$available, FALSE) && !is.null(g$p) &&
+        is.finite(g$p)) {
+      dr_p_lab(g$p)
+    } else "not available"
+  }
+  r2 <- function(f) {
+    g <- f$gof
+    if (!is.null(g) && !identical(g$available, FALSE) && !is.null(g$r2adj) &&
+        is.finite(g$r2adj)) {
+      formatC(g$r2adj, format = "f", digits = 2)
+    } else "not available"
+  }
+  out <- data.frame(` ` = c(sub(" [(]linear trend[)]$", "", hl0$label),
+                            "Heterogeneity", "Deviance", "Adjusted R\u00b2"),
+                    check.names = FALSE, stringsAsFactors = FALSE)
+  for (lv in names(fits)) {
+    f <- fits[[lv]]
+    out[[lv]] <- c(eff(f), het(f), dev(f), r2(f))
+  }
+  out
 }
