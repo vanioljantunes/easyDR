@@ -215,7 +215,7 @@ body.nav-sidebar #quarto-sidebar.sidebar-navigation,
   font-size: 14.4px;
 }
 
-// ---- right-hand table of contents ---------------------------------------
+// ---- chapter table of contents (left column, under the chapter list) -----
 
 // Quarto 1.8 emits the right-hand TOC list as a closed bootstrap .collapse and
 // leaves JS to open it; newer Quarto does not add the class at all. The CI
@@ -223,12 +223,13 @@ body.nav-sidebar #quarto-sidebar.sidebar-navigation,
 // without this the book looks different locally than it does published. Showing
 // it on wide screens is a no-op wherever it is already open.
 @media (min-width: 992px) {
-  #quarto-margin-sidebar #TOC > ul.collapse:not(.show) {
+  #TOC > ul.collapse:not(.show) {
     display: block;
   }
 }
 
-#quarto-margin-sidebar {
+#quarto-margin-sidebar,
+#TOC {
   .sidebar-section,
   nav[role="doc-toc"] ul > li > a,
   .nav-link {
@@ -237,6 +238,7 @@ body.nav-sidebar #quarto-sidebar.sidebar-navigation,
   }
 
   #toc-title {
+    margin-top: 1.2rem;
     font-size: 14.4px;
     font-weight: 500;
     color: #000;

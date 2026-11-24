@@ -39,7 +39,8 @@ format:
       - theme.scss
     toc: true
     toc-depth: 2
-    toc-title: "On this page"
+    toc-location: left
+    toc-title: "In this chapter"
     number-sections: true
     code-copy: true
     code-overflow: wrap

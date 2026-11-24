@@ -19,13 +19,16 @@ Analysis prose carries the inclusive **we**. Setup and guidance sections carry
 
 ## Structure
 
-**One H2 is one slide, and the chapter's H2 sections are the deck's content
-slides, one to one.** The deck is regenerated from the chapter, so the two
-cannot drift. Finer points live as H3 subsections or callouts inside an H2,
-never as an H2 of their own.
+Changed by the author on 2026-11-24: **one H2 is one item of the deck's
+agenda, and one H3 is one slide inside it.** In 4.1.4 and 4.1.5 the agenda
+items are the block eyebrows. The H2 titles show in the left column of the
+book, under the chapter list, so the reader sees the class agenda while
+reading. Finer points live as H4 subsections or callouts inside a slide's H3.
 
-A chapter therefore starts from its deck's `outline.md`, not from a blank
-page.
+A chapter starts from its deck (`deck.html`, what the class shows), with
+`outline.md` as the brief. The deck is no longer regenerated from the
+chapter: `scripts/chapter-to-outline.mjs` still reads H2 as a slide and would
+now produce one slide per block, so do not run it on these chapters.
 
 ## The step-by-step
 
@@ -66,16 +69,21 @@ that paper printed.
 
 ## Columns
 
-The book teaches **easyDR's own column names**, which are the names the
-packaged data sets already carry.
+The book teaches the column names of the class workbook
+(`book/data/easydr-data.xlsx`, the same file the 4.1.4 class uses). easyDR
+reads them as they are.
 
 | Outcome | Columns |
 |---|---|
-| Binary | `studlab`, `dose`, `TE`, `lower`, `upper`, `event.e`, `n.e`, `design`, `ref` |
-| Continuous | `studlab`, `dose`, `mean.e`, `sd.e`, `n.e`, `ref` |
+| Binary | `studlab`, `type`, `dose`, `event`, `n`, `TE`, `lower`, `upper` |
+| Continuous | `studlab`, `dose`, `mean`, `sd`, `n` |
 
-`ref` is `TRUE` on each study's reference level. `design` is one of
-`case-control`, `incidence rate`, `cumulative incidence`.
+`type` is `cc` (case-control), `ci` (cumulative incidence) or `ir`
+(incidence rate). There is no reference column: the reference row is the one
+with `TE` = 1 and empty limits, and easyDR finds it. Any extra column (such as
+`nordic`) holds a subgroup. The packaged data sets (`alcohol_cvd`,
+`aripiprazole`) keep their older names (`event.e`, `n.e`, `design`, `ref`),
+which easyDR also accepts.
 
 ## Chapter boundaries
 

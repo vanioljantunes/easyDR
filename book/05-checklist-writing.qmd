@@ -1,382 +1,403 @@
-# Writing the manuscript
+# Checklist, writing and interpretation {#sec-writing}
 
 ```{r}
 #| include: false
-# This chapter shows what goes on the page, not how to produce it, so every
-# chunk below runs with echo turned off. The fit behind the figures is the
-# one built in Chapter 4.
-suppressMessages(library(easyDR))
-knitr::opts_chunk$set(echo = FALSE, collapse = FALSE, comment = "",
-                      fig.align = "center")
+suppressMessages({
+  library(easyDR)
+  library(dosresmeta)
+})
+knitr::opts_chunk$set(collapse = FALSE, comment = "", fig.align = "center")
+# Measured, not guessed: the output column fits 69 monospace characters at
+# this font size. R gets a little less, and wraps its own columns, which keeps
+# them aligned. Never let CSS wrap this text: alignment is the information.
 options(width = 66)
-
-data(alcohol_cvd)
-
-easydr.object <- easydr(
-  alcohol_cvd,
-  sm = "OR",
-  shape = "rcs",
-  dose.unit = "g/day",
-  at = c(10, 25, 50)
-)
-
-easydr.object.subgroup <- easydr(
-  alcohol_cvd,
-  sm = "OR",
-  shape = "linear",
-  dose.unit = "g/day",
-  subgroup = "design"
-)
 ```
 
 By now we have judged whether a question is viable, registered it, and fitted
 a curve. What remains is the part reviewers actually read. In this chapter we
-walk through the main parts of the manuscript and of the supplementary
-material, in the order they appear on the page, and we say what belongs in
-each one.
+walk through the manuscript in the order it appears on the page: the abstract,
+the methods, the results, the discussion and the conclusion, and then the
+figures, tables and supplement that go with them.
 
-Much of the content has already been built in the earlier chapters. Where that
-is so, we point back rather than repeat ourselves, and we spend the space here
-on the one thing no earlier chapter covers: how to put the work on the page so
-that a reader can check it.
+Most of the content was built in the earlier chapters. Where that is so, we
+point back rather than repeat ourselves. Each methods paragraph below is an
+example assembled from the papers used in the class, with every phrase
+numbered and its job named, so that you can write your own paragraph phrase by
+phrase. Each results section pairs a published figure with the same figure
+refitted in **{easyDR}**, from the data the authors published.
 
 ## The checklist
 
 A dose-response review is reported under **PRISMA** like any other systematic
-review [@page2021]. Yet PRISMA knows nothing about dose levels, reference
-categories or spline knots. The table below is therefore the short supplement
-to it: what a dose-response manuscript carries that a conventional one does
-not.
+review (Page, 2021; The PRISMA 2020 statement: an updated guideline for
+reporting systematic reviews; 10.1136/bmj.n71). Yet PRISMA knows nothing about
+dose levels, reference categories or spline knots. The three lists below are
+the short supplement to it: what a dose-response manuscript carries that a
+conventional one does not.
 
-```{r}
-#| label: tbl-checklist
-#| tbl-cap: "What belongs in each part of a dose-response manuscript. This supplements the PRISMA checklist rather than replacing it."
-checklist <- data.frame(
-  Section = c(
-    "Introduction",
-    "Methods",
-    "Results",
-    "Discussion",
-    "Conclusion",
-    "Supplementary material",
-    "Proposed figures",
-    "Proposed tables"
-  ),
-  `What belongs there` = c(
-    "Why the shape matters, and not only whether the exposure matters. The decision a curve would inform. The registration number.",
-    "Eligibility, including the three-level rule. Search and dates. What was extracted per dose level. How doses were assigned and harmonised, including the rescaling of any bounded or ordinal scale. The reference category rule. Model, shape, knots, and which criterion chooses between candidate shapes. Heterogeneity, bias, subgroups and sensitivity, including knot-location sensitivity. Software with versions, and the repository.",
-    "Study and participant counts. The dose range covered. Table 1 and Table 2. The pooled trend, the curve, and heterogeneity. Goodness of fit: the deviance against a saturated model with its test, and the R-squared, alongside the Wald test for departure from linearity. Target doses: ED50, ED80 and ED max with bootstrap intervals. Subgroups and sensitivity as pre-specified.",
-    "What the shape means on the dose scale. Comparison with published curves. Where the evidence thins out. Limitations specific to dose-response, including the unit of analysis and dose harmonisation.",
-    "One or two sentences answering the question that was asked, at a named dose, without leaving the observed range.",
-    "Full search strings. Outcome definitions per study. The dose conversion table, with any scale rescaling. Risk of bias per domain. Leave-one-out, knot-location sensitivity, and the candidate shapes not chosen with their AIC and BIC. The analysis code.",
-    "PRISMA flow, forest of study trends, the dose-response curve, subgroup curves.",
-    "Table 1 with study and participant characteristics, Table 2 with the effect at the doses of interest and the target doses."
-  ),
-  check.names = FALSE
-)
-knitr::kable(checklist)
-```
+**Abstract**
 
-Let us take the rows in order.
+1. Background
+2. Aims
+3. Methods
+4. Results
+5. Conclusion
 
-## Introduction
+**Methods**
 
-Two sentences carry a dose-response introduction that a conventional one does
-not. The first says why the shape matters. The second says what decision would
-change if the shape were known.
+1. Protocol registered
+2. Eligibility, including the three-dose rule
+3. Search: databases and dates
+4. Extraction, per dose level
+5. Greenland and Longnecker covariance (statistical analysis, part 1)
+6. The shape, and the splines (part 1)
+7. Where the knots sit (part 1)
+8. Bounded scales, rescaled (part 1)
+9. Heterogeneity (statistical analysis, part 2)
+10. Software and repository (part 2)
+11. Risk of bias (quality assessment)
+12. Publication bias (quality assessment)
 
-We made that argument in full in Chapter 1: a single pooled estimate answers
-"does it matter" and cannot answer "how much". The introduction is where the
-argument is made for one specific exposure, briefly, and then dropped.
+**Results**
 
-::: {.callout-note appearance="simple"}
-**Example**
+1. The characteristics paragraph
+2. The flow diagram
+3. The model comparison plot
+4. The pooled effect
+5. The dose-response curve
+6. Subgroups
+7. Sensitivity
+8. Target doses
 
-> _Meta-analyses of alcohol and cardiovascular disease have pooled the highest
-> reported intake against the lowest. That contrast answers whether drinkers
-> differ from non-drinkers, and it cannot say how risk changes across the
-> range of intake. Public health guidance is written in grams per day, so the
-> quantity that matters for guidance is the shape of the relationship rather
-> than a single contrast. We therefore estimated the dose-response
-> relationship between alcohol intake and cardiovascular disease (PROSPERO
-> CRD420XXXXXXXX)._
+Methods 1 to 4 and every results line get a section of their own. Methods 5 to
+12 are read as three paragraphs, because in a paper they run together. Let us
+take the lists in order.
 
-Three sentences, three jobs: the gap, why the shape is the decision-relevant
-quantity, and the registration number from Chapter 3.
-:::
+## Abstract
 
-@bryazka2022 is worth reading as a model. Its introduction does not argue that
-alcohol matters. It argues that the dose question is open, which is what earns
-the paper its method.
+### Abstract structure
+
+An abstract of a dose-response meta-analysis has the same five parts as any
+other. What changes is what each part carries. Let us read one, written for
+the class in the style of the papers used in it.
+
+> _**Cruciferous vegetable intake and the risk of colorectal cancer: a
+> dose-response meta-analysis of cohort studies**_
+>
+> _**Background:** Observational cohorts have linked a higher intake of
+> cruciferous vegetables to a lower risk of colorectal cancer, yet whether the
+> risk keeps falling at the upper end of intake has never been settled._ **(1)**
+>
+> _**Aims:** To estimate the shape of the dose-response relation between
+> cruciferous vegetable intake and colorectal cancer incidence, and to read a
+> target intake off that curve._ **(2)**
+>
+> _**Methods:** PubMed, Embase and Web of Science were searched to March 2024
+> for cohort studies reporting at least three quantitative intake categories.
+> Study-specific trends were derived by the method of Greenland and Longnecker
+> and pooled in a restricted cubic spline random-effects model, knots at the
+> 10th, 50th and 90th percentiles._ **(3)**
+>
+> _**Results:** Seventeen cohorts, 1,246,089 participants and 12,311 incident
+> cases. Each additional 20 g per day carried a relative risk of 0.92 (95% CI
+> 0.89 to 0.96), and the curve flattened beyond roughly 60 g per day (P for
+> non-linearity = 0.004; I^2^ = 41%)._ **(4)**
+>
+> _**Conclusion:** Cruciferous vegetable intake is inversely associated with
+> colorectal cancer, with most of the reduction already reached at about 60 g
+> per day._ **(5)**
+
+The numbers are invented for the class, so nobody should cite them. What
+matters is what each numbered part does that an ordinary abstract does not.
+
+1. **Background.** The exposure is named as a quantity with units, not as
+   eaten or not eaten, and the open question is the **shape** rather than
+   whether an association exists.
+2. **Aims.** The aim is a curve and a target intake. An ordinary meta-analysis
+   aims at one pooled number.
+3. **Methods.** Three sentences no other design needs: at least three dose
+   categories per study, Greenland and Longnecker for the within-study
+   covariance, and the spline with its knots.
+4. **Results.** The effect is reported **per unit of dose**, and the test for
+   non-linearity is reported beside it. Highest versus lowest alone would not
+   answer the question.
+5. **Conclusion.** It names a dose, not only a direction, and keeps that dose
+   inside the observed range.
 
 ## Methods
 
-The longest section, and almost all of it has been built already. Chapter 2
-covered extraction and the reference category, Chapter 3 the protocol and the
-risk of bias, Chapter 4 the model itself.
+The methods section is the longest, and almost all of its content was decided
+before the first study was extracted. Chapter 2 covered viability and
+extraction, Chapter 3 the protocol and the risk of bias, Chapter 4 the model.
+What we add here is the wording. A reader cannot check the registration
+against the paper if the paper leaves out the thing that was registered.
 
-What we add here is the reminder that each of those decisions has to appear in
-the manuscript, and not only in the protocol. A reader cannot check the
-registration against the paper if the paper leaves out the thing that was
-registered.
+Each paragraph below was assembled from the methods sections of the papers
+used in the class. The numbers in bold mark the phrases, and the list under
+each paragraph names the checklist item each phrase answers.
 
-The order that reads well:
+### Protocol number
 
-1. Protocol and registration
-2. Eligibility, including the three-level rule and what happened to the
-   studies that fell below it
-3. Search, databases and dates, with the full strings in the supplement
-4. Extraction, one row per dose level per study, and what was taken per level
-5. Dose assignment and harmonisation, including the open-ended top category
-6. The reference category, and what was done when studies disagreed
-7. The model: one-stage or two-stage, covariance method, shape, knots
-8. Heterogeneity, publication bias, sensitivity and subgroups
-9. Software, package versions, and where the code lives
+> _The protocol of this review was registered in PROSPERO (CRD42025XXXXXX)
+> before data extraction began,_ **(1)** _and the review is reported following
+> the PRISMA 2020 statement [1]._ **(2)** _Analyses were planned as
+> conditional rules, stating in advance what would be done if a condition was
+> met,_ **(3)** _and every deviation from the registered protocol is listed in
+> the supplement._ **(4)**
 
-### Bounded and ordinal scales
+1. The registration number and the register.
+2. The reporting guideline.
+3. The rules written in advance. This is the "if fewer than three studies..."
+   style of Chapter 3, which lets a protocol commit without guessing the data.
+4. The deviations from the protocol, listed rather than hidden.
 
-A continuous outcome measured on a bounded scale needs one step the others do
-not. Many clinical scales do not start at zero. The PANSS runs from 30 to
-210, because its thirty items are each scored from 1 rather than from 0, so a
-patient with no symptoms at all still scores 30.
+Reference [1] is Page, 2021; The PRISMA 2020 statement: an updated guideline
+for reporting systematic reviews; 10.1136/bmj.n71.
+
+### Eligibility criteria
+
+> _We included prospective cohort, nested case-control and case-control
+> studies in adults_ **(1)** _that reported a relative risk with its confidence
+> interval for at least three quantitative categories of exposure for the
+> primary analysis,_ **(2)** _together with the number of cases and of
+> participants or person-years in each category._ **(3)** _The lowest category
+> reported by each study served as its reference, whether or not it was
+> zero._ **(4)** _Studies reporting two categories could not enter the primary
+> two-stage spline; they were kept in a one-stage sensitivity analysis._ **(5)**
+
+1. The designs and the population.
+2. The **three-dose rule**: the reference and two doses, the least a
+   two-stage spline can use (Chapter 2).
+3. The counts per category, which the covariance of Greenland and Longnecker
+   needs.
+4. The reference category. It does not have to be zero.
+5. What happened to the studies with two categories. They are not thrown
+   away; the one-stage model keeps them, as a sensitivity analysis.
+
+### Search strategy
+
+> _PubMed, Embase and Web of Science were searched from inception to [date of
+> the last search], each date given per database,_ **(1)** _with no
+> restriction on language._ **(2)** _The full search string for each database,
+> with its field tags, is given verbatim in the supplement._ **(3)** _The
+> reference lists of included studies and of earlier reviews were searched by
+> hand._ **(4)**
+
+1. Every database, with its own date.
+2. The language limits, or the absence of them.
+3. The full string, verbatim, in the supplement (Table S1).
+4. Hand-searching of reference lists.
+
+### Data extraction
+
+> _Two reviewers extracted the data independently, and a third resolved
+> disagreements._ **(1)** _Data were extracted per dose category rather than
+> per study, one row for each category of each study._ **(2)** _For each
+> category we recorded the dose, the number of cases, the number of
+> participants or person-years, and the adjusted estimate with its confidence
+> interval;_ **(3)** _for continuous outcomes, the mean and standard deviation
+> took the place of the counts._ **(4)** _Each category was assigned the mean
+> or median dose reported by the authors, or the midpoint of its range where
+> none was reported._ **(5)**
+
+1. Two reviewers and a third.
+2. The unit of extraction is the **dose category**, not the study. This is the
+   one sentence a conventional review never writes.
+3. What was extracted per category: the columns of the binary template in
+   Chapter 2.
+4. Continuous outcomes, and the columns of the continuous template.
+5. How each category got a single dose. Only a precise dose can sit on the
+   horizontal axis of a curve.
+
+### Statistical analysis, part 1
+
+The next paragraph carries checklist items 5 to 8: the covariance, the shape,
+the knots and the bounded scales. It is the densest paragraph of the paper,
+and every clause in it names a decision a reader is free to disagree with,
+which is the point of writing it out.
+
+> _Study-specific dose-response trends were estimated with the method of
+> Greenland and Longnecker, which recovers the covariance between the log
+> risks reported across the categories of a single study from the numbers of
+> cases and non-cases in each category [1]._ **(1)** _A restricted cubic
+> spline was then fitted to the pooled data, so that a non-linear association
+> could be detected without a shape being forced on it [2]._ **(2)** _Three
+> knots were placed at the 10th, 50th and 90th percentiles of the dose
+> distribution, and every three-knot combination of the 10th, 25th, 50th,
+> 75th and 90th percentiles was refitted and overlaid in the supplement._
+> **(3)** _The final shape was chosen on three grounds read together: the
+> tests, namely a Wald test on the non-linear coefficients for departure from
+> linearity, a deviance test against the saturated model with the coefficient
+> of determination R^2^ for goodness of fit [3], and the Akaike and Bayesian
+> information criteria (AIC, BIC) on maximum likelihood fits; the candidate
+> curves overlaid on one plot; and the clinical plausibility of each shape over
+> the observed dose range. The shapes not retained were reported as
+> sensitivity analyses._ **(4)** _Because the PANSS has a theoretical floor of
+> 30 rather than 0, all scores were shifted to that floor before any ratio or
+> percentage change was computed._ **(5)**
+
+1. Methods 5, the **Greenland and Longnecker covariance**. easyDR calls
+   dosresmeta, which uses this method (Chapter 4).
+2. Methods 6, the shape, and why a spline: it lets the data bend.
+3. Methods 7, where the knots sit, and the supplement figure that shows what
+   the choice was worth (Figure S2).
+4. Methods 6 again, how the shape was chosen: tests, plot and clinical sense.
+5. Methods 8, bounded scales, rescaled.
+
+The references are: [1] Greenland, 1992; Methods for trend estimation from
+summarized dose-response data, with applications to meta-analysis;
+10.1093/oxfordjournals.aje.a116237. [2] Orsini, 2012; Meta-analysis for
+linear and nonlinear dose-response relations: examples, an evaluation of
+approximations, and software; 10.1093/aje/kwr265. [3] Discacciati, 2017;
+Goodness of fit tools for dose-response meta-analysis of binary outcomes;
+10.1002/jrsm.1194.
+
+::: {.callout-note appearance="simple"}
+**Choosing the shape**
+
+**Default.** Keep the shape the protocol named, usually the restricted cubic
+spline, if its AIC is within 2 of the best candidate. Report the others as
+sensitivity analyses.
+
+**When the default fails.** If another shape beats it by more than 2 AIC
+points, and the curves part inside the observed dose range, report the better
+shape beside it and say which one the conclusion rests on. If no shape passes
+the deviance test, keep the pre-specified one and report the lack of fit as a
+limitation. Discacciati, 2017; 10.1002/jrsm.1194
+:::
+
+#### Bounded scales
+
+Phrase 5 needs a word of explanation. Many clinical scales do not start at
+zero. The PANSS runs from 30 to 210, because its thirty items are each scored
+from 1 rather than from 0, so a patient with no symptoms at all still scores
+30.
 
 That floor makes every proportional statement wrong. A fall from 90 to 60
-looks like a third of the scale, and as a share of what could actually have
-improved, 90 minus 30 against 60 minus 30, it is a half. A percentage change
-computed on raw PANSS scores understates every effect, and the understatement
-is larger for patients who started lower.
-
-So the scale is shifted to its theoretical minimum before any ratio or
-percentage is taken:
+looks like a third of the scale. As a share of what could actually have
+improved, 90 minus 30 against 60 minus 30, it is a half. So the scale is
+shifted to its theoretical minimum before any ratio or percentage is taken:
 
 $$
-	ext{PANSS}_{	ext{adjusted}} = 	ext{PANSS}_{	ext{raw}} - 30
+\text{PANSS}_{\text{adjusted}} = \text{PANSS}_{\text{raw}} - 30
 $$
-
-Three things follow, and all three belong in the methods.
 
 A **mean difference** between two arms is unaffected, because the constant
-cancels. Shifting matters for ratios and percentages, not for differences.
+cancels, and so is a **standardised mean difference**. A **percentage change
+from baseline**, and anything built on it such as a responder threshold,
+changes, and must be computed on the shifted scale. The rule generalises: any
+scale whose floor is not zero gets shifted to its theoretical minimum, and the
+methods say which minimum was used.
 
-A **standardised mean difference** is unaffected too, for the same reason: the
-numerator is a difference and the denominator is a standard deviation.
+### Statistical analysis, part 2
 
-A **percentage change from baseline**, and anything built on it such as a
-responder threshold, changes, and must be computed on the shifted scale.
-Leucht and colleagues established this for the PANSS, and reviews that skip
-it report smaller effects than their own data contains.
+Checklist items 9 and 10: heterogeneity, the model, the subgroups and the
+software.
 
-The rule generalises. Any scale whose floor is not zero, including ordinal
-scores summed from items numbered from one, gets shifted to its theoretical
-minimum, and the methods say which minimum was used.
+> _Heterogeneity was quantified with the I^2^ statistic and tested with
+> Cochran's Q, and both are reported beside the pooled estimate rather than in
+> place of it [1]._ **(1)** _All models were fitted under random effects with
+> the restricted maximum likelihood estimator [2]._ **(2)** _Differences
+> between subgroups were assessed with a test for subgroup interaction: a
+> meta-regression in which the subgroup modified the dose-response
+> coefficients, tested jointly with a Wald test [3]. Because about ten studies
+> are needed for each characteristic modelled [4], a non-significant test was
+> not read as evidence that the subgroups agree._ **(3)** _All analyses were
+> run in RStudio with R version 4.6.0 [5], using the easyDR package [6]._
+> **(4)**
 
-::: {.callout-note appearance="simple"}
-**Example**
+1. Methods 9, heterogeneity: I^2^ with Q.
+2. Methods 9, random effects, and the estimator that fits them.
+3. Methods 9, the test for subgroup interaction, and its limit. A test with
+   few studies has little power, so "no difference" is not what it shows.
+4. Methods 10, the software: RStudio, the R version, and easyDR.
 
-> _PANSS total scores were rescaled by subtracting the theoretical minimum of
-> 30 before any proportional quantity was computed, so that percentage
-> changes refer to the range of the scale a patient could actually move
-> across. Mean differences and standardised mean differences were computed on
-> the raw scale, where the constant cancels._
+The references are: [1] Higgins, 2002; Quantifying heterogeneity in a
+meta-analysis; 10.1002/sim.1186. [2] Crippa, 2016; Multivariate dose-response
+meta-analysis: the dosresmeta R package; 10.18637/jss.v072.c01. [3] Berlin,
+1993; Meta-analysis of epidemiologic dose-response data;
+10.1097/00001648-199305000-00005. [4] the Cochrane Handbook, Chapter 10
+[@cochranehandbook]. [5] R Core Team, R: a language and environment for
+statistical computing, version 4.6.0. [6] easyDR,
+<https://github.com/vanioljantunes/easyDR>.
+
+::: {.callout-important}
+**Cite the tools, and the repository**
+
+A dose-response curve is the product of several modelling decisions taken
+inside software. A methods section that says "analyses were performed in R"
+does not let anybody reproduce it, and a reader cannot tell which covariance
+approximation, which shape, or which knot rule produced the figure.
+
+Name all of it, with versions: **{easyDR}** with its repository, which holds
+both the package and this book; **{dosresmeta}** [@crippa2016], which does the
+estimation; the method itself [@greenland1992]; and _R_, with its version
+number. The [Cite this material](cite.qmd) page carries the exact wording for
+easyDR, generated from the installed version. Copy it rather than retyping it,
+because the version number is the part most often got wrong.
 :::
 
-::: {.callout-note appearance="simple"}
-**Example**
+### Quality assessment
 
-The statistical paragraph, written out in full in Chapter 4, reduces to this
-shape:
+Checklist items 11 and 12: risk of bias and publication bias.
 
-> _We fitted a two-stage random-effects dose-response model. Within-study
-> covariances between estimates sharing a reference category were
-> reconstructed by the method of Greenland and Longnecker. The dose-response
-> relationship was modelled with a restricted cubic spline with three knots
-> placed at the 10th, 50th and 90th percentiles of the observed intake
-> distribution, specified in the protocol before any data were extracted.
-> Departure from linearity was tested with a Wald test on the spline terms._
+> _Two reviewers independently assessed the risk of bias of each included
+> study, and a third reviewer resolved disagreements. Randomized controlled
+> trials were assessed with the revised Cochrane risk-of-bias tool (RoB 2)
+> [1], and observational studies with the ROBINS-I tool [2]._ **(1)**
+> _Publication bias was assessed with funnel plots and Egger's regression test
+> [3] only for analyses including more than ten studies._ **(2)**
 
-Every clause names a decision a reader is free to disagree with, which is the
-point of writing it out.
-:::
+1. Methods 11, risk of bias: RoB 2 for trials, ROBINS-I for observational
+   studies. The tool follows the design of the study being rated (Chapter 3).
+2. Methods 12, publication bias, and the ten-study limit below which a funnel
+   plot cannot be read.
+
+The references are: [1] Sterne, 2019; RoB 2: a revised tool for assessing risk
+of bias in randomised trials; 10.1136/bmj.l4898. [2] Sterne, 2016; ROBINS-I: a
+tool for assessing risk of bias in non-randomised studies of interventions;
+10.1136/bmj.i4919. [3] Egger, 1997; Bias in meta-analysis detected by a
+simple, graphical test; 10.1136/bmj.315.7109.629.
 
 ## Results
 
 The results section has a fixed running order, and it is the order of the
-figures. One paragraph of characteristics comes first: how many studies, how
-many participants and cases, the dose range the pooled data covers, and which
-designs are included.
+figures: who was included, which shape was chosen, the forest, the curve, the
+subgroups, the sensitivity analyses and the target doses. Each section below
+reads a published results paragraph, and where the paper is open we refit its
+figure with easyDR from the data the authors published, which dosresmeta
+ships.
 
-Then the pooled result itself: the trend, the test for departure from
-linearity, and the heterogeneity. Let us read those numbers off the fitted
-model rather than retype them, because a number retyped by hand is a number
-that can disagree with its own figure.
+### Study selection
 
-::: {.callout-note appearance="simple"}
-**Example**
+The first paragraph of the results says how many studies were found and kept
+(Figure 1, the PRISMA flow) and who was in them (Table 1). Di Giuseppe and
+colleagues wrote it like this, which we condense lightly:
 
-> _Six study contrasts contributed 25 intake categories covering 0 to 77.2
-> grams per day. The restricted cubic spline showed a departure from
-> linearity, with risk lowest at moderate intake and rising at higher intake.
-> Estimates at 10, 25 and 50 grams per day are given in Table 2, and the
-> fitted curve in Figure 3._
+> _Of the 384 studies identified through PubMed and EMBASE, only seven
+> examined the association between fish consumption and risk of RA and were
+> included in this dose-response meta-analysis (Figure 1)._ **(1)**
+> _Characteristics of the included studies are shown in Table 1. Three studies
+> were prospective cohorts and included 170,986 participants, of whom 820
+> developed RA during 2,212,395 person-years of follow-up, while four were
+> case-control studies with 2,526 cases and 3,715 controls. Three studies
+> analysed RA risk only among women; the rest analysed men and women._ **(2)**
 
-We see what the paragraph does not do. It does not interpret, it does not
-recommend an intake, and it says nothing about what happens beyond 77.2 grams
-per day.
-:::
+1. The PRISMA flow, Figure 1.
+2. The studies and patients, Table 1.
 
-### Goodness of fit, and the target dose
+Di Giuseppe, 2014; Fish consumption and risk of rheumatoid arthritis: a
+dose-response meta-analysis; 10.1186/s13075-014-0446-8.
 
-Two reporting items separate a dose-response results section from a
-conventional one, and Chapter 4 built both.
-
-**Goodness of fit is not the departure-from-linearity test.** The Wald test
-asks whether the bend is real. The deviance against a saturated model asks a
-different question: could this curve have produced the category effects the
-studies reported at all. A curve can pass the first and fail the second, and
-a review that reports only the first has not said whether the model fits.
-Report the deviance with its degrees of freedom and p value, and the
-R-squared, beside the Wald test.
-
-**A target dose is what a guideline can use.** ED50, ED80 and ED max, each
-with a bootstrap interval, say where on the curve the benefit arrives. Where
-the maximum sits at the end of the observed range, say so: that is a limit of
-the evidence, not a plateau.
-
-::: {.callout-note appearance="simple"}
-**Example**
-
-> *The restricted cubic spline fitted the reported category effects
-> adequately (deviance 6.0 on 12 degrees of freedom, p = 0.92; R-squared
-> 0.90), and departure from linearity was supported (p < 0.001). The dose
-> reaching half the maximum fitted effect was 1.9 mg/day (95% CI 0.2 to 2.3)
-> and the dose reaching 80% was 6.3 mg/day (0.8 to 7.5). The fitted effect
-> was still increasing at the highest dose studied, so no plateau was
-> identified within the observed range.*
-
-Four numbers and one caveat. The caveat is the one that stops the ED values
-being read as a ceiling.
-:::
-
-## Discussion
-
-The discussion is where a dose-response paper most often goes wrong, because a
-curve invites claims that a curve cannot support. Three things belong here and
-nowhere else.
-
-**What the shape means on the dose scale.** Not "alcohol was associated with
-cardiovascular disease", which the curve did not test, but what happens
-between two named intakes.
-
-**Comparison with published curves.** Dose-response results are comparable to
-each other in a way that pooled estimates are not, because both are functions
-of the same quantity. Where another review fitted the same exposure, the two
-curves can be laid side by side.
-
-**Limitations specific to this design.** Three of them recur: the unit of
-analysis issue from Chapter 1, dose harmonisation across studies that defined
-their categories differently, and the width of the band where the data thin
-out.
-
-::: {.callout-important}
-**The claim a curve does not support**
-
-A curve is estimated over the range the studies reported, and its band widens
-wherever they thin out. Reading a threshold off the point where the band
-crosses the null is the commonest error in this literature, because that point
-moves with the width of the band and not only with the size of the effect.
-
-The Burden of Proof papers [@gbd2022tobacco; @gbd2022vegetables] and the
-critique of them [@burdenofproofconcerns2023] are the best available case
-study. We recommend reading that exchange before writing a discussion that
-names an optimal dose.
-:::
-
-## Conclusion
-
-One or two sentences. They answer the question the introduction asked, at a
-named dose, inside the observed range.
-
-::: {.callout-note appearance="simple"}
-**Example**
-
-> _Across the intake range these studies report, cardiovascular risk was
-> lowest at moderate intake and did not fall further at higher intake. The
-> data do not support a recommendation above the observed range._
-
-The second sentence is the one co-authors tend to cut, and it is the one that
-should stay.
-:::
-
-## The supplementary material
-
-The supplement is where a dose-response review becomes checkable. Six things
-belong in it.
-
-1. **Full search strings**, verbatim, per database, with the dates they were run.
-2. **Outcome definitions per study**, because studies that call an outcome by
-   the same name often do not measure the same thing.
-3. **The dose conversion table**, showing how each study turned its categories
-   into numbers, including the rule used for the open-ended top category.
-4. **Risk of bias per domain per study**, as described in Chapter 3.
-5. **Sensitivity analyses**: leave-one-out; the alternative shapes that were
-   fitted but not chosen, with their AIC and BIC; and the knot-location
-   sensitivity.
-
-   Knot placement deserves its own line. A spline at the 10th, 50th and 90th
-   percentiles is a defensible default and still a choice, so the supplement
-   shows what the choice was worth: every combination of three knots drawn
-   from the 10th, 25th, 50th, 75th and 90th percentiles, refitted and
-   overlaid. Ten curves that lie together say the result is the data. Ten
-   that fan apart say the reader is looking at the knots, and the range over
-   which they fan should be quoted in the limitations.
-6. **The analysis code**, so that the curve can be re-run rather than re-read.
-
-```{r}
-#| label: fig-loo
-#| fig-cap: "Supplementary figure: leave-one-out. Each row refits the model without one study, which shows whether the result rests on a single contributor."
-#| fig-width: 9
-#| fig-height: 5
-easydr_loo(easydr.object, quiet = TRUE)
-```
-
-::: {.callout-note appearance="simple"}
-**Example: the outcome definition table**
-
-A supplementary table whose only job is to let a reader see that the studies
-are not quite measuring the same thing.
-
-```{r}
-knitr::kable(data.frame(
-  Study = c("Study A", "Study B", "Study C", "Study D"),
-  `Outcome as defined in the paper` = c(
-    "Non-fatal myocardial infarction, hospital discharge code",
-    "Death from coronary heart disease, death certificate",
-    "Incident coronary heart disease, self-report with record check",
-    "Incident coronary heart disease, adjudicated by committee"
-  ),
-  check.names = FALSE
-))
-```
-
-The wording here is illustrative. The column that matters is the second one,
-and writing it out usually changes what goes into the limitations.
-:::
-
-## The figures
-
-Let us look at the figures one by one. Four figures in the paper, in this order. The order is not decoration: the
-numbering is the running order of the results, and reviewers expect it.
-
-### Figure 1. The PRISMA flow
-
-The standard flow diagram, with one difference that matters. The exclusion
-reasons at the full-text stage should name the dose-response ones separately.
-"Fewer than three dose levels" and "no counts per level" are the two a reviewer
-looks for, because together they say whether the viability check of Chapter 2
-was applied at all.
+The flow diagram has one feature that matters here. The exclusion reasons at
+the full-text stage name the dose-response ones separately. "Fewer than three
+dose levels" and "no counts per level" are the two a reviewer looks for,
+because together they say whether the viability check of Chapter 2 was
+applied at all.
 
 ```{r}
 #| label: fig-prisma
+#| echo: false
 #| fig-cap: "Figure 1: study flow, with exclusion reasons specific to a dose-response review. The counts are illustrative; the structure and the named reasons are the point."
 #| fig-width: 7.5
 #| fig-height: 7.5
@@ -410,84 +431,36 @@ arrows(5.9, 5.60, 6.3, 5.60, length = 0.08, col = "#277db0")
 par(op)
 ```
 
-### Figure 2. The forest of study trends
-
-Not a forest of contrasts. One row per study, each row carrying that study's
-trend together with its number of dose levels and the range it covers. A
-reader sees at a glance which studies could carry a trend at all.
-
-```{r}
-#| label: fig-forest
-#| fig-cap: "Figure 2: one dose-response trend per study, with the number of levels and the dose range each one covers."
-#| fig-width: 10
-#| fig-height: 5
-easydr_forest(easydr.object)
-```
-
-### Figure 3. The dose-response curve
-
-The figure the paper exists for. Its caption carries the reference dose, the
-band, the shape with its knots, and the test for departure from linearity.
+Table 1 has one row per study: the design, how many dose categories it
+reported, the range those categories cover, and the people behind them. Let us
+build it from the data of Di Giuseppe and colleagues, which dosresmeta ships
+as `fish_ra`. First we put it in the columns easyDR reads.
 
 ```{r}
-#| label: fig-curve
-#| fig-cap: "Figure 3: the fitted dose-response curve for the main outcome, with its 95% confidence band. Reference 0 g/day, restricted cubic spline, knots as printed in the subtitle."
-#| fig-width: 7
-#| fig-height: 4.6
-easydr_curve(easydr.object)
+# Rename the dosresmeta columns to the easyDR template
+data(fish_ra)
+fish <- data.frame(
+  studlab = fish_ra$author, type = fish_ra$type, dose = fish_ra$dose,
+  event = fish_ra$cases, n = fish_ra$n, TE = exp(fish_ra$logrr),
+  lower = ifelse(fish_ra$se > 0,
+                 exp(fish_ra$logrr - qnorm(0.975) * fish_ra$se), NA),
+  upper = ifelse(fish_ra$se > 0,
+                 exp(fish_ra$logrr + qnorm(0.975) * fish_ra$se), NA))
 ```
-
-### Figure 4. Subgroup curves
-
-Pre-specified subgroups, drawn on shared axes so that the strata can be
-compared by eye. Here the natural subgroup is study design, since the table
-mixes case-control data with cumulative incidence.
-
-```{r}
-#| label: fig-subgroup
-#| fig-cap: "Figure 4: the curve by study design. Strata on common axes, so that the comparison is visual as well as numerical."
-#| fig-width: 7.5
-#| fig-height: 4.8
-easydr_curve(easydr.object.subgroup)
-```
-
-We see two strata that separate only at the higher intakes, and the table
-under the plot gives the slope and the test for each one. A difference
-between strata is tested, never read off two overlapping bands.
-
-### Getting the figures out of R
-
-Each of the four figures writes itself to a file when it is given one. The
-format is `filetype`, which is `"png"` unless a journal asks for `"tiff"` or
-`"pdf"`, the folder is `path`, and the name is `file.name`. The size is
-measured from the figure, so a forest of twenty studies comes out taller than
-one of six, and `width` and `height` are there for the journal that specifies
-its own. The README and Chapter 4 show the calls.
-
-## The tables
-
-Two tables belong in the paper. More than two usually means something belongs
-in the supplement instead.
-
-### Table 1. Studies and participants
-
-One row per study: the design, how many intake categories it reported, the
-range those categories cover, and the people behind them. This is the table
-that lets a reader judge the evidence before seeing any estimate.
 
 ```{r}
 #| label: tbl-baseline
-#| tbl-cap: "Table 1: characteristics of the included studies and participants."
+#| tbl-cap: "Table 1: characteristics of the included studies, from the data of Di Giuseppe and colleagues (2014)."
 characteristics <- do.call(rbind, lapply(
-  split(alcohol_cvd, alcohol_cvd$studlab),
+  split(fish, fish$studlab),
   function(x) data.frame(
     Study  = x$studlab[1],
-    Design = as.character(x$design[1]),
+    Design = x$type[1],
     Levels = nrow(x),
     `Dose range` = paste0(round(min(x$dose), 1), " to ",
                           round(max(x$dose), 1)),
-    Cases  = sum(x$event.e),
-    N      = sum(x$n.e),
+    Cases  = sum(x$event),
+    N      = sum(x$n),
     check.names = FALSE
   )
 ))
@@ -495,70 +468,459 @@ characteristics <- do.call(rbind, lapply(
 knitr::kable(characteristics, row.names = FALSE)
 ```
 
-### Table 2. The effect at the doses of interest
+We see the column that makes this a dose-response Table 1: the number of
+levels and the range each study contributed. A reader judges the evidence
+from it before seeing any estimate.
 
-The doses are chosen in the protocol, not after seeing the curve. They are
-usually the intakes that existing guidance already speaks about.
+### Model comparison plot
+
+The second figure shows every candidate shape on one plot, with the
+statistics that chose between them (Chapter 4). Let us fit it on coffee and
+stroke, the 16 cohorts of Larsson and colleagues that the class used, read
+from the class workbook.
 
 ```{r}
-#| label: tbl-doses
-#| tbl-cap: "Table 2: the fitted effect at the pre-specified intakes, with confidence and prediction intervals."
-knitr::kable(easydr_table(easydr.object, doses = c(10, 25, 50)))
+#| label: fig-compare
+#| fig-cap: "Figure 2: five candidate shapes for coffee and stroke, 16 cohorts, relative risk."
+#| fig-width: 9
+#| fig-height: 8
+larsson <- as.data.frame(readxl::read_excel("data/easydr-data.xlsx",
+                                            sheet = "Larsson_2011"))
+
+easydr.object <- easydr(data             = larsson,
+                        sm               = "RR",
+                        shape            = "rcs",
+                        knots            = c(0.25, 0.50, 0.75),
+                        overall.per.unit = TRUE,
+                        result.at        = 1,
+                        dose.unit        = "cups/day")
+
+easydr_compare_shapes(easydr.object,
+                      shapes         = c("linear", "quadratic", "rcs",
+                                         "fp", "hyperbolic_emax"),
+                      deviance.value = TRUE,
+                      r2adj          = FALSE)
 ```
 
-`easydr_table()` is the function that builds it. It takes the fit and the
-doses, adds the reference dose because every other row is measured against it,
-and marks any row that falls beyond the range the studies reported. Given a
-`filetype` and a `file.name` it writes the same table to a spreadsheet or to a
-PDF, which is the form a journal asks for. `main` is the title it carries.
+Larsson, 2011; Coffee consumption and risk of stroke: a dose-response
+meta-analysis of prospective studies; 10.1093/aje/kwr226.
 
-Two arguments attach the rest of what the checklist asks for. `gof = TRUE`
-adds the deviance against a saturated model, its test and the R-squared.
-`target = TRUE` adds ED50, ED80 and ED max with their bootstrap intervals.
-Both travel with the table rather than being quoted from somewhere else,
-which is how they stop disagreeing with it.
+The table under the plot ranks the shapes by AIC and gives, for each one, the
+Wald test for departure from linearity, the deviance with its test, and the
+difference in AIC from the best shape. Here is the results paragraph we would
+write around it, in the style of Discacciati, Crippa and Orsini (2017):
 
-The prediction interval is wider than the confidence interval on purpose. It
-is the interval a new study would be expected to fall in, and it is the honest
-number to quote when somebody asks what to expect next.
+> _Five candidate shapes were fitted to the 16 cohorts and compared (Figure 2,
+> Table 2). The restricted cubic spline departed from linearity (Wald test, p
+> < 0.001), as did the quadratic (p < 0.001); the fractional polynomial chosen
+> (powers 0 and 2) holds no straight line, so it has no such test._ **(1)**
+> _No shape fitted the reported estimates fully: the deviance of the spline was
+> 74.6 (p = 0.014), against 138.8 (p < 0.001) for the linear model._ **(2)**
+> _The hyperbolic Emax had the lowest AIC, with the spline close behind
+> (ΔAIC 0.4); the quadratic (ΔAIC 2.4) had comparable support, and the
+> fractional polynomial (ΔAIC 4.2) and the linear model (ΔAIC 20.2) less._
+> **(3)** _The pre-specified spline, within 2 AIC of the best shape, was kept
+> as the primary model and its lack of fit reported as a limitation; the
+> curved shapes agree up to about 4 cups/day and part above it._ **(4)**
 
-## Cite the tools, and the repository
+1. The Wald test, one per shape that holds a straight line.
+2. The deviance, which asks a different question: could this curve have
+   produced the estimates the studies reported at all.
+3. ΔAIC, which ranks the shapes.
+4. The decision, which follows the default of the box in the methods.
+
+### Forest plot
+
+The third figure is a forest of study trends, not of contrasts: one row per
+study, each row carrying that study's slope. Crippa and colleagues reported it
+like this for red meat and bladder cancer:
+
+> _There was statistical heterogeneity according to study design (P for
+> heterogeneity = 0.02)._ **(1)** _The pooled RR restricted to the cohort
+> studies was 1.01 (95% CI 0.97, 1.06) for an increment of 100 g per day of
+> red meat with no significant heterogeneity (R~b~ = 0%, P = 0.62) (Figure 2).
+> The deviance test did not detect lack of fit (D = 24, df = 18, P = 0.17)._
+> **(2)** _In case control studies, the corresponding pooled RR was 1.51 (95%
+> CI 1.13, 2.02) with substantial heterogeneity among studies (R~b~ = 81%, P <
+> 0.01) and overall indication of poor fit (D = 44, df = 18, P < 0.01)._
+> **(3)**
+
+1. The difference by design.
+2. The cohort studies.
+3. The case-control studies.
+
+Crippa, 2018; Red and processed meat consumption and risk of bladder cancer:
+a dose-response meta-analysis of epidemiological studies;
+10.1007/s00394-016-1356-0. Results text, verbatim. Their Figure 2 is the
+published forest. Let us refit it from `red_bc`, the same 13 studies, which
+dosresmeta ships. Five studies give no counts per category, so they keep
+independent contrasts, and the authors used the DerSimonian and Laird
+estimator (`method.tau = "mm"`).
+
+```{r}
+# Rename the columns and keep the studies in the paper's order
+data(red_bc)
+red <- data.frame(
+  id = red_bc$id,
+  studlab = paste0(sub(" et al.", "", red_bc$author, fixed = TRUE),
+                   ", ", red_bc$year),
+  dose = red_bc$dose, event = red_bc$cases, n = red_bc$n,
+  TE = red_bc$rr, lower = red_bc$lrr, upper = red_bc$urr,
+  design = factor(ifelse(red_bc$type == "cc", "Case-control", "Cohort"),
+                  c("Cohort", "Case-control")))
+red$studlab[red$id == 10] <- "Michaud, 2006 (a)"
+red$studlab[red$id == 11] <- "Michaud, 2006 (b)"
+red$lower[red$TE == 1 & red_bc$se == 0] <- NA
+red$upper[is.na(red$lower)] <- NA
+paper_order <- c(13, 11, 10, 6, 5, 4, 14, 9, 8, 7, 3, 2, 1)
+red <- red[order(match(red$id, paper_order)), ]
+```
+
+```{r}
+#| label: fig-forest
+#| fig-cap: "Figure 3: the forest of Crippa and colleagues (2018) refitted with easyDR, 13 studies, per 100 g/day of red meat, by design."
+#| fig-width: 10
+#| fig-height: 7
+red_fit <- easydr(red, sm = "RR", shape = "linear", dose.unit = "g/day",
+                  method.tau = "mm", subgroup = "design")
+
+easydr_forest(red_fit, increment = 100, subgroup = TRUE,
+              main = FALSE, columns = FALSE)
+```
+
+We see every study, both subtotals and the overall estimate of the published
+figure, 1.22 (1.05, 1.41).
+
+### Dose-response curve
+
+The fourth figure is the one the paper exists for. Crippa and Orsini reported
+the aripiprazole curve like this:
+
+> _The results indicated a statistically significant positive association
+> between increasing doses of aripiprazole and the mean change in PANSS score
+> with the maximum value of 10.39 (95 % CI: 7.48, 13.30) observed at x~max~ =
+> 19.32 mg/day._ **(1)** _The model suggested a slight decrease in the
+> predicted mean PANSS score for dosages greater than 20 mg/day._ **(2)** _The
+> estimated dose to produce 50 % and 80 % of the predicted maximum effect were
+> ED~50~ = 5.82 mg/day (95 % CI: 5.10, 8.58) and ED~80~ = 10.43 mg/day (95 %
+> CI: 9.02, 16.73)._ **(3)**
+
+1. The maximum effect, and the dose where it is reached.
+2. The shape above 20 mg/day.
+3. The target doses.
+
+Crippa, 2016; Dose-response meta-analysis of differences in means;
+10.1186/s12874-016-0189-0. Results text, verbatim; their Figure 2 is the
+published curve. Let us refit it from `ari`, the same five trials, with the
+knots the paper used: 0, 10 and 30 mg/day, the 10th, 50th and 90th percentiles
+of the doses.
+
+```{r}
+#| label: fig-curve
+#| fig-cap: "Figure 4: the aripiprazole curve of Crippa and Orsini (2016) refitted with easyDR, mean difference in PANSS change, restricted cubic spline."
+#| fig-width: 7
+#| fig-height: 4.6
+data(ari)
+aripip <- data.frame(studlab = ari$author, dose = ari$dose, mean = ari$y,
+                     sd = ari$sd, n = ari$n)
+
+ari_fit <- easydr(aripip, sm = "MD", shape = "rcs", knots = c(0, 10, 30),
+                  dose.unit = "mg/day")
+
+easydr_curve(ari_fit, main = FALSE, result = FALSE, studies = TRUE)
+```
+
+### Subgroup analysis
+
+The fifth figure, optional, draws one curve per subgroup over the overall
+fit. Crippa and colleagues pooled coffee and all-cause mortality. The paper
+is not open access, so its figure is not shown here, yet the data are in
+dosresmeta as `coffee_mort`: 22 studies with cases and participants.
+
+> _The largest risk reductions were observed for 4 cups/day for all-cause
+> mortality (16%, 95% confidence interval: 13, 18)._ **(1)** _Stratified by
+> sex, 4 cups/day was associated with a 19% lower risk of all-cause mortality
+> in women (RR 0.81, 95% CI 0.78, 0.83), 17% in men (RR 0.83, 95% CI 0.79,
+> 0.88) and 10% in studies that reported both sexes together (RR 0.90, 95% CI
+> 0.85, 0.95)._ **(2)**
+
+1. The overall result.
+2. The result by sex.
+
+Crippa, 2014; Coffee consumption and mortality from all causes,
+cardiovascular disease, and cancer: a dose-response meta-analysis;
+10.1093/aje/kwu194. The first sentence is verbatim from the abstract; the
+second is written from our refit of the authors' data, which follows.
+
+```{r}
+# Rename the columns; studies reported twice get their sex in the label
+data(coffee_mort)
+twice <- ave(coffee_mort$id, coffee_mort$author, coffee_mort$year,
+             FUN = function(z) length(unique(z))) > 1
+coffee <- data.frame(
+  studlab = paste0(coffee_mort$author, " ", coffee_mort$year,
+                   ifelse(twice, paste0(" (", coffee_mort$gender, ")"), "")),
+  dose = coffee_mort$dose, event = coffee_mort$cases, n = coffee_mort$n,
+  TE = exp(coffee_mort$logrr),
+  lower = ifelse(coffee_mort$se > 0,
+                 exp(coffee_mort$logrr - qnorm(0.975) * coffee_mort$se), NA),
+  upper = ifelse(coffee_mort$se > 0,
+                 exp(coffee_mort$logrr + qnorm(0.975) * coffee_mort$se), NA),
+  design = coffee_mort$type,
+  sex = factor(c(F = "Women", M = "Men",
+                 "M/F" = "Women and men")[coffee_mort$gender],
+               c("Women", "Men", "Women and men")))
+```
+
+```{r}
+#| label: fig-subgroup
+#| fig-cap: "Figure 5: coffee and all-cause mortality by sex, refitted from the data of Crippa and colleagues (2014), relative risk at 4 against 0 cups/day."
+#| fig-width: 8
+#| fig-height: 6
+coffee_sex <- easydr(coffee, sm = "RR", shape = "rcs",
+                     knots = c(0.5, 2, 4.5), method.tau = "mm",
+                     overall.per.unit = FALSE, result.at = c(4, 0),
+                     dose.unit = "cups/day", subgroup = "sex")
+
+easydr_curve(coffee_sex, main = FALSE, result = TRUE,
+             table = "horizontal", results.table = 4)
+```
+
+We see the overall relative risk at 4 cups/day, 0.84 (0.82, 0.87), which is
+the 16% (13, 18) of the abstract, and one curve per sex under it. A difference
+between subgroups is tested with the test for subgroup interaction, never read
+off two overlapping bands.
+
+### Sensitivity analysis
+
+Sensitivity analyses go to the supplement, and the results paragraph points
+to them. Crippa and Orsini checked two things: where the knots sit, and which
+shape was fitted.
+
+> _Therefore we considered alternative knots locations including different
+> combinations of the 10th, 25th, 50th, 75th and 90th percentiles of the
+> overall dose distribution (0, 0.5, 10, 18.75, and 30 mg/day). A graphical
+> comparison is presented in the left panel of Fig. 3. The alternative curves
+> roughly described the same dose-response shape with no substantial
+> variation, all indicating an increase in the mean change PANSS score up to
+> 20 mg/day of aripiprazole._ **(1)** _The best fractional polynomials
+> (p1=0.5, p2=1) provided overall a similar dose-response curve when compared
+> to the spline model, with slightly higher value for the maximum predicted
+> response (right panel of Fig. 3). The hyperbolic Emax had substantially
+> higher predicted mean differences for low values of the dose._ **(2)**
+
+1. The knot placement.
+2. The other shapes.
+
+Crippa, 2016; Dose-response meta-analysis of differences in means;
+10.1186/s12874-016-0189-0. Results text, verbatim. Their Figure 3 has two
+panels; let us draw both on the same fit. The left panel overlays the eight
+knot sets of the paper.
+
+```{r}
+#| label: fig-knots
+#| fig-cap: "Supplementary Figure S2: the aripiprazole spline refitted with the eight knot sets of Crippa and Orsini (2016), Figure 3, left panel."
+#| fig-width: 7
+#| fig-height: 5
+easydr_knot_sensitivity(ari_fit,
+                        sets = list(c(0, 0.5, 18.75), c(0, 0.5, 30),
+                                    c(0, 10, 18.75),  c(0, 10, 30),
+                                    c(0, 18.75, 30),  c(0.5, 10, 18.75),
+                                    c(0.5, 10, 30),   c(0.5, 18.75, 30)),
+                        result = FALSE, main = FALSE)
+```
+
+The right panel compares the spline with the other shapes.
+
+```{r}
+#| label: fig-shapes
+#| fig-cap: "The aripiprazole spline against a fractional polynomial, a hyperbolic Emax and a quadratic, Crippa and Orsini (2016), Figure 3, right panel."
+#| fig-width: 7
+#| fig-height: 5
+easydr_compare_shapes(ari_fit,
+                      shapes = c("rcs", "fp", "hyperbolic_emax", "quadratic"),
+                      result = FALSE, main = FALSE)
+```
+
+We see the knot sets lying together up to 20 mg/day, which says the curve is
+the data and not the knots. Ten curves that fan apart would say the opposite,
+and the range over which they fan would go into the limitations.
+
+### Target doses
+
+The last results line, when the curve has a maximum, gives the doses that
+reach a share of it: **ED50**, **ED80** and **ED max**, each with a bootstrap
+interval. They are what a guideline can use. Let us compute them on the same
+aripiprazole fit.
+
+```{r}
+easydr_target_dose(ari_fit, B = 1000, seed = 1)
+```
+
+We see the published doses reproduced: the maximum of 10.39 at 19.32 mg/day,
+ED50 at 5.82 mg/day and ED80 at 10.43 mg/day. The doses match the paper
+exactly. The intervals come from bootstrap draws, so their upper limits move
+with the draws, and ours differ slightly from the published 8.58 and 16.73.
+
+> _The results indicated a statistically significant positive association
+> between increasing doses of aripiprazole and the mean change in PANSS score
+> with the maximum value of 10.39 (95 % CI: 7.48, 13.30) observed at x~max~ =
+> 19.32 mg/day._ **(1)** _The estimated dose to produce 50 % and 80 % of the
+> predicted maximum effect were ED~50~ = 5.82 mg/day (95 % CI: 5.10, 8.58) and
+> ED~80~ = 10.43 mg/day (95 % CI: 9.02, 16.73)._ **(2)**
+
+1. The maximum effect.
+2. ED50 and ED80.
+
+Where the maximum sits at the end of the observed range, say so. That is a
+limit of the evidence, not a plateau.
+
+## Discussion
+
+### Writing the discussion
+
+The discussion is where a dose-response paper most often goes wrong, because
+a curve invites claims that a curve cannot support. It has three parts.
+
+**The introduction paragraph**
+
+- Open with the main finding: the shape, and the dose where the effect is
+  largest.
+- Give the effect at that dose with its 95% CI.
+- Say what is new against earlier reviews: more studies, a dose-response
+  analysis, a different shape.
+- Add no result that is not in the results.
+
+**The reasoning paragraphs**
+
+- Explain the shape with a mechanism that fits a plateau, a turn or a straight
+  line.
+- Compare with earlier meta-analyses and large studies, and say why they
+  differ: doses, designs, populations.
+- Discuss heterogeneity and the tests for subgroup interaction, not only the
+  pooled curve.
+- Keep every claim inside the observed dose range.
+
+**The limitations**
+
+- Observational studies carry residual confounding, so a dose-response curve
+  does not prove cause.
+- Assigned doses: midpoints and open-ended categories.
+- Studies with two exposure levels were left out of the two-stage model; say
+  what the one-stage analysis showed.
+- Tests for subgroup interaction with fewer than ten studies per
+  characteristic have low power.
+- Publication bias was tested only with ten or more studies.
 
 ::: {.callout-important}
-**This part is not optional**
+**The claim a curve does not support**
 
-A dose-response curve is the product of several modelling decisions taken
-inside software. A methods section that says "analyses were performed in R"
-does not let anybody reproduce it, and a reader cannot tell which covariance
-approximation, which shape, or which knot rule produced the figure.
+A curve is estimated over the range the studies reported, and its band widens
+wherever they thin out. Reading a threshold off the point where the band
+crosses the null is the commonest error in this literature, because that
+point moves with the width of the band and not only with the size of the
+effect.
 
-Name all of it, with versions:
-
-- **{easyDR}**, this package, together with the repository that holds both the
-  package and this book: <https://github.com/vanioljantunes/easyDR>
-- **{dosresmeta}** [@crippa2016], which does the estimation
-- the method itself [@greenland1992]
-- _R_, with its version number
-
-The [Cite this material](cite.qmd) page carries the exact wording for the
-first of these, generated from the installed version. Copy it rather than
-retyping it, because the version number is the part that matters most and the
-part most often got wrong.
+The Burden of Proof papers [@gbd2022tobacco; @gbd2022vegetables] and the
+critique of them [@burdenofproofconcerns2023] are the best available case
+study. We recommend reading that exchange before writing a discussion that
+names an optimal dose.
 :::
 
-The package prints its own call back on request, which is the quickest way to
-get every argument into the methods sentence without missing one.
+## Conclusion
 
-::: {.callout-note appearance="simple"}
-**Example**
+### Writing the conclusion
 
-> _Analyses were performed in R. Dose-response models were fitted with the
-> easyDR package (version 0.0.0.9000;
-> https://github.com/vanioljantunes/easyDR), which prepares the data and calls
-> dosresmeta (Crippa and Orsini, 2016) for estimation using the method of
-> Greenland and Longnecker (1992). The analysis code is available in the
-> supplementary material._
-:::
+The conclusion has three sentences: the question in brief, the result with
+its interval, and what is still needed. Let us read two, one for each kind of
+evidence, written for the class from the published results.
+
+**Observational studies: coffee and all-cause mortality**
+
+> _In 21 prospective cohort studies with 997,464 participants, coffee
+> consumption showed a non-linear inverse association with all-cause
+> mortality._ **(1)** _The largest risk reduction, 16% (95% CI 13% to 18%),
+> was seen at 4 cups/day._ **(2)** _Because all the evidence is
+> observational, residual confounding cannot be ruled out, and randomized
+> trials of coffee intake are needed before any amount is recommended._
+> **(3)**
+
+**Randomized trials: aripiprazole in schizophrenia**
+
+> _In five placebo-controlled trials in schizophrenia, the improvement in
+> PANSS score rose with the dose of aripiprazole and levelled off near 20
+> mg/day._ **(1)** _The maximum mean difference, 10.39 points (95% CI 7.48 to
+> 13.30), was reached at 19.32 mg/day, and 80% of it at 10.43 mg/day (95% CI
+> 9.02 to 16.73)._ **(2)** _With only five trials, more fixed-dose trials are
+> needed to confirm where the plateau starts._ **(3)**
+
+1. The question in brief: population, exposure, outcome, designs.
+2. The result, with its interval.
+3. What is still needed: trials, when the evidence is observational; more
+   trials, when there are few.
+
+Crippa, 2014; Coffee consumption and mortality from all causes,
+cardiovascular disease, and cancer: a dose-response meta-analysis;
+10.1093/aje/kwu194. Crippa, 2016; Dose-response meta-analysis of differences
+in means; 10.1186/s12874-016-0189-0.
+
+## Manuscript
+
+### Standard manuscript elements
+
+Five figures and two tables cover a dose-response paper. Two of them are
+optional, and the list says when they are needed.
+
+| Element | Content | |
+|---|---|---|
+| Figure 1. PRISMA flowchart | Records found, screened, read in full and included, with the reasons for exclusion. | Expected |
+| Figure 2. Model comparison plot | Every candidate shape on one plot, with the fit statistics that chose between them. | Expected |
+| Figure 3. Forest plot | The trend of each study and the pooled trend, one row per study. | Expected |
+| Figure 4. Dose-response curve | The pooled curve with its band, read inside the observed dose range. | Expected |
+| Figure 5. Dose-response curve by subgroup | One curve per level over the overall fit, when a subgroup was planned. | Optional |
+| Table 1. Baseline characteristics | One row per study: design, size, follow-up and the dose range it contributed. | Expected |
+| Table 2. Target doses summary | ED50, ED80 and ED max with bootstrap intervals, when the curve has a maximum. | Optional |
+
+: The elements of a dose-response manuscript. {#tbl-manuscript}
+
+Each figure in the results section above is one of these. The figure
+functions of easyDR write themselves to a file when they are given one: the
+format is `filetype` (`"png"` unless a journal asks for `"tiff"` or `"pdf"`),
+the folder is `path`, and the name is `file.name`. `easydr_table()` writes
+Table 2 to a spreadsheet or a PDF the same way, and with `target = TRUE` it
+carries the target doses (Chapter 4).
+
+## Supplement
+
+### Supplementary figures
+
+| Element | Content | |
+|---|---|---|
+| Figure S1. Leave-one-out | The pooled curve refitted with each study removed in turn. | Expected |
+| Figure S2. Knot sensitivity analysis | Every three-knot combination overlaid on the chosen fit. | Optional |
+| Figure S3. Funnel plot | Study-level estimates against precision, with Egger's test when ten or more studies enter. | Optional |
+| Figure S4. Risk of bias | Every domain judged for every study. | Expected |
+
+: Supplementary figures. {#tbl-supp-figures}
+
+Chapter 4 draws each of them: `easydr_loo()` for Figure S1,
+`easydr_knot_sensitivity()` for Figure S2 (as in the sensitivity section
+above), and `easydr_funnel()` for Figure S3.
+
+### Supplementary tables
+
+| Element | Content | |
+|---|---|---|
+| Table S1. Search strategy per database | The exact string run in each database, the date it ran and the records it returned. | Expected |
+| Table S2. Model comparison | The candidate shapes with their fit statistics, so the chosen one can be checked. | Optional |
+
+: Supplementary tables. {#tbl-supp-tables}
+
+The results paragraphs cite this numbering: subgroups Figure 5, sensitivity
+Supplementary Figures 1 and 2, goodness of fit Supplementary Table 2, target
+doses Table 2. The supplement is where a dose-response review becomes
+checkable, so the analysis code belongs there too, so that the curve can be
+re-run rather than re-read.
 
 ::: {.callout-note appearance="simple"}
 **Test your knowledge!**
@@ -566,39 +928,39 @@ get every argument into the methods sentence without missing one.
 1. A co-author proposes reporting the intake at which the confidence band
    first crosses the null, and calling it a threshold. What is wrong with
    that, and what would you report instead?
-2. Why does the forest plot of a dose-response paper carry one row per study
-   rather than one row per intake category?
-3. A reviewer asks why Table 2 reports a prediction interval as well as a
-   confidence interval. What is the one-sentence answer?
-4. Which three limitations are specific to a dose-response review and belong
-   in every discussion?
+2. Which three sentences does the methods section of a dose-response abstract
+   carry that no other design needs?
+3. The spline in your review has a ΔAIC of 0.4 against the best shape. Which
+   shape do you keep as the primary model, and where do the others go?
+4. Why does a percentage change on the PANSS need the scale shifted to 30
+   first, while a mean difference does not?
 
 Answers to these questions are listed in Appendix A.
 :::
 
 ## Summary
 
-- A dose-response review is reported under PRISMA, plus the items in
-  @tbl-checklist that PRISMA does not cover: dose assignment, the reference
-  category, the shape and its knots.
-- The results section has a fixed running order, and the figure numbering is
-  that order: flow, study trends, the curve, subgroups.
-- Two tables belong in the paper. Table 1 describes the studies and the
-  participants, and Table 2 reports the effect at intakes chosen in the
-  protocol.
-- The supplement carries what makes the review checkable: search strings,
-  outcome definitions, the dose conversion table, risk of bias, leave-one-out,
-  the knot-location sensitivity, the shapes that were not chosen with their
-  AIC and BIC, and the code.
-- Goodness of fit and the departure-from-linearity test answer different
-  questions, and a results section reports both. Target doses say where on
-  the curve the benefit arrives, and say so plainly when the maximum is the
-  end of the observed range rather than a plateau.
-- A scale whose floor is not zero, such as the PANSS at 30, is shifted to
-  that floor before any ratio or percentage is taken.
-- The conclusion answers the question at a named dose, inside the observed
-  range, and says so plainly when the data do not reach further.
-- Software, package versions and the repository belong in the methods. A curve
-  reported without them is a figure that nobody can reproduce.
+- A dose-response review is reported under PRISMA, plus the checklist above:
+  five abstract parts, twelve methods items and eight results items that
+  PRISMA does not cover.
+- The abstract names the exposure as a quantity, aims at a curve and a target
+  dose, and reports the effect per unit of dose with the test for
+  non-linearity beside it.
+- The methods are written phrase by phrase: registration, the three-dose rule,
+  the search, extraction per dose category, the covariance, the shape and its
+  knots, bounded scales, heterogeneity, software, risk of bias and publication
+  bias.
+- The results follow the figures: study selection, the model comparison plot,
+  the forest of study trends, the curve, subgroups, sensitivity and target
+  doses.
+- The pre-specified shape stays primary when it is within 2 AIC of the best
+  candidate, and the others are reported as sensitivity analyses.
+- A scale whose floor is not zero, such as the PANSS at 30, is shifted to that
+  floor before any ratio or percentage is taken.
+- The discussion keeps every claim inside the observed dose range, and the
+  conclusion answers the question at a named dose, with its interval.
+- The manuscript carries five figures and two tables, two of them optional;
+  the supplement carries the leave-one-out, the knot sensitivity, the funnel,
+  the risk of bias, the search strings, the model comparison and the code.
 
 {{< include _cta.qmd >}}
